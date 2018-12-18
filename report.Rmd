@@ -1,0 +1,185 @@
+---
+title: "Dynamic report"
+output: word_document
+---
+
+```{r eval = FALSE, echo = FALSE, cache = FALSE}
+#================================================================CR
+# Licence: ====
+# Copyright 2018 EUROPEAN UNION
+# Licensed under the EUPL, Version 1.2 or subsequent versions of the EUPL (the "License"); 
+# You may not use this work except in compliance with the License. 
+# You may obtain a copy of the License at: http://ec.europa.eu/idabc/eupl
+# Unless required by applicable law or agreed to in writing, the software distributed 
+# under the License is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS 
+# OF ANY KIND, either express or implied. See the License for the specific language 
+# governing permissions and limitations under the License.
+# Date: 05/11/2017
+# 
+# Authors
+# - Federico Karagulian    , federico.karagulian@ec.europa.eu - European Commission - Joint Research Centre
+# - Michel Gerboles        , michel.gerboles@ec.europa.eu  - European Commission - Joint Research Centre
+# - Laurent Spinelle       , laurent.spinelle@ec.europa.eu - European Commission - Joint Research Centre
+# - Maria Gabriella Villani, mariagabriella.villani@enea.it - ENEA
+# - Marco Signorini        , marco.signorini@liberaintentio.com - Liberatintentio srl
+# - Alex Kotsev            , alexander.kotsev@ec.europa.eu - European Commission - Joint Research Centre
+
+# Note that due to an issue in rmarkdown, the default value of a parameter in
+# the header cannot be `NULL`, so I used a default of `NA` for the default value
+# of `n`.
+```
+
+## Name of the ASE box (AirSensEUR)
+
+```{r, message = FALSE, echo = FALSE, cache = FALSE, warning = FALSE, results = 'asis'}
+# name of the selected sensor
+cat(AirsensEur.name(), "\n")
+```
+
+## Calibration of sensor in the ASE box
+
+```{r, echo = FALSE, cache = FALSE, results = 'asis'}
+cat(CalSet()$name.sensor, "\n")
+```
+
+## Calibration of sensor
+
+#### outputs
+
+```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis'}
+# results = 'asis'
+#print(Table.SummaryCal())
+
+# model used for the calibration
+Model.i <- readRDS(file = file.path(CalSet()$WDoutputMod, CalSet()$Cal))
+
+coefficients <- Model.i$coefficients
+uncertainities <-  summary(Model.i)$coefficients[,2]
+t_values <-  summary(Model.i)$coefficients[,3]
+R2           <- summary(Model.i)$r.squared
+
+# list all the covariates used in the model
+covariates_names <- CalSet()$CovMod
+covariates_names <- paste0(covariates_names, ".rds_Calibrated")
+
+List_calib <- list(name = CalSet()$name.sensor,
+                   type = CalSet()$mod.eta.model.type,
+                   Cal = CalSet()$Cal,
+                   coefficients = coefficients,
+                   uncertainities = uncertainities,
+                   t_values = t_values,
+                   R2 = R2)
+df <- unlist(List_calib)
+df <- as.data.frame(df)
+names(df) <- CalSet()$name.sensor
+
+df <- knitr::kable(df, format = "markdown")
+print(df)
+
+# plot calibration 
+
+image = intersect(intersect(list.files(paste0(DisqueFieldtestDir(),"/","Calibration", "/"), pattern = c(CalSet()$name.sensor, "\\.png$")),
+                            list.files(paste0(DisqueFieldtestDir(),"/","Calibration", "/"), pattern = CalSet()$mod.eta.model.type)),
+                  list.files(paste0(DisqueFieldtestDir(),"/","Calibration", "/"), pattern = covariates_names))
+
+
+image <- paste0(DisqueFieldtestDir(),"/","Calibration", "/", image)
+# sort images from the most recent 
+image <- sort(image, decreasing = TRUE)
+# get only the last one (the most recent)
+image <- image[1]
+
+
+if (file.exists(image)) { knitr::include_graphics(image) 
+    } else print ("Save Calibration plot", quote = FALSE) 
+```
+
+## Validation of sensor
+
+```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis'}
+
+# load model used for the comparison of calibrated data with the reference
+DateIN  <- max(c(input[[paste0("DateMeas",CalSet()$k)]][1],input[[paste0("DatePlotMeas",CalSet()$k)]][1]), na.rm = TRUE)
+DateEND <- min(c(input[[paste0("DateMeas",CalSet()$k)]][2],input[[paste0("DatePlotMeas",CalSet()$k)]][2]), na.rm = TRUE)
+
+if(file.exists(file.path(CalSet()$WDModelled_gas, paste0(CalSet()$Cal,"__", CalSet()$eta.model.type,"__",
+                                                         format(DateIN, "%Y%m%d"),"__",
+                                                         format(DateEND,"%Y%m%d"),"__",
+                                                         ".rds")))){
+    
+    comparison.i <- readRDS(file = file.path(CalSet()$WDModelled_gas, paste0(CalSet()$Cal,"__", CalSet()$eta.model.type,"__",
+                                                                             format(DateIN, "%Y%m%d"),"__",
+                                                                             format(DateEND,"%Y%m%d"),"__",
+                                                                             ".rds")))
+    
+    coeff_validation <- comparison.i$coefficients
+    unc_validation <-  summary(comparison.i)$coefficients[,2]
+    t_validation <-  summary(comparison.i)$coefficients[,3]
+    R2_validation <- summary(comparison.i)$r.squared
+    
+    # coeff_validation <- summary(Plot.Extrapolation())$coefficients[,1]
+    # unc_validation <- summary(Plot.Extrapolation())$coefficients[,2]
+    # t_validation <- summary(Plot.Extrapolation())$coefficients[,3]
+    # R2_validation <- summary(Plot.Extrapolation())$r.squared
+    
+    List_validation <- list(name = CalSet()$name.sensor,
+                            type = "Linear",
+                            coefficients = coeff_validation,
+                            uncertainities = unc_validation,
+                            t_values = t_validation,
+                            R2 = R2_validation)
+    
+    df <- unlist(List_validation)
+    df <- as.data.frame(df)
+    names(df) <- CalSet()$name.sensor
+    
+    df <- knitr::kable(df, format = "markdown")
+    print(df)
+    
+    # plot validation 
+    
+    # if (length(covariates_names) > 1) {
+    # image = intersect(intersect(list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = c(CalSet()$name.sensor, "\\.png$")),
+    #                   list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = CalSet()$mod.eta.model.type)),
+    #                   list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = covariates_names))
+    # } else if (length(covariates_names) == 1) { image = intersect(intersect(list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = c(CalSet()$name.sensor, "\\.png$")),
+    #                   list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = CalSet()$mod.eta.model.type)),
+    #                    list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = paste0("__",covariates_names[1],"_")))
+    # }
+    
+} else print("Save the comparison file using the save plot check box", quote = FALSE)
+
+image = intersect(intersect(list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = c(CalSet()$name.sensor, "\\.png$")),
+                            list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = CalSet()$mod.eta.model.type)),
+                  list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = covariates_names))
+
+# exclude the time_series (validation)
+image_scatter <- image[!grepl("_ts_", image)]
+# WDoutput
+
+image_scatter <- paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/", image_scatter)
+image_scatter <- sort(image_scatter, decreasing = TRUE)
+# get only the last one (the most recent)
+image_scatter <- image_scatter[1]
+
+
+if (file.exists(image_scatter)) { knitr::include_graphics(image_scatter) 
+    } else print ("Save validation plot", quote = FALSE)
+```
+
+#### time series
+
+```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis'}
+
+# time_series
+image_ts <- image[grepl("_ts_", image)]
+
+image_ts <- paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/", image_ts)
+image_ts <- sort(image_ts, decreasing = TRUE)
+# get only the last one (the most recent)
+image_ts <- image_ts[1]
+
+if (file.exists(image_ts)) { knitr::include_graphics(image_ts) 
+    } else print ("Save time-series plot", quote = FALSE)
+```
+
