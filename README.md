@@ -1,4 +1,4 @@
-# Github_Calibration_to_push
+# AirSensEUR Calibration
 The JAVA software , shell scripts, C applications, drivers and configuration files developed for the AirSensEUR sensor box is released under the European Public License, an open source license for software. The copyright notice is as follows: 
 License
 Copyright 2018 EUROPEAN UNION
