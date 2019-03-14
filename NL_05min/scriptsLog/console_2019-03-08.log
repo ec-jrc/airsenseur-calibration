@@ -1,0 +1,1276 @@
+-----------------------------------------------------------------------------------
+[shiny, Selected] INFO Starting log file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/scriptsLog/console_2019-03-08.log
+-----------------------------------------------------------------------------------
+[ASEConfig.R] INFO 2017-12-07 Functions Config() and SETTIME transfered to Function4ASE.R to simplify maintenance
+[ASEConfig.R] INFO 2017-12-07 SUGGESTION to manage the directories of ASE box instaed of file ASECOnfigxxxx.R
+-----------------------------------------------------------------------------------
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Servers.cfg for the configuration of servers  exists
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min.cfg for the configuration of AirSensEUR exists
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_COA4.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_COA4.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_NOB4.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_NOB4.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_NO2B43F.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_NO2B43F.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_OX_A431.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_OX_A431.cfg exists 
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Servers.cfg for the configuration of servers  exists
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min.cfg for the configuration of AirSensEUR exists
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_COA4.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_COA4.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_NOB4.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_NOB4.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_NO2B43F.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_NO2B43F.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_OX_A431.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_OX_A431.cfg exists 
+-----------------------------------------------------------------------------------
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Servers.cfg for the configuration of servers  exists
+[shiny, asc.File] INFO, NL_05min_Servers.cfg config file  saved in directory General_data.
+[ASEConfig.R] INFO 2017-12-07 Functions Config() and SETTIME transfered to Function4ASE.R to simplify maintenance
+[ASEConfig.R] INFO 2017-12-07 SUGGESTION to manage the directories of ASE box instaed of file ASECOnfigxxxx.R
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+[Check_Download] INFO, Checking S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata 
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata
+ in S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata exists.
+[Check_Download] INFO, reference data are going to be retrieved. Start new reference data at : 2019-01-11
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata exists.
+[Check_Download] INFO, sensor data are going to be retrieved. Start date for data download: 2018-11-26 16:30:00
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata exists.
+[Check_Download] INFO, sensor data are going to be retrieved. Start date for data download: 2018-11-26 17:00:00
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata does not exist. It should be created, SOS sensor data should be retrieved.
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db exists.
+[Check_Download] INFO, The database S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db includes the table ASE_NL_05 with the columns: time, altitude, boardTimeStamp, gpsTimestamp, latitude, longitude, sampleEvaluatedVal, sampleRawVal, channel, name
+[Check_Download] INFO, SOS sensor data are going to be retrieved. Start date for data download: 2018-11-26 16:30:00
+$Ref.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata"
+
+$Influx.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata"
+
+$SOS.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata"
+
+$General.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata"
+
+$airsenseur.db.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db"
+
+$WDinput
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data"
+
+$ExistFil.data.db
+[1] TRUE
+
+$Retrieve.data.db
+[1] TRUE
+
+$DateIN.db.prev
+[1] "2018-06-25T16:07:00Z"
+
+$DateEND.db.prev
+[1] "2018-11-26T16:30:00Z"
+
+$ExistFil.data.Ref
+[1] TRUE
+
+$Retrieve.data.Ref
+[1] TRUE
+
+$DateIN.Ref.prev
+[1] "2018-07-30 15:01:00 +01"
+
+$DateEND.Ref.prev
+[1] "2019-01-11 +01"
+
+$Var.Ref.prev
+[1] "date"       "Ref.NO"     "Ref.NO2"    "Ref.O3"     "Ref.CO_ppm" "Ref.Long"   "Ref.Lat"   
+
+$ExistFil.data.Influx
+[1] TRUE
+
+$Retrieve.data.Influx
+[1] TRUE
+
+$DateIN.Influx.prev
+[1] "2018-06-25 16:07:00 UTC"
+
+$DateEND.Influx.prev
+[1] "2018-11-26 16:30:00 UTC"
+
+$ExistFil.data.SOS
+[1] FALSE
+
+$Retrieve.data.SOS
+[1] TRUE
+
+$DateIN.SOS.prev
+NULL
+
+$DateEND.SOS.prev
+NULL
+
+$ExistFil.data.General
+[1] TRUE
+
+$Retrieve.data.General
+[1] TRUE
+
+$DateIN.General.prev
+[1] "2018-06-25 16:00:00 UTC"
+
+$DateEND.General.prev
+[1] "2018-11-26 17:00:00 UTC"
+
+-----------------------------------------------------------------------------------
+[SETTIME] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_SETTIME.cfg for the configuration of AirSensEUR exists
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+[REF] INFO: Downloading Reference data, save RefData.RData and refData.csv with all reference values in directory General_Data
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+-----------------------------------------------------------------------------------
+[INFLUXDB] INFO: Downloading InfluxDB data
+[INFLUXDB] INFO: Down.Influx set to FALSE in ASEConfig.R  (no request of sensor data download from InfluxDB). Using previously saved Influx.Rdata.file .
+[INFLUXDB] INFO INFLUXDB returning list with InfluxData, var.names.meteo, var.name.GasSensors and var.names.sens
+-----------------------------------------------------------------------------------
+[SOS] INFO: Downloading SOS data
+[SOS] INFO: Down.SOS set to FALSE in ASEConfig_xx.R  (no request of sensor data download from SOS). There is no previously saved SOS.Rdata.file.Missing SOSData and Down.SOS request of sensor data download set to FALSE in ASEConfig_xx.R .
+[SOS] INFO no SOS data available
+[REF] INFO, Variables found in the reference dataset: Ref.NO, Ref.NO2, Ref.O3, Ref.CO_ppm
+[REF] WARNING, There is no new reference data for RIVM station Breukelen
+[REF] INFO, returning list with RefData, var.names.ref and DownloadSensor
+-----------------------------------------------------------------------------------
+[REF] INFO: Downloading Reference data, save RefData.RData and refData.csv with all reference values in directory General_Data
+-----------------------------------------------------------------------------------
+[INFLUXDB] INFO: Downloading InfluxDB data
+[INFLUXDB] INFO: Down.Influx set to FALSE in ASEConfig.R  (no request of sensor data download from InfluxDB). Using previously saved Influx.Rdata.file .
+[INFLUXDB] INFO INFLUXDB returning list with InfluxData, var.names.meteo, var.name.GasSensors and var.names.sens
+-----------------------------------------------------------------------------------
+[SOS] INFO: Downloading SOS data
+[SOS] INFO: Down.SOS set to FALSE in ASEConfig_xx.R  (no request of sensor data download from SOS). There is no previously saved SOS.Rdata.file.Missing SOSData and Down.SOS request of sensor data download set to FALSE in ASEConfig_xx.R .
+[SOS] INFO no SOS data available
+[REF] INFO, Variables found in the reference dataset: Ref.NO, Ref.NO2, Ref.O3, Ref.CO_ppm
+[REF] WARNING, There is no new reference data for RIVM station Breukelen
+[REF] INFO, returning list with RefData, var.names.ref and DownloadSensor
+|====================================================================================================================================================================================================|100% ~0 s remaining     [shiny, General.cal()] INFO, Outliers.Sens$Forced is : FALSE
+[shiny, General.cal()] INFO, Outliers.Ref$Forced is : FALSE
+[shiny, General.cal()] INFO, Conv$Forced is : FALSE
+[shiny, General.cal()] INFO, Cal$Forced is : FALSE
+|====================================================================================================================================================================================================|100% ~0 s remaining     -----------------------------------------------------------------------------------
+[Check_Download] INFO, Checking S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata 
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata
+ in S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata exists.
+[Check_Download] INFO, reference data are going to be retrieved. Start new reference data at : 2019-01-11
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata exists.
+[Check_Download] INFO, sensor data are going to be retrieved. Start date for data download: 2018-11-26 16:30:00
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata exists.
+[Check_Download] INFO, sensor data are going to be retrieved. Start date for data download: 2018-11-26 17:00:00
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata does not exist. It should be created, SOS sensor data should be retrieved.
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db exists.
+[Check_Download] INFO, The database S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db includes the table ASE_NL_05 with the columns: time, altitude, boardTimeStamp, gpsTimestamp, latitude, longitude, sampleEvaluatedVal, sampleRawVal, channel, name
+[Check_Download] INFO, SOS sensor data are going to be retrieved. Start date for data download: 2018-11-26 16:30:00
+$Ref.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata"
+
+$Influx.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata"
+
+$SOS.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata"
+
+$General.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata"
+
+$airsenseur.db.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db"
+
+$WDinput
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data"
+
+$ExistFil.data.db
+[1] TRUE
+
+$Retrieve.data.db
+[1] TRUE
+
+$DateIN.db.prev
+[1] "2018-06-25T16:07:00Z"
+
+$DateEND.db.prev
+[1] "2018-11-26T16:30:00Z"
+
+$ExistFil.data.Ref
+[1] TRUE
+
+$Retrieve.data.Ref
+[1] TRUE
+
+$DateIN.Ref.prev
+[1] "2018-07-30 15:01:00 +01"
+
+$DateEND.Ref.prev
+[1] "2019-01-11 +01"
+
+$Var.Ref.prev
+[1] "date"       "Ref.NO"     "Ref.NO2"    "Ref.O3"     "Ref.CO_ppm" "Ref.Long"   "Ref.Lat"   
+
+$ExistFil.data.Influx
+[1] TRUE
+
+$Retrieve.data.Influx
+[1] TRUE
+
+$DateIN.Influx.prev
+[1] "2018-06-25 16:07:00 UTC"
+
+$DateEND.Influx.prev
+[1] "2018-11-26 16:30:00 UTC"
+
+$ExistFil.data.SOS
+[1] FALSE
+
+$Retrieve.data.SOS
+[1] TRUE
+
+$DateIN.SOS.prev
+NULL
+
+$DateEND.SOS.prev
+NULL
+
+$ExistFil.data.General
+[1] TRUE
+
+$Retrieve.data.General
+[1] TRUE
+
+$DateIN.General.prev
+[1] "2018-06-25 16:00:00 UTC"
+
+$DateEND.General.prev
+[1] "2018-11-26 17:00:00 UTC"
+
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+[shiny, Plot.Warming()] INFO, sensor COA4 starting with 92103 valid measurements between 2018-08-08  00:00 and 2018-10-10  00:00.
+[shiny, Plot.Warming()] INFO, sensor NOB4 starting with 92103 valid measurements between 2018-08-08  00:00 and 2018-10-10  00:00.
+[shiny, Plot.Warming()] INFO, sensor NO2B43F starting with 92103 valid measurements between 2018-08-08  00:00 and 2018-10-10  00:00.
+[shiny, Plot.Warming()] INFO, sensor OX_A431 starting with 92103 valid measurements between 2018-08-08  00:00 and 2018-10-10  00:00.
+-----------------------------------------------------------------------------------
+Called from: GraphOut(date = General.df$date, y = General.df[, CalSet()$gas.sensor], 
+    Col = "green", Ylab = "Raw Sensor values", indfull = which(General.df$date %in% 
+        unlist(Index.warm[CalSet()$gas.sensor])), Title = (paste0("Data invalidated during warming of sensor ", 
+        CalSet()$name.sensor, " for ", isolate(input[[paste0("Warming", 
+            CalSet()$k)]]), " hours after each switch-on.")), 
+    Dygraphs = TRUE)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#443: if (Dygraphs) {
+    if (class(indfull) == "integer") {
+        data <- data.frame(date = date, Sensor = y, Invalid = NA)
+        data$Invalid[indfull] <- data$Sensor[indfull]
+        data$Sensor[indfull] <- NA
+        data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+        data <- cbind(data$Sensor, data$Invalid)
+        names(data) <- c("Sensor", "Invalid")
+        plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+            dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+            dySeries("Invalid", label = "Invalid sensor value", 
+                color = "red") %>% dyOptions(drawPoints = TRUE, 
+            pointSize = 2) %>% dyRangeSelector()
+    }
+    else if (class(indfull) == "list") {
+        Col <- c("blue", "red", "orange", "darkgrey")
+        for (i in 1:length(indfull)) {
+            if (length(indfull[[i]][which(indfull[[i]] %in% date)]) > 
+                0) {
+                which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                  date)]
+                index.in <- match(which.date, date)
+                points(which.date, y[index.in], pch = 19, col = Col[i])
+            }
+        }
+        data <- data.frame(date = date, Sensor = y, Invalid = NA)
+        data$Invalid[indfull] <- data$Sensor[indfull]
+        data$Sensor[indfull] <- NA
+        data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+        data <- cbind(data$Sensor, data$Invalid)
+        names(data) <- c("Sensor", "Invalid")
+        plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+            dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+            dySeries("Invalid", label = "Invalid sensor value", 
+                color = "red") %>% dyOptions(drawPoints = TRUE, 
+            pointSize = 2) %>% dyRangeSelector()
+    }
+} else {
+    op <- par(no.readonly = TRUE)
+    par(mar = c(2, 2.7, 1.7, 0.2))
+    par(mgp = c(1.5, 0.3, 0))
+    Xlim <- c(min(date, na.rm = TRUE), max(date, na.rm = TRUE))
+    Ylim <- c(min(y, na.rm = TRUE), max(y, na.rm = TRUE))
+    dates <- pretty(date, n = nTicksX)
+    yticks <- pretty(y, n = nTicksY)
+    if (class(indfull) == "integer") {
+        plot(date, y, type = "p", lwd = 2, col = Col, xlim = Xlim, 
+            ylim = Ylim, ylab = Ylab, cex.lab = 1.2, xlab = "", 
+            cex = 0.2, xaxt = "n", yaxt = "n")
+        points(date[indfull], y[indfull], pch = 19, col = "red")
+        legend(x = "topright", c(paste0("Invalid (n= ", length(indfull), 
+            ")")), col = "red", pch = c(19))
+    }
+    else {
+        if (class(indfull) == "list") {
+            plot(x = date, y = y, type = "p", lwd = 2, col = Col, 
+                xlim = Xlim, ylim = Ylim, ylab = Ylab, cex.lab = 1.2, 
+                xlab = "", cex = 0.2, xaxt = "n", yaxt = "n")
+            Col <- c("blue", "red", "orange", "darkgrey")
+            for (i in 1:length(indfull)) {
+                if (length(indfull[[i]][which(indfull[[i]] %in% 
+                  date)]) > 0) {
+                  which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                    date)]
+                  index.in <- match(which.date, date)
+                  points(which.date, y[index.in], pch = 19, col = Col[i])
+                }
+            }
+            legend(x = "topright", c(paste0(names(indfull)[1], 
+                " (n= ", length(indfull[[names(indfull)[1]]][which(indfull[[names(indfull)[1]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[2], " (n= ", 
+                length(indfull[[names(indfull)[2]]][which(indfull[[names(indfull)[2]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[3], " (n= ", 
+                length(indfull[[names(indfull)[3]]][which(indfull[[names(indfull)[3]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[4], " (n= ", 
+                length(indfull[[names(indfull)[4]]][which(indfull[[names(indfull)[4]]] %in% 
+                  date)]), ")")), col = Col, pch = c(19, 19, 
+                19, 19))
+        }
+    }
+    if (!is.null(Title)) 
+        title(Title, line = 0.5)
+    if (abs(difftime(time1 = dates[length(dates)], time2 = dates[1], 
+        units = "days")) <= nTicksX) {
+        axis.POSIXct(1, at = dates, las = 1, format = "%d-%b %H:%M")
+    }
+    else axis.POSIXct(1, at = dates, las = 1, format = "%d-%b")
+    axis(2, at = yticks, srt = 45, las = LasY)
+    abline(v = dates, h = yticks, col = "lightgray", lty = "dotted")
+    legend(x = "topleft", c("Raw values"), col = Col, pt.cex = 0.5, 
+        pch = c(19))
+}
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#444: if (class(indfull) == "integer") {
+    data <- data.frame(date = date, Sensor = y, Invalid = NA)
+    data$Invalid[indfull] <- data$Sensor[indfull]
+    data$Sensor[indfull] <- NA
+    data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+    data <- cbind(data$Sensor, data$Invalid)
+    names(data) <- c("Sensor", "Invalid")
+    plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+        dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+        dySeries("Invalid", label = "Invalid sensor value", color = "red") %>% 
+        dyOptions(drawPoints = TRUE, pointSize = 2) %>% dyRangeSelector()
+} else if (class(indfull) == "list") {
+    Col <- c("blue", "red", "orange", "darkgrey")
+    for (i in 1:length(indfull)) {
+        if (length(indfull[[i]][which(indfull[[i]] %in% date)]) > 
+            0) {
+            which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                date)]
+            index.in <- match(which.date, date)
+            points(which.date, y[index.in], pch = 19, col = Col[i])
+        }
+    }
+    data <- data.frame(date = date, Sensor = y, Invalid = NA)
+    data$Invalid[indfull] <- data$Sensor[indfull]
+    data$Sensor[indfull] <- NA
+    data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+    data <- cbind(data$Sensor, data$Invalid)
+    names(data) <- c("Sensor", "Invalid")
+    plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+        dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+        dySeries("Invalid", label = "Invalid sensor value", color = "red") %>% 
+        dyOptions(drawPoints = TRUE, pointSize = 2) %>% dyRangeSelector()
+}
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#447: data <- data.frame(date = date, Sensor = y, Invalid = NA)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#450: data$Invalid[indfull] <- data$Sensor[indfull]
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#451: data$Sensor[indfull] <- NA
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#453: data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#454: data <- cbind(data$Sensor, data$Invalid)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#455: names(data) <- c("Sensor", "Invalid")
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#458: plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+    dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+    dySeries("Invalid", label = "Invalid sensor value", color = "red") %>% 
+    dyOptions(drawPoints = TRUE, pointSize = 2) %>% dyRangeSelector()
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#578: if (Dygraphs) return(plot_Warm)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#578: return(plot_Warm)
+[shiny, Plot.Warming()] INFO, sensor COA4, 90209 valid data after removing 1906 values during 4 hours of warming at each switch-on
+-----------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------
+Called from: GraphOut(date = General.df$date, y = General.df[, CalSet()$gas.sensor], 
+    Col = "green", Ylab = "Raw Sensor values", indfull = ind, 
+    Title = paste0("Data invalidated for temperature or humidity outside thresholds for sensor ", 
+        CalSet()$name.sensor))
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#443: if (Dygraphs) {
+    if (class(indfull) == "integer") {
+        data <- data.frame(date = date, Sensor = y, Invalid = NA)
+        data$Invalid[indfull] <- data$Sensor[indfull]
+        data$Sensor[indfull] <- NA
+        data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+        data <- cbind(data$Sensor, data$Invalid)
+        names(data) <- c("Sensor", "Invalid")
+        plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+            dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+            dySeries("Invalid", label = "Invalid sensor value", 
+                color = "red") %>% dyOptions(drawPoints = TRUE, 
+            pointSize = 2) %>% dyRangeSelector()
+    }
+    else if (class(indfull) == "list") {
+        Col <- c("blue", "red", "orange", "darkgrey")
+        for (i in 1:length(indfull)) {
+            if (length(indfull[[i]][which(indfull[[i]] %in% date)]) > 
+                0) {
+                which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                  date)]
+                index.in <- match(which.date, date)
+                points(which.date, y[index.in], pch = 19, col = Col[i])
+            }
+        }
+        data <- data.frame(date = date, Sensor = y, Invalid = NA)
+        data$Invalid[indfull] <- data$Sensor[indfull]
+        data$Sensor[indfull] <- NA
+        data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+        data <- cbind(data$Sensor, data$Invalid)
+        names(data) <- c("Sensor", "Invalid")
+        plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+            dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+            dySeries("Invalid", label = "Invalid sensor value", 
+                color = "red") %>% dyOptions(drawPoints = TRUE, 
+            pointSize = 2) %>% dyRangeSelector()
+    }
+} else {
+    op <- par(no.readonly = TRUE)
+    par(mar = c(2, 2.7, 1.7, 0.2))
+    par(mgp = c(1.5, 0.3, 0))
+    Xlim <- c(min(date, na.rm = TRUE), max(date, na.rm = TRUE))
+    Ylim <- c(min(y, na.rm = TRUE), max(y, na.rm = TRUE))
+    dates <- pretty(date, n = nTicksX)
+    yticks <- pretty(y, n = nTicksY)
+    if (class(indfull) == "integer") {
+        plot(date, y, type = "p", lwd = 2, col = Col, xlim = Xlim, 
+            ylim = Ylim, ylab = Ylab, cex.lab = 1.2, xlab = "", 
+            cex = 0.2, xaxt = "n", yaxt = "n")
+        points(date[indfull], y[indfull], pch = 19, col = "red")
+        legend(x = "topright", c(paste0("Invalid (n= ", length(indfull), 
+            ")")), col = "red", pch = c(19))
+    }
+    else {
+        if (class(indfull) == "list") {
+            plot(x = date, y = y, type = "p", lwd = 2, col = Col, 
+                xlim = Xlim, ylim = Ylim, ylab = Ylab, cex.lab = 1.2, 
+                xlab = "", cex = 0.2, xaxt = "n", yaxt = "n")
+            Col <- c("blue", "red", "orange", "darkgrey")
+            for (i in 1:length(indfull)) {
+                if (length(indfull[[i]][which(indfull[[i]] %in% 
+                  date)]) > 0) {
+                  which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                    date)]
+                  index.in <- match(which.date, date)
+                  points(which.date, y[index.in], pch = 19, col = Col[i])
+                }
+            }
+            legend(x = "topright", c(paste0(names(indfull)[1], 
+                " (n= ", length(indfull[[names(indfull)[1]]][which(indfull[[names(indfull)[1]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[2], " (n= ", 
+                length(indfull[[names(indfull)[2]]][which(indfull[[names(indfull)[2]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[3], " (n= ", 
+                length(indfull[[names(indfull)[3]]][which(indfull[[names(indfull)[3]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[4], " (n= ", 
+                length(indfull[[names(indfull)[4]]][which(indfull[[names(indfull)[4]]] %in% 
+                  date)]), ")")), col = Col, pch = c(19, 19, 
+                19, 19))
+        }
+    }
+    if (!is.null(Title)) 
+        title(Title, line = 0.5)
+    if (abs(difftime(time1 = dates[length(dates)], time2 = dates[1], 
+        units = "days")) <= nTicksX) {
+        axis.POSIXct(1, at = dates, las = 1, format = "%d-%b %H:%M")
+    }
+    else axis.POSIXct(1, at = dates, las = 1, format = "%d-%b")
+    axis(2, at = yticks, srt = 45, las = LasY)
+    abline(v = dates, h = yticks, col = "lightgray", lty = "dotted")
+    legend(x = "topleft", c("Raw values"), col = Col, pt.cex = 0.5, 
+        pch = c(19))
+}
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#497: op <- par(no.readonly = TRUE)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#500: par(mar = c(2, 2.7, 1.7, 0.2))
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#501: par(mgp = c(1.5, 0.3, 0))
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#504: Xlim <- c(min(date, na.rm = TRUE), max(date, na.rm = TRUE))
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#505: Ylim <- c(min(y, na.rm = TRUE), max(y, na.rm = TRUE))
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#508: dates <- pretty(date, n = nTicksX)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#509: yticks <- pretty(y, n = nTicksY)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#511: if (class(indfull) == "integer") {
+    plot(date, y, type = "p", lwd = 2, col = Col, xlim = Xlim, 
+        ylim = Ylim, ylab = Ylab, cex.lab = 1.2, xlab = "", cex = 0.2, 
+        xaxt = "n", yaxt = "n")
+    points(date[indfull], y[indfull], pch = 19, col = "red")
+    legend(x = "topright", c(paste0("Invalid (n= ", length(indfull), 
+        ")")), col = "red", pch = c(19))
+} else {
+    if (class(indfull) == "list") {
+        plot(x = date, y = y, type = "p", lwd = 2, col = Col, 
+            xlim = Xlim, ylim = Ylim, ylab = Ylab, cex.lab = 1.2, 
+            xlab = "", cex = 0.2, xaxt = "n", yaxt = "n")
+        Col <- c("blue", "red", "orange", "darkgrey")
+        for (i in 1:length(indfull)) {
+            if (length(indfull[[i]][which(indfull[[i]] %in% date)]) > 
+                0) {
+                which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                  date)]
+                index.in <- match(which.date, date)
+                points(which.date, y[index.in], pch = 19, col = Col[i])
+            }
+        }
+        legend(x = "topright", c(paste0(names(indfull)[1], " (n= ", 
+            length(indfull[[names(indfull)[1]]][which(indfull[[names(indfull)[1]]] %in% 
+                date)]), ")"), paste0(names(indfull)[2], " (n= ", 
+            length(indfull[[names(indfull)[2]]][which(indfull[[names(indfull)[2]]] %in% 
+                date)]), ")"), paste0(names(indfull)[3], " (n= ", 
+            length(indfull[[names(indfull)[3]]][which(indfull[[names(indfull)[3]]] %in% 
+                date)]), ")"), paste0(names(indfull)[4], " (n= ", 
+            length(indfull[[names(indfull)[4]]][which(indfull[[names(indfull)[4]]] %in% 
+                date)]), ")")), col = Col, pch = c(19, 19, 19, 
+            19))
+    }
+}
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#526: if (class(indfull) == "list") {
+    plot(x = date, y = y, type = "p", lwd = 2, col = Col, xlim = Xlim, 
+        ylim = Ylim, ylab = Ylab, cex.lab = 1.2, xlab = "", cex = 0.2, 
+        xaxt = "n", yaxt = "n")
+    Col <- c("blue", "red", "orange", "darkgrey")
+    for (i in 1:length(indfull)) {
+        if (length(indfull[[i]][which(indfull[[i]] %in% date)]) > 
+            0) {
+            which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                date)]
+            index.in <- match(which.date, date)
+            points(which.date, y[index.in], pch = 19, col = Col[i])
+        }
+    }
+    legend(x = "topright", c(paste0(names(indfull)[1], " (n= ", 
+        length(indfull[[names(indfull)[1]]][which(indfull[[names(indfull)[1]]] %in% 
+            date)]), ")"), paste0(names(indfull)[2], " (n= ", 
+        length(indfull[[names(indfull)[2]]][which(indfull[[names(indfull)[2]]] %in% 
+            date)]), ")"), paste0(names(indfull)[3], " (n= ", 
+        length(indfull[[names(indfull)[3]]][which(indfull[[names(indfull)[3]]] %in% 
+            date)]), ")"), paste0(names(indfull)[4], " (n= ", 
+        length(indfull[[names(indfull)[4]]][which(indfull[[names(indfull)[4]]] %in% 
+            date)]), ")")), col = Col, pch = c(19, 19, 19, 19))
+}
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#528: plot(x = date, y = y, type = "p", lwd = 2, col = Col, xlim = Xlim, 
+    ylim = Ylim, ylab = Ylab, cex.lab = 1.2, xlab = "", cex = 0.2, 
+    xaxt = "n", yaxt = "n")
+[shiny, Plot.Temp.Humid()] INFO, for sensor COA4: 90209 valid data after removing sensor warm up data and 0 values outside temperature/humidity intervals
+-----------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------
+Called from: GraphOut(date = General.df$date, y = General.df[, CalSet()$gas.sensor], 
+    Col = "green", Ylab = "Raw Sensor values", indfull = ind, 
+    Title = paste0("Data invalidated for temperature or humidity outside thresholds for sensor ", 
+        CalSet()$name.sensor))
+[shiny, Plot.Temp.Humid()] INFO, for sensor OX_A431: 90209 valid data after removing sensor warm up data and 0 values outside temperature/humidity intervals
+-----------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------
+[Shiny, Plot.Inv()] INFO, plotting invalid sensor data
+Called from: GraphOut(date = General.df$date, y = General.df[, CalSet()$gas.sensor], 
+    Col = "green", Ylab = "Raw Sensor values", indfull = which(General.df$date %in% 
+        unlist(ind.Invalid$out[[2]][CalSet()$name.sensor])), 
+    Title = paste0("Data invalidated, dates outside valid period, for sensor ", 
+        CalSet()$name.sensor), Dygraphs = TRUE)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#443: if (Dygraphs) {
+    if (class(indfull) == "integer") {
+        data <- data.frame(date = date, Sensor = y, Invalid = NA)
+        data$Invalid[indfull] <- data$Sensor[indfull]
+        data$Sensor[indfull] <- NA
+        data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+        data <- cbind(data$Sensor, data$Invalid)
+        names(data) <- c("Sensor", "Invalid")
+        plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+            dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+            dySeries("Invalid", label = "Invalid sensor value", 
+                color = "red") %>% dyOptions(drawPoints = TRUE, 
+            pointSize = 2) %>% dyRangeSelector()
+    }
+    else if (class(indfull) == "list") {
+        Col <- c("blue", "red", "orange", "darkgrey")
+        for (i in 1:length(indfull)) {
+            if (length(indfull[[i]][which(indfull[[i]] %in% date)]) > 
+                0) {
+                which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                  date)]
+                index.in <- match(which.date, date)
+                points(which.date, y[index.in], pch = 19, col = Col[i])
+            }
+        }
+        data <- data.frame(date = date, Sensor = y, Invalid = NA)
+        data$Invalid[indfull] <- data$Sensor[indfull]
+        data$Sensor[indfull] <- NA
+        data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+        data <- cbind(data$Sensor, data$Invalid)
+        names(data) <- c("Sensor", "Invalid")
+        plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+            dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+            dySeries("Invalid", label = "Invalid sensor value", 
+                color = "red") %>% dyOptions(drawPoints = TRUE, 
+            pointSize = 2) %>% dyRangeSelector()
+    }
+} else {
+    op <- par(no.readonly = TRUE)
+    par(mar = c(2, 2.7, 1.7, 0.2))
+    par(mgp = c(1.5, 0.3, 0))
+    Xlim <- c(min(date, na.rm = TRUE), max(date, na.rm = TRUE))
+    Ylim <- c(min(y, na.rm = TRUE), max(y, na.rm = TRUE))
+    dates <- pretty(date, n = nTicksX)
+    yticks <- pretty(y, n = nTicksY)
+    if (class(indfull) == "integer") {
+        plot(date, y, type = "p", lwd = 2, col = Col, xlim = Xlim, 
+            ylim = Ylim, ylab = Ylab, cex.lab = 1.2, xlab = "", 
+            cex = 0.2, xaxt = "n", yaxt = "n")
+        points(date[indfull], y[indfull], pch = 19, col = "red")
+        legend(x = "topright", c(paste0("Invalid (n= ", length(indfull), 
+            ")")), col = "red", pch = c(19))
+    }
+    else {
+        if (class(indfull) == "list") {
+            plot(x = date, y = y, type = "p", lwd = 2, col = Col, 
+                xlim = Xlim, ylim = Ylim, ylab = Ylab, cex.lab = 1.2, 
+                xlab = "", cex = 0.2, xaxt = "n", yaxt = "n")
+            Col <- c("blue", "red", "orange", "darkgrey")
+            for (i in 1:length(indfull)) {
+                if (length(indfull[[i]][which(indfull[[i]] %in% 
+                  date)]) > 0) {
+                  which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                    date)]
+                  index.in <- match(which.date, date)
+                  points(which.date, y[index.in], pch = 19, col = Col[i])
+                }
+            }
+            legend(x = "topright", c(paste0(names(indfull)[1], 
+                " (n= ", length(indfull[[names(indfull)[1]]][which(indfull[[names(indfull)[1]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[2], " (n= ", 
+                length(indfull[[names(indfull)[2]]][which(indfull[[names(indfull)[2]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[3], " (n= ", 
+                length(indfull[[names(indfull)[3]]][which(indfull[[names(indfull)[3]]] %in% 
+                  date)]), ")"), paste0(names(indfull)[4], " (n= ", 
+                length(indfull[[names(indfull)[4]]][which(indfull[[names(indfull)[4]]] %in% 
+                  date)]), ")")), col = Col, pch = c(19, 19, 
+                19, 19))
+        }
+    }
+    if (!is.null(Title)) 
+        title(Title, line = 0.5)
+    if (abs(difftime(time1 = dates[length(dates)], time2 = dates[1], 
+        units = "days")) <= nTicksX) {
+        axis.POSIXct(1, at = dates, las = 1, format = "%d-%b %H:%M")
+    }
+    else axis.POSIXct(1, at = dates, las = 1, format = "%d-%b")
+    axis(2, at = yticks, srt = 45, las = LasY)
+    abline(v = dates, h = yticks, col = "lightgray", lty = "dotted")
+    legend(x = "topleft", c("Raw values"), col = Col, pt.cex = 0.5, 
+        pch = c(19))
+}
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#444: if (class(indfull) == "integer") {
+    data <- data.frame(date = date, Sensor = y, Invalid = NA)
+    data$Invalid[indfull] <- data$Sensor[indfull]
+    data$Sensor[indfull] <- NA
+    data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+    data <- cbind(data$Sensor, data$Invalid)
+    names(data) <- c("Sensor", "Invalid")
+    plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+        dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+        dySeries("Invalid", label = "Invalid sensor value", color = "red") %>% 
+        dyOptions(drawPoints = TRUE, pointSize = 2) %>% dyRangeSelector()
+} else if (class(indfull) == "list") {
+    Col <- c("blue", "red", "orange", "darkgrey")
+    for (i in 1:length(indfull)) {
+        if (length(indfull[[i]][which(indfull[[i]] %in% date)]) > 
+            0) {
+            which.date <- indfull[[i]][which(indfull[[i]] %in% 
+                date)]
+            index.in <- match(which.date, date)
+            points(which.date, y[index.in], pch = 19, col = Col[i])
+        }
+    }
+    data <- data.frame(date = date, Sensor = y, Invalid = NA)
+    data$Invalid[indfull] <- data$Sensor[indfull]
+    data$Sensor[indfull] <- NA
+    data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+    data <- cbind(data$Sensor, data$Invalid)
+    names(data) <- c("Sensor", "Invalid")
+    plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+        dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+        dySeries("Invalid", label = "Invalid sensor value", color = "red") %>% 
+        dyOptions(drawPoints = TRUE, pointSize = 2) %>% dyRangeSelector()
+}
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#447: data <- data.frame(date = date, Sensor = y, Invalid = NA)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#450: data$Invalid[indfull] <- data$Sensor[indfull]
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#451: data$Sensor[indfull] <- NA
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#453: data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#454: data <- cbind(data$Sensor, data$Invalid)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#455: names(data) <- c("Sensor", "Invalid")
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#458: plot_Warm <- dygraph(data = data, ylab = Ylab, main = Title) %>% 
+    dySeries("Sensor", label = "Sensor value", color = Col) %>% 
+    dySeries("Invalid", label = "Invalid sensor value", color = "red") %>% 
+    dyOptions(drawPoints = TRUE, pointSize = 2) %>% dyRangeSelector()
+                         Sensor     Invalid
+2018-08-08 00:00:00 61494.25000          NA
+2018-08-08 00:01:00 61548.66667          NA
+2018-08-08 00:02:00 61552.00000          NA
+2018-08-08 00:03:00 61532.66667          NA
+2018-08-08 00:04:00 61568.66667          NA
+2018-08-08 00:05:00 61614.33333          NA
+2018-08-08 00:06:00 61533.25000          NA
+2018-08-08 00:07:00 61581.33333          NA
+2018-08-08 00:08:00 61434.50000          NA
+2018-08-08 00:09:00 61478.33333          NA
+2018-08-08 00:10:00 61460.00000          NA
+2018-08-08 00:11:00 61505.00000          NA
+2018-08-08 00:12:00 61442.50000          NA
+2018-08-08 00:13:00 61420.00000          NA
+2018-08-08 00:14:00 61440.00000          NA
+2018-08-08 00:15:00 61401.00000          NA
+2018-08-08 00:16:00 61435.75000          NA
+2018-08-08 00:17:00 61412.00000          NA
+2018-08-08 00:18:00 61403.25000          NA
+2018-08-08 00:19:00 61429.00000          NA
+2018-08-08 00:20:00 61428.25000          NA
+2018-08-08 00:21:00 61442.00000          NA
+2018-08-08 00:22:00 61442.00000          NA
+2018-08-08 00:23:00 61462.75000          NA
+2018-08-08 00:24:00 61470.00000          NA
+2018-08-08 00:25:00 61508.50000          NA
+2018-08-08 00:26:00 61519.66667          NA
+2018-08-08 00:27:00 61511.00000          NA
+2018-08-08 00:28:00 61475.33333          NA
+2018-08-08 00:29:00 61448.75000          NA
+2018-08-08 00:30:00 61514.33333          NA
+2018-08-08 00:31:00 61448.75000          NA
+2018-08-08 00:32:00 61413.33333          NA
+2018-08-08 00:33:00 61433.25000          NA
+2018-08-08 00:34:00 61434.00000          NA
+2018-08-08 00:35:00 61412.00000          NA
+2018-08-08 00:36:00 61402.33333          NA
+2018-08-08 00:37:00 61434.50000          NA
+2018-08-08 00:38:00 61408.66667          NA
+2018-08-08 00:39:00 61389.25000          NA
+2018-08-08 00:40:00 61382.00000          NA
+2018-08-08 00:41:00 61407.75000          NA
+2018-08-08 00:42:00 61372.66667          NA
+2018-08-08 00:43:00 61379.00000          NA
+2018-08-08 00:44:00 61423.33333          NA
+2018-08-08 00:45:00 61372.25000          NA
+2018-08-08 00:46:00 61393.33333          NA
+2018-08-08 00:47:00 61387.75000          NA
+2018-08-08 00:48:00 61414.00000          NA
+2018-08-08 00:49:00 61366.33333          NA
+2018-08-08 00:50:00 61411.75000          NA
+2018-08-08 00:51:00 61434.33333          NA
+2018-08-08 00:52:00 61406.75000          NA
+2018-08-08 00:53:00 61428.33333          NA
+2018-08-08 00:54:00 61456.00000          NA
+2018-08-08 00:55:00 61439.66667          NA
+2018-08-08 00:56:00 61412.50000          NA
+2018-08-08 00:57:00 61423.33333          NA
+2018-08-08 00:58:00 61431.75000          NA
+2018-08-08 00:59:00 61425.66667          NA
+2018-08-08 01:00:00 61469.00000          NA
+2018-08-08 01:01:00 61496.33333          NA
+2018-08-08 01:02:00 61466.50000          NA
+2018-08-08 01:03:00 61477.66667          NA
+2018-08-08 01:04:00 61468.25000          NA
+2018-08-08 01:05:00 61482.00000          NA
+2018-08-08 01:06:00 61465.00000          NA
+2018-08-08 01:07:00 61543.33333          NA
+2018-08-08 01:08:00 61470.50000          NA
+2018-08-08 01:09:00 61472.66667          NA
+2018-08-08 01:10:00 61474.75000          NA
+2018-08-08 01:11:00 61488.33333          NA
+2018-08-08 01:12:00 61447.25000          NA
+2018-08-08 01:13:00 61433.33333          NA
+2018-08-08 01:14:00 61436.75000          NA
+2018-08-08 01:15:00 61431.75000          NA
+2018-08-08 01:16:00 61467.00000          NA
+2018-08-08 01:17:00 61494.50000          NA
+2018-08-08 01:18:00 61481.33333          NA
+2018-08-08 01:19:00 61497.50000          NA
+2018-08-08 01:20:00 61461.66667          NA
+2018-08-08 01:21:00 61492.00000          NA
+2018-08-08 01:22:00 61508.33333          NA
+2018-08-08 01:23:00 61501.25000          NA
+2018-08-08 01:24:00 61485.33333          NA
+2018-08-08 01:25:00 61600.50000          NA
+2018-08-08 01:26:00 61587.00000          NA
+2018-08-08 01:27:00 61566.00000          NA
+2018-08-08 01:28:00 61603.66667          NA
+2018-08-08 01:29:00 61581.50000          NA
+2018-08-08 01:30:00 61735.66667          NA
+2018-08-08 01:31:00 61676.50000          NA
+2018-08-08 01:32:00 61698.00000          NA
+2018-08-08 01:33:00 61665.75000          NA
+2018-08-08 01:34:00 61782.66667          NA
+2018-08-08 01:35:00 61649.00000          NA
+2018-08-08 01:36:00 61721.00000          NA
+2018-08-08 01:37:00 61725.00000          NA
+2018-08-08 01:38:00 61737.33333          NA
+2018-08-08 01:39:00 61595.00000          NA
+2018-08-08 01:40:00 61565.75000          NA
+2018-08-08 01:41:00 61609.33333          NA
+2018-08-08 01:42:00 61572.75000          NA
+2018-08-08 01:43:00 61591.66667          NA
+2018-08-08 01:44:00 61620.25000          NA
+2018-08-08 01:45:00 61733.00000          NA
+2018-08-08 01:46:00 61671.50000          NA
+2018-08-08 01:47:00 61686.33333          NA
+2018-08-08 01:48:00 61631.25000          NA
+2018-08-08 01:49:00 61586.00000          NA
+2018-08-08 01:50:00 61617.25000          NA
+2018-08-08 01:51:00 61601.33333          NA
+2018-08-08 01:52:00 61670.50000          NA
+2018-08-08 01:53:00 61604.66667          NA
+2018-08-08 01:54:00 61620.00000          NA
+2018-08-08 01:55:00 61592.00000          NA
+2018-08-08 01:56:00 61570.25000          NA
+2018-08-08 01:57:00 61604.33333          NA
+2018-08-08 01:58:00 61559.00000          NA
+2018-08-08 01:59:00 61561.66667          NA
+2018-08-08 02:00:00 61573.00000          NA
+2018-08-08 02:01:00 61553.33333          NA
+2018-08-08 02:02:00 61544.75000          NA
+2018-08-08 02:03:00 61510.00000          NA
+2018-08-08 02:04:00 61509.25000          NA
+2018-08-08 02:05:00 61490.66667          NA
+2018-08-08 02:06:00 61454.50000          NA
+2018-08-08 02:07:00 61449.50000          NA
+2018-08-08 02:08:00 61466.00000          NA
+2018-08-08 02:09:00 61442.00000          NA
+2018-08-08 02:10:00 61430.00000          NA
+2018-08-08 02:11:00 61407.00000          NA
+2018-08-08 02:12:00 61428.66667          NA
+2018-08-08 02:13:00 61393.75000          NA
+2018-08-08 02:14:00 61394.00000          NA
+2018-08-08 02:15:00 61354.00000          NA
+2018-08-08 02:16:00 61339.33333          NA
+2018-08-08 02:17:00 61351.25000          NA
+2018-08-08 02:18:00 61364.66667          NA
+2018-08-08 02:19:00 61348.75000          NA
+2018-08-08 02:20:00 61385.00000          NA
+2018-08-08 02:21:00 61386.50000          NA
+2018-08-08 02:22:00 61431.33333          NA
+2018-08-08 02:23:00 61437.25000          NA
+2018-08-08 02:24:00 61505.66667          NA
+2018-08-08 02:25:00 61465.75000          NA
+2018-08-08 02:26:00 61481.66667          NA
+2018-08-08 02:27:00 61535.00000          NA
+2018-08-08 02:28:00 61561.66667          NA
+2018-08-08 02:29:00 61559.00000          NA
+2018-08-08 02:30:00 61554.66667          NA
+2018-08-08 02:31:00 61710.25000          NA
+2018-08-08 02:32:00 61730.25000          NA
+2018-08-08 02:33:00 61685.66667          NA
+2018-08-08 02:34:00 61649.75000          NA
+2018-08-08 02:35:00 61736.33333          NA
+2018-08-08 02:36:00 61655.50000          NA
+2018-08-08 02:37:00 61618.00000          NA
+2018-08-08 02:38:00 61637.00000          NA
+2018-08-08 02:39:00 61629.00000          NA
+2018-08-08 02:40:00 61663.25000          NA
+2018-08-08 02:41:00 61672.66667          NA
+2018-08-08 02:42:00 61649.75000          NA
+2018-08-08 02:43:00 61620.33333          NA
+2018-08-08 02:44:00 61613.75000          NA
+2018-08-08 02:45:00 61621.66667          NA
+2018-08-08 02:46:00 61637.75000          NA
+2018-08-08 02:47:00 61656.33333          NA
+2018-08-08 02:48:00 61659.25000          NA
+2018-08-08 02:49:00 61665.66667          NA
+2018-08-08 02:50:00 61655.50000          NA
+2018-08-08 02:51:00 61640.66667          NA
+2018-08-08 02:52:00 61608.00000          NA
+2018-08-08 02:53:00 61565.66667          NA
+2018-08-08 02:54:00 61658.00000          NA
+2018-08-08 02:55:00 61666.66667          NA
+2018-08-08 02:56:00 61642.25000          NA
+2018-08-08 02:57:00 61649.33333          NA
+2018-08-08 02:58:00 61663.50000          NA
+2018-08-08 02:59:00 61581.00000          NA
+2018-08-08 03:00:00 61592.33333          NA
+2018-08-08 03:01:00 61606.00000          NA
+2018-08-08 03:02:00 61613.33333          NA
+2018-08-08 03:03:00 61630.25000          NA
+2018-08-08 03:04:00 61603.00000          NA
+2018-08-08 03:05:00 61640.50000          NA
+2018-08-08 03:06:00 61668.66667          NA
+2018-08-08 03:07:00 61669.00000          NA
+2018-08-08 03:08:00 61680.00000          NA
+2018-08-08 03:09:00 61634.75000          NA
+2018-08-08 03:10:00 61642.33333          NA
+2018-08-08 03:11:00 61678.50000          NA
+2018-08-08 03:12:00 61658.00000          NA
+2018-08-08 03:13:00 61655.75000          NA
+2018-08-08 03:14:00 61688.00000          NA
+2018-08-08 03:15:00 61611.00000          NA
+2018-08-08 03:16:00 61645.66667          NA
+2018-08-08 03:17:00 61637.50000          NA
+2018-08-08 03:18:00 61617.66667          NA
+2018-08-08 03:19:00 61655.00000          NA
+2018-08-08 03:20:00 61616.33333          NA
+2018-08-08 03:21:00 61614.50000          NA
+2018-08-08 03:22:00 61655.33333          NA
+2018-08-08 03:23:00 61645.50000          NA
+2018-08-08 03:24:00 61592.25000          NA
+2018-08-08 03:25:00 61583.66667          NA
+2018-08-08 03:26:00 61641.50000          NA
+2018-08-08 03:27:00 61682.33333          NA
+2018-08-08 03:28:00 61666.50000          NA
+2018-08-08 03:29:00 61684.00000          NA
+2018-08-08 03:30:00 61675.00000          NA
+2018-08-08 03:31:00 61637.33333          NA
+2018-08-08 03:32:00 61650.00000          NA
+2018-08-08 03:33:00 61653.66667          NA
+2018-08-08 03:34:00 61572.00000          NA
+2018-08-08 03:35:00 61619.33333          NA
+2018-08-08 03:36:00 61605.50000          NA
+2018-08-08 03:37:00 61577.33333          NA
+2018-08-08 03:38:00 61568.50000          NA
+2018-08-08 03:39:00 61636.33333          NA
+2018-08-08 03:40:00 61590.50000          NA
+2018-08-08 03:41:00 61577.33333          NA
+2018-08-08 03:42:00 61563.75000          NA
+2018-08-08 03:43:00 61585.66667          NA
+2018-08-08 03:44:00 61594.75000          NA
+2018-08-08 03:45:00 61556.66667          NA
+2018-08-08 03:46:00 61568.75000          NA
+2018-08-08 03:47:00 61584.00000          NA
+2018-08-08 03:48:00 61608.50000          NA
+2018-08-08 03:49:00 61630.00000          NA
+2018-08-08 03:50:00 61598.25000          NA
+2018-08-08 03:51:00 61577.25000          NA
+2018-08-08 03:52:00 61573.33333          NA
+2018-08-08 03:53:00 61579.50000          NA
+2018-08-08 03:54:00 61593.00000          NA
+2018-08-08 03:55:00 61576.25000          NA
+2018-08-08 03:56:00 61574.33333          NA
+2018-08-08 03:57:00 61598.25000          NA
+2018-08-08 03:58:00 61589.66667          NA
+2018-08-08 03:59:00 61559.25000          NA
+2018-08-08 04:00:00 61574.00000          NA
+2018-08-08 04:01:00 61561.00000          NA
+2018-08-08 04:02:00 61569.00000          NA
+2018-08-08 04:03:00 61553.50000          NA
+2018-08-08 04:04:00 61577.66667          NA
+2018-08-08 04:05:00 61589.00000          NA
+2018-08-08 04:06:00 61565.33333          NA
+2018-08-08 04:07:00 61562.25000          NA
+2018-08-08 04:08:00 61584.33333          NA
+2018-08-08 04:09:00 61569.75000          NA
+2018-08-08 04:10:00 61568.00000          NA
+2018-08-08 04:11:00 61604.25000          NA
+2018-08-08 04:12:00 61618.66667          NA
+2018-08-08 04:13:00 61618.50000          NA
+2018-08-08 04:14:00 61590.33333          NA
+2018-08-08 04:15:00 61581.25000          NA
+2018-08-08 04:16:00 61603.00000          NA
+2018-08-08 04:17:00 61596.00000          NA
+2018-08-08 04:18:00 61586.50000          NA
+2018-08-08 04:19:00 61593.33333          NA
+2018-08-08 04:20:00 61569.00000          NA
+2018-08-08 04:21:00 61604.66667          NA
+2018-08-08 04:22:00 61597.25000          NA
+2018-08-08 04:23:00 61584.66667          NA
+2018-08-08 04:24:00 61556.75000          NA
+2018-08-08 04:25:00 61620.66667          NA
+2018-08-08 04:26:00 61611.25000          NA
+2018-08-08 04:27:00 61593.33333          NA
+2018-08-08 04:28:00 61605.25000          NA
+2018-08-08 04:29:00 61582.66667          NA
+2018-08-08 04:30:00 61546.75000          NA
+2018-08-08 04:31:00 61593.33333          NA
+2018-08-08 04:32:00 61597.50000          NA
+2018-08-08 04:33:00 61578.00000          NA
+2018-08-08 04:34:00 61561.25000          NA
+2018-08-08 04:35:00 61557.00000          NA
+2018-08-08 04:36:00 61574.00000          NA
+2018-08-08 04:37:00 61575.66667          NA
+2018-08-08 04:38:00 61595.25000          NA
+2018-08-08 04:39:00 61565.00000          NA
+2018-08-08 04:40:00 61587.75000          NA
+2018-08-08 04:41:00 61591.66667          NA
+2018-08-08 04:42:00 61569.50000          NA
+2018-08-08 04:43:00 61575.75000          NA
+2018-08-08 04:44:00 61599.66667          NA
+2018-08-08 04:45:00 61582.75000          NA
+2018-08-08 04:46:00 61570.66667          NA
+2018-08-08 04:47:00 61589.75000          NA
+2018-08-08 04:48:00 61607.00000          NA
+2018-08-08 04:49:00 61608.00000          NA
+2018-08-08 04:50:00 61606.00000          NA
+2018-08-08 04:51:00 61633.50000          NA
+2018-08-08 04:52:00 61662.00000          NA
+2018-08-08 04:53:00 61688.75000          NA
+2018-08-08 04:54:00 61682.33333          NA
+2018-08-08 04:55:00 61705.75000          NA
+2018-08-08 04:56:00 61719.66667          NA
+2018-08-08 04:57:00 61729.75000          NA
+2018-08-08 04:58:00 61733.66667          NA
+2018-08-08 04:59:00 61721.00000          NA
+2018-08-08 05:00:00 61756.00000          NA
+2018-08-08 05:01:00 61735.50000          NA
+2018-08-08 05:02:00 61712.00000          NA
+2018-08-08 05:03:00 61715.75000          NA
+2018-08-08 05:04:00 61721.33333          NA
+2018-08-08 05:05:00 61691.50000          NA
+2018-08-08 05:06:00 61650.66667          NA
+2018-08-08 05:07:00 61683.00000          NA
+2018-08-08 05:08:00 61657.33333          NA
+2018-08-08 05:09:00 61629.50000          NA
+2018-08-08 05:10:00 61629.75000          NA
+2018-08-08 05:11:00 61579.33333          NA
+2018-08-08 05:12:00 61619.25000          NA
+2018-08-08 05:13:00 61595.00000          NA
+2018-08-08 05:14:00 61634.50000          NA
+2018-08-08 05:15:00 61636.00000          NA
+2018-08-08 05:16:00 61604.75000          NA
+2018-08-08 05:17:00 61574.00000          NA
+2018-08-08 05:18:00 61545.50000          NA
+2018-08-08 05:19:00 61551.00000          NA
+2018-08-08 05:20:00 61580.75000          NA
+2018-08-08 05:21:00 61583.66667          NA
+2018-08-08 05:22:00 61569.00000          NA
+2018-08-08 05:23:00 61578.00000          NA
+2018-08-08 05:24:00 61589.25000          NA
+2018-08-08 05:25:00 61587.00000          NA
+2018-08-08 05:26:00 61614.00000          NA
+2018-08-08 05:27:00 61644.00000          NA
+2018-08-08 05:28:00 61657.50000          NA
+2018-08-08 05:29:00 61682.66667          NA
+2018-08-08 05:30:00 61686.50000          NA
+2018-08-08 05:31:00 61671.00000          NA
+2018-08-08 05:32:00 61720.50000          NA
+2018-08-08 05:33:00 61724.00000          NA
+2018-08-08 05:34:00 61739.50000          NA
+2018-08-08 05:35:00 61739.50000          NA
+2018-08-08 05:36:00 61727.33333          NA
+2018-08-08 05:37:00 61765.00000          NA
+2018-08-08 05:38:00 61727.00000          NA
+2018-08-08 05:39:00 61718.50000          NA
+2018-08-08 05:40:00 61729.00000          NA
+2018-08-08 05:41:00 61736.25000          NA
+2018-08-08 05:42:00 61732.00000          NA
+2018-08-08 05:43:00 61717.25000          NA
+2018-08-08 05:44:00 61714.00000          NA
+2018-08-08 05:45:00 61663.75000          NA
+2018-08-08 05:46:00 61658.33333          NA
+2018-08-08 05:47:00 61627.00000          NA
+2018-08-08 05:48:00 61622.00000          NA
+2018-08-08 05:49:00 61573.75000          NA
+2018-08-08 05:50:00 61606.00000          NA
+2018-08-08 05:51:00 61545.00000          NA
+2018-08-08 05:52:00 61548.00000          NA
+2018-08-08 05:53:00 61591.50000          NA
+2018-08-08 05:54:00 61576.66667          NA
+2018-08-08 05:55:00 61572.00000          NA
+2018-08-08 05:56:00 61607.33333          NA
+2018-08-08 05:57:00 61592.25000          NA
+2018-08-08 05:58:00 61591.00000          NA
+2018-08-08 05:59:00 61596.25000          NA
+2018-08-08 06:00:00 61614.66667          NA
+2018-08-08 06:01:00 61594.25000          NA
+2018-08-08 06:02:00 61615.25000          NA
+2018-08-08 06:03:00 61584.00000          NA
+2018-08-08 06:04:00 61574.75000          NA
+2018-08-08 06:05:00 61588.33333          NA
+2018-08-08 06:06:00 61580.50000          NA
+2018-08-08 06:07:00 61596.66667          NA
+2018-08-08 06:08:00 61561.25000          NA
+2018-08-08 06:09:00 61564.00000          NA
+2018-08-08 06:10:00 61580.00000          NA
+2018-08-08 06:11:00 61585.66667          NA
+2018-08-08 06:12:00 61584.75000          NA
+2018-08-08 06:13:00 61631.66667          NA
+2018-08-08 06:14:00 61609.50000          NA
+2018-08-08 06:15:00 61585.66667          NA
+2018-08-08 06:16:00 61582.00000          NA
+2018-08-08 06:17:00 61585.00000          NA
+2018-08-08 06:18:00 61610.25000          NA
+2018-08-08 06:19:00 61609.33333          NA
+2018-08-08 06:20:00 61621.75000          NA
+2018-08-08 06:21:00 61571.33333          NA
+2018-08-08 06:22:00 61592.50000          NA
+2018-08-08 06:23:00 61594.33333          NA
+2018-08-08 06:24:00 61533.75000          NA
+2018-08-08 06:25:00 61566.66667          NA
+2018-08-08 06:26:00 61588.00000          NA
+2018-08-08 06:27:00 61565.25000          NA
+2018-08-08 06:28:00 61587.00000          NA
+2018-08-08 06:29:00 61608.75000          NA
+2018-08-08 06:30:00 61597.33333          NA
+2018-08-08 06:31:00 61589.25000          NA
+2018-08-08 06:32:00 61598.00000          NA
+2018-08-08 06:33:00 61563.50000          NA
+2018-08-08 06:34:00 61552.33333          NA
+2018-08-08 06:35:00 61572.50000          NA
+2018-08-08 06:36:00 61583.00000          NA
+2018-08-08 06:37:00 61612.50000          NA
+2018-08-08 06:38:00 61600.66667          NA
+2018-08-08 06:39:00 61622.25000          NA
+2018-08-08 06:40:00 61595.00000          NA
+2018-08-08 06:41:00 61562.00000          NA
+2018-08-08 06:42:00 61577.66667          NA
+2018-08-08 06:43:00 61589.25000          NA
+2018-08-08 06:44:00 61585.33333          NA
+2018-08-08 06:45:00 61605.00000          NA
+2018-08-08 06:46:00 61606.33333          NA
+2018-08-08 06:47:00 61568.50000          NA
+2018-08-08 06:48:00 61583.00000          NA
+2018-08-08 06:49:00 61589.50000          NA
+2018-08-08 06:50:00 61586.33333          NA
+2018-08-08 06:51:00 61591.00000          NA
+2018-08-08 06:52:00 61607.66667          NA
+2018-08-08 06:53:00 61581.50000          NA
+2018-08-08 06:54:00 61564.50000          NA
+2018-08-08 06:55:00 61537.66667          NA
+2018-08-08 06:56:00 61592.00000          NA
+2018-08-08 06:57:00 61595.00000          NA
+2018-08-08 06:58:00 61634.75000          NA
+2018-08-08 06:59:00 61633.33333          NA
+2018-08-08 07:00:00 61602.75000          NA
+2018-08-08 07:01:00 61598.33333          NA
+2018-08-08 07:02:00 61627.00000          NA
+2018-08-08 07:03:00 61624.66667          NA
+2018-08-08 07:04:00 61612.25000          NA
+2018-08-08 07:05:00 61614.66667          NA
+2018-08-08 07:06:00 61630.00000          NA
+2018-08-08 07:07:00 61631.33333          NA
+2018-08-08 07:08:00 61649.75000          NA
+2018-08-08 07:09:00 61634.33333          NA
+2018-08-08 07:10:00 61642.00000          NA
+2018-08-08 07:11:00 61619.33333          NA
+2018-08-08 07:12:00 61617.50000          NA
+2018-08-08 07:13:00 61628.00000          NA
+2018-08-08 07:14:00 61603.75000          NA
+2018-08-08 07:15:00 61609.66667          NA
+2018-08-08 07:16:00 61616.50000          NA
+2018-08-08 07:17:00 61632.66667          NA
+2018-08-08 07:18:00 61621.25000          NA
+2018-08-08 07:19:00 61631.00000          NA
+2018-08-08 07:20:00 61645.00000          NA
+2018-08-08 07:21:00 61609.75000          NA
+2018-08-08 07:22:00 61638.66667          NA
+2018-08-08 07:23:00 61636.00000          NA
+2018-08-08 07:24:00 61615.66667          NA
+2018-08-08 07:25:00 61619.75000          NA
+2018-08-08 07:26:00 61612.00000          NA
+2018-08-08 07:27:00 61637.25000          NA
+2018-08-08 07:28:00 61630.33333          NA
+2018-08-08 07:29:00 61608.50000          NA
+2018-08-08 07:30:00 61609.33333          NA
+2018-08-08 07:31:00 61617.75000          NA
+2018-08-08 07:32:00 61630.33333          NA
+2018-08-08 07:33:00 61631.25000          NA
+2018-08-08 07:34:00 61588.33333          NA
+2018-08-08 07:35:00 61599.50000          NA
+2018-08-08 07:36:00 61627.66667          NA
+2018-08-08 07:37:00 61595.75000          NA
+2018-08-08 07:38:00 61617.00000          NA
+2018-08-08 07:39:00 61589.25000          NA
+2018-08-08 07:40:00 61589.33333          NA
+2018-08-08 07:41:00 61606.75000          NA
+2018-08-08 07:42:00 61592.66667          NA
+2018-08-08 07:43:00 61592.50000          NA
+2018-08-08 07:44:00 61634.00000          NA
+2018-08-08 07:45:00 61611.00000          NA
+2018-08-08 07:46:00 61580.00000          NA
+2018-08-08 07:47:00 61574.66667          NA
+2018-08-08 07:48:00 61588.25000          NA
+2018-08-08 07:49:00 61590.00000          NA
+2018-08-08 07:50:00 61598.75000          NA
+2018-08-08 07:51:00 61589.33333          NA
+2018-08-08 07:52:00 61562.25000          NA
+2018-08-08 07:53:00 61567.00000          NA
+2018-08-08 07:54:00 61568.00000          NA
+2018-08-08 07:55:00 61592.00000          NA
+2018-08-08 07:56:00 61585.25000          NA
+2018-08-08 07:57:00 61578.00000          NA
+2018-08-08 07:58:00 61584.50000          NA
+2018-08-08 07:59:00 61562.66667          NA
+2018-08-08 08:00:00 61559.75000          NA
+2018-08-08 08:01:00 61573.00000          NA
+2018-08-08 08:02:00 61582.00000          NA
+2018-08-08 08:03:00 61579.00000          NA
+2018-08-08 08:04:00 61586.50000          NA
+2018-08-08 08:05:00 61580.33333          NA
+2018-08-08 08:06:00 61595.25000          NA
+2018-08-08 08:07:00 61616.33333          NA
+2018-08-08 08:08:00 61594.50000          NA
+2018-08-08 08:09:00 61576.33333          NA
+2018-08-08 08:10:00 61579.25000          NA
+2018-08-08 08:11:00 61586.25000          NA
+2018-08-08 08:12:00 61588.66667          NA
+2018-08-08 08:13:00 61608.50000          NA
+2018-08-08 08:14:00 61609.66667          NA
+2018-08-08 08:15:00 61592.25000          NA
+2018-08-08 08:16:00 61620.33333          NA
+2018-08-08 08:17:00 61585.50000          NA
+2018-08-08 08:18:00 61597.66667          NA
+2018-08-08 08:19:00 61578.75000          NA
+ [ reached getOption("max.print") -- omitted 90221 rows ]
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#578: if (Dygraphs) return(plot_Warm)
+debug at S:/Box Sync/AirSensEUR/Fieldtests/Shiny/Functions4ASE.R#578: return(plot_Warm)
+[Shiny, Plot.Inv()] INFO, sensor OX_A431, 175240 valid data within validity period removing 849 values outside validity period.
+-----------------------------------------------------------------------------------
+

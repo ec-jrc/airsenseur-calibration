@@ -1,0 +1,518 @@
+-----------------------------------------------------------------------------------
+[shiny, Selected] INFO Starting log file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/scriptsLog/console_2019-03-04.log
+-----------------------------------------------------------------------------------
+[ASEConfig.R] INFO 2017-12-07 Functions Config() and SETTIME transfered to Function4ASE.R to simplify maintenance
+[ASEConfig.R] INFO 2017-12-07 SUGGESTION to manage the directories of ASE box instaed of file ASECOnfigxxxx.R
+-----------------------------------------------------------------------------------
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Servers.cfg for the configuration of servers  exists
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min.cfg for the configuration of AirSensEUR exists
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_COA4.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_COA4.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_NOB4.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_NOB4.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_NO2B43F.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_NO2B43F.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_OX_A431.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_OX_A431.cfg exists 
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Servers.cfg for the configuration of servers  exists
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min.cfg for the configuration of AirSensEUR exists
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_COA4.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_COA4.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_NOB4.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_NOB4.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_NO2B43F.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_NO2B43F.cfg exists 
+[CONFIG] INFO, the file with covariates to plot S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Covariates_OX_A431.cfg exists 
+[CONFIG] INFO, the file with covariates to calibrate S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_CovMod_OX_A431.cfg exists 
+-----------------------------------------------------------------------------------
+[CONFIG] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_Servers.cfg for the configuration of servers  exists
+[shiny, asc.File] INFO, NL_05min_Servers.cfg config file  saved in directory General_data.
+[ASEConfig.R] INFO 2017-12-07 Functions Config() and SETTIME transfered to Function4ASE.R to simplify maintenance
+[ASEConfig.R] INFO 2017-12-07 SUGGESTION to manage the directories of ASE box instaed of file ASECOnfigxxxx.R
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+[Check_Download] INFO, Checking S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata 
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata
+ in S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata exists.
+[Check_Download] INFO, reference data are going to be retrieved. Start new reference data at : 2019-01-11
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata exists.
+[Check_Download] INFO, sensor data are going to be retrieved. Start date for data download: 2018-11-26 16:30:00
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata exists.
+[Check_Download] INFO, sensor data are going to be retrieved. Start date for data download: 2018-11-26 17:00:00
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata does not exist. It should be created, SOS sensor data should be retrieved.
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db exists.
+[Check_Download] INFO, The database S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db includes the table ASE_NL_05 with the columns: time, altitude, boardTimeStamp, gpsTimestamp, latitude, longitude, sampleEvaluatedVal, sampleRawVal, channel, name
+[Check_Download] INFO, SOS sensor data are going to be retrieved. Start date for data download: 2018-11-26 16:30:00
+$Ref.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata"
+
+$Influx.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata"
+
+$SOS.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata"
+
+$General.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata"
+
+$airsenseur.db.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db"
+
+$WDinput
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data"
+
+$ExistFil.data.db
+[1] TRUE
+
+$Retrieve.data.db
+[1] TRUE
+
+$DateIN.db.prev
+[1] "2018-06-25T16:07:00Z"
+
+$DateEND.db.prev
+[1] "2018-11-26T16:30:00Z"
+
+$ExistFil.data.Ref
+[1] TRUE
+
+$Retrieve.data.Ref
+[1] TRUE
+
+$DateIN.Ref.prev
+[1] "2018-07-30 15:01:00 +01"
+
+$DateEND.Ref.prev
+[1] "2019-01-11 +01"
+
+$Var.Ref.prev
+[1] "date"       "Ref.NO"     "Ref.NO2"    "Ref.O3"     "Ref.CO_ppm" "Ref.Long"   "Ref.Lat"   
+
+$ExistFil.data.Influx
+[1] TRUE
+
+$Retrieve.data.Influx
+[1] TRUE
+
+$DateIN.Influx.prev
+[1] "2018-06-25 16:07:00 UTC"
+
+$DateEND.Influx.prev
+[1] "2018-11-26 16:30:00 UTC"
+
+$ExistFil.data.SOS
+[1] FALSE
+
+$Retrieve.data.SOS
+[1] TRUE
+
+$DateIN.SOS.prev
+NULL
+
+$DateEND.SOS.prev
+NULL
+
+$ExistFil.data.General
+[1] TRUE
+
+$Retrieve.data.General
+[1] TRUE
+
+$DateIN.General.prev
+[1] "2018-06-25 16:00:00 UTC"
+
+$DateEND.General.prev
+[1] "2018-11-26 17:00:00 UTC"
+
+-----------------------------------------------------------------------------------
+[SETTIME] Info, the config file S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/NL_05min_SETTIME.cfg for the configuration of AirSensEUR exists
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+[REF] INFO: Downloading Reference data, save RefData.RData and refData.csv with all reference values in directory General_Data
+-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+  name.gas         Ref        RefAD      RefAFE name.sensor Rload TIA_Gain GAIN Ref_Source Int_Z Bias_Sign Bias Fet_Short Mode board.zero.set        BIAIS       gas.sensor
+1      NO2 1.700854701 0.5006105006 4.301587302     NO2B43F    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000 Nitrogen_dioxide
+2       CO 1.500610501 0.5006105006 1.642246642        COA4    50   350000 7001   External  0.67         1 0.00  Disabled    3   1.1003052503 0.0000000000  Carbon_monoxide
+3       O3 1.700854701 0.5006105006 4.301587302     OX_A431    50   350000 7001   External  0.50        -1 0.00  Disabled    3   2.1507936508 0.0000000000            Ozone
+4       NO 1.200244200 0.5000000000 1.663003663        NOB4    50   350000 7001   External  0.50         1 0.12  Disabled    3   0.8315018315 0.1995604396     Nitric_oxide
+-----------------------------------------------------------------------------------
+[INFLUXDB] INFO: Downloading InfluxDB data
+[INFLUXDB] INFO: Down.Influx set to FALSE in ASEConfig.R  (no request of sensor data download from InfluxDB). Using previously saved Influx.Rdata.file .
+[INFLUXDB] INFO INFLUXDB returning list with InfluxData, var.names.meteo, var.name.GasSensors and var.names.sens
+-----------------------------------------------------------------------------------
+[SOS] INFO: Downloading SOS data
+[SOS] INFO: Down.SOS set to FALSE in ASEConfig_xx.R  (no request of sensor data download from SOS). There is no previously saved SOS.Rdata.file.Missing SOSData and Down.SOS request of sensor data download set to FALSE in ASEConfig_xx.R .
+[SOS] INFO no SOS data available
+[REF] INFO, Variables found in the reference dataset: Ref.NO, Ref.NO2, Ref.O3, Ref.CO_ppm
+[REF] WARNING, There is no new reference data for RIVM station Breukelen
+[REF] INFO, returning list with RefData, var.names.ref and DownloadSensor
+-----------------------------------------------------------------------------------
+[REF] INFO: Downloading Reference data, save RefData.RData and refData.csv with all reference values in directory General_Data
+-----------------------------------------------------------------------------------
+[INFLUXDB] INFO: Downloading InfluxDB data
+[INFLUXDB] INFO: Down.Influx set to FALSE in ASEConfig.R  (no request of sensor data download from InfluxDB). Using previously saved Influx.Rdata.file .
+[INFLUXDB] INFO INFLUXDB returning list with InfluxData, var.names.meteo, var.name.GasSensors and var.names.sens
+-----------------------------------------------------------------------------------
+[SOS] INFO: Downloading SOS data
+[SOS] INFO: Down.SOS set to FALSE in ASEConfig_xx.R  (no request of sensor data download from SOS). There is no previously saved SOS.Rdata.file.Missing SOSData and Down.SOS request of sensor data download set to FALSE in ASEConfig_xx.R .
+[SOS] INFO no SOS data available
+[REF] INFO, Variables found in the reference dataset: Ref.NO, Ref.NO2, Ref.O3, Ref.CO_ppm
+[REF] WARNING, There is no new reference data for RIVM station Breukelen
+[REF] INFO, returning list with RefData, var.names.ref and DownloadSensor
+|========================================================================================================================================================================================================|100% ~0 s remaining     [shiny, General.cal()] INFO, Outliers.Sens$Forced is : FALSE
+[shiny, General.cal()] INFO, Outliers.Ref$Forced is : FALSE
+[shiny, General.cal()] INFO, Conv$Forced is : FALSE
+[shiny, General.cal()] INFO, Cal$Forced is : FALSE
+|========================================================================================================================================================================================================|100% ~0 s remaining     -----------------------------------------------------------------------------------
+[Check_Download] INFO, Checking S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata 
+S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata
+ in S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata exists.
+[Check_Download] INFO, reference data are going to be retrieved. Start new reference data at : 2019-01-11
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata exists.
+[Check_Download] INFO, sensor data are going to be retrieved. Start date for data download: 2018-11-26 16:30:00
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata exists.
+[Check_Download] INFO, sensor data are going to be retrieved. Start date for data download: 2018-11-26 17:00:00
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata does not exist. It should be created, SOS sensor data should be retrieved.
+[Check_Download] INFO, S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db exists.
+[Check_Download] INFO, The database S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db includes the table ASE_NL_05 with the columns: time, altitude, boardTimeStamp, gpsTimestamp, latitude, longitude, sampleEvaluatedVal, sampleRawVal, channel, name
+[Check_Download] INFO, SOS sensor data are going to be retrieved. Start date for data download: 2018-11-26 16:30:00
+$Ref.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/RefData.Rdata"
+
+$Influx.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/InfluxData.Rdata"
+
+$SOS.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/SOSData.Rdata"
+
+$General.Rdata.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata"
+
+$airsenseur.db.file
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/airsenseur.db"
+
+$WDinput
+[1] "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data"
+
+$ExistFil.data.db
+[1] TRUE
+
+$Retrieve.data.db
+[1] TRUE
+
+$DateIN.db.prev
+[1] "2018-06-25T16:07:00Z"
+
+$DateEND.db.prev
+[1] "2018-11-26T16:30:00Z"
+
+$ExistFil.data.Ref
+[1] TRUE
+
+$Retrieve.data.Ref
+[1] TRUE
+
+$DateIN.Ref.prev
+[1] "2018-07-30 15:01:00 +01"
+
+$DateEND.Ref.prev
+[1] "2019-01-11 +01"
+
+$Var.Ref.prev
+[1] "date"       "Ref.NO"     "Ref.NO2"    "Ref.O3"     "Ref.CO_ppm" "Ref.Long"   "Ref.Lat"   
+
+$ExistFil.data.Influx
+[1] TRUE
+
+$Retrieve.data.Influx
+[1] TRUE
+
+$DateIN.Influx.prev
+[1] "2018-06-25 16:07:00 UTC"
+
+$DateEND.Influx.prev
+[1] "2018-11-26 16:30:00 UTC"
+
+$ExistFil.data.SOS
+[1] FALSE
+
+$Retrieve.data.SOS
+[1] TRUE
+
+$DateIN.SOS.prev
+NULL
+
+$DateEND.SOS.prev
+NULL
+
+$ExistFil.data.General
+[1] TRUE
+
+$Retrieve.data.General
+[1] TRUE
+
+$DateIN.General.prev
+[1] "2018-06-25 16:00:00 UTC"
+
+$DateEND.General.prev
+[1] "2018-11-26 17:00:00 UTC"
+
+-----------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Calibration()] INFO, Plotting scatter plot of calibration for COA4
+[shiny, Plot.Calibration()], INFO, using previous calibration NL_05min__COA4__nA__MultiLinear__20180903__20180910__Relative_humidity-1.rdata with MultiLinear calibration method
+-----------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Calibrated()] INFO, plotting calibration of sensor COA4
+[shiny, Plot.Calibrated()] INFO, using previous calibration NL_05min__COA4__nA__MultiLinear__20180903__20180910__Relative_humidity-1.rdata with MultiLinear calibration method
+
+Call:
+lm(formula = y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-89.186839  -8.433987   0.018177   8.862393 119.013918 
+
+Coefficients:
+                Estimate   Std. Error   t value Pr(>|t|)    
+(Intercept) -0.005764093  0.773177353  -0.00746  0.99405    
+x            1.000023079  0.003552696 281.48290  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 16.16779 on 8897 degrees of freedom
+Multiple R-squared:  0.8990464,	Adjusted R-squared:  0.8990351 
+F-statistic: 79232.62 on 1 and 8897 DF,  p-value: < 2.2204e-16
+
+-----------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Prediction()] INFO, Plotting Predicted data for COA4
+[shiny, Plot.Prediction()] INFO, using calibration nA__MultiLinear__20180903__20180910__Relative_humidity-1.rdata with MultiLinear calibration method
+
+Call:
+lm(formula = y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-58.369091  -9.410195   1.101720   9.899558  55.382184 
+
+Coefficients:
+               Estimate  Std. Error   t value   Pr(>|t|)    
+(Intercept) 7.029002573 1.657473466   4.24079 2.3784e-05 ***
+x           0.952852749 0.008010766 118.94652 < 2.22e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 15.49923 on 1355 degrees of freedom
+Multiple R-squared:  0.9125991,	Adjusted R-squared:  0.9125346 
+F-statistic: 14148.27 on 1 and 1355 DF,  p-value: < 2.2204e-16
+
+-----------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Calibrated()] INFO, plotting calibration of sensor NOB4
+[shiny, Plot.Calibrated()] INFO, using previous calibration NL_05min__NOB4__nA__exp_kK__20180827__20180903__Temperature.rdata with exp_kK calibration method
+
+Call:
+lm(formula = y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-40.083508  -3.398468  -0.100425   3.248070  31.539024 
+
+Coefficients:
+                Estimate   Std. Error   t value Pr(>|t|)    
+(Intercept) 0.0004833463 0.0756572570   0.00639   0.9949    
+x           0.9999897669 0.0026332696 379.75214   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 5.602004 on 9502 degrees of freedom
+Multiple R-squared:  0.9381838,	Adjusted R-squared:  0.9381773 
+F-statistic: 144211.7 on 1 and 9502 DF,  p-value: < 2.2204e-16
+
+-----------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Prediction()] INFO, Plotting Predicted data for NOB4
+[shiny, Plot.Prediction()] INFO, using calibration nA__exp_kK__20180827__20180903__Temperature.rdata with exp_kK calibration method
+
+Call:
+lm(formula = y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
+
+Residuals:
+        Min          1Q      Median          3Q         Max 
+-17.0618543  -2.9448359   0.2702266   3.2770154  15.3003283 
+
+Coefficients:
+               Estimate  Std. Error   t value Pr(>|t|)    
+(Intercept) 0.003312327 0.189799466   0.01745  0.98608    
+x           1.005134594 0.006826744 147.23484  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 4.640119 on 1333 degrees of freedom
+Multiple R-squared:  0.9420714,	Adjusted R-squared:  0.942028 
+F-statistic:  21678.1 on 1 and 1333 DF,  p-value: < 2.2204e-16
+
+-----------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Calibrated()] INFO, plotting calibration of sensor NO2B43F
+[shiny, Plot.Calibrated()] INFO, using previous calibration NL_05min__NO2B43F__nA__MultiLinear__20180903__20180910__Temperature-1.rdata with MultiLinear calibration method
+
+Call:
+lm(formula = y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-49.711029  -3.570947   0.751145   4.589183  28.432197 
+
+Coefficients:
+                Estimate   Std. Error  t value Pr(>|t|)    
+(Intercept) -0.000771747  0.160881581  -0.0048  0.99617    
+x            1.000018158  0.004742446 210.8655  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 7.678322 on 8928 degrees of freedom
+Multiple R-squared:  0.8327847,	Adjusted R-squared:  0.832766 
+F-statistic: 44464.25 on 1 and 8928 DF,  p-value: < 2.2204e-16
+
+-----------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Prediction()] INFO, Plotting Predicted data for NO2B43F
+[shiny, Plot.Prediction()] INFO, using calibration nA__MultiLinear__20180903__20180910__Temperature-1.rdata with MultiLinear calibration method
+
+Call:
+lm(formula = y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-47.528329  -3.780582   0.444664   4.239925  20.988511 
+
+Coefficients:
+               Estimate  Std. Error   t value   Pr(>|t|)    
+(Intercept) -5.36942327  0.37694134 -14.24472 < 2.22e-16 ***
+x            1.15496688  0.01095316 105.44600 < 2.22e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 6.299098 on 1428 degrees of freedom
+Multiple R-squared:  0.8861867,	Adjusted R-squared:  0.886107 
+F-statistic: 11118.86 on 1 and 1428 DF,  p-value: < 2.2204e-16
+
+-----------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Calibrated()] INFO, plotting calibration of sensor OX_A431
+[shiny, Plot.Calibrated()] INFO, using previous calibration NL_05min__OX_A431__nA__MultiLinear__20180903__20180910__Nitrogen_dioxide_modelled-1.rdata with MultiLinear calibration method
+
+Call:
+lm(formula = y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
+
+Residuals:
+        Min          1Q      Median          3Q         Max 
+-30.6470118  -3.7522746  -0.4488383   3.3984014  29.5103499 
+
+Coefficients:
+                 Estimate    Std. Error   t value Pr(>|t|)    
+(Intercept) -0.0001104059  0.1321494685  -0.00084  0.99933    
+x            1.0000214337  0.0030489972 327.98372  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 6.085885 on 9569 degrees of freedom
+Multiple R-squared:  0.918313,	Adjusted R-squared:  0.9183045 
+F-statistic: 107573.3 on 1 and 9569 DF,  p-value: < 2.2204e-16
+
+-----------------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------------
+[shiny, Plot.Prediction()] INFO, Plotting Predicted data for OX_A431
+[shiny, Plot.Prediction()] INFO, using calibration nA__MultiLinear__20180903__20180910__Nitrogen_dioxide_modelled-1.rdata with  calibration method
+
+Call:
+lm(formula = y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
+
+Residuals:
+        Min          1Q      Median          3Q         Max 
+-22.0286523  -4.1013852   0.4785404   4.4167113  17.9635893 
+
+Coefficients:
+               Estimate  Std. Error   t value   Pr(>|t|)    
+(Intercept) -6.87942344  0.32317290 -21.28713 < 2.22e-16 ***
+x            1.11470685  0.00829072 134.45235 < 2.22e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 6.334169 on 1392 degrees of freedom
+Multiple R-squared:  0.9285033,	Adjusted R-squared:  0.928452 
+F-statistic: 18077.44 on 1 and 1392 DF,  p-value: < 2.2204e-16
+
+-----------------------------------------------------------------------------------
+
+[shiny, Save()] INFO,NL_05min.cfg config file saved in directory General_data.
+[shiny, Save()] INFO,NL_05min_Servers.cfg config file saved in directory General_data.
+[Shiny, Save()] INFO: NL_05min_SETTIME.cfg config file saved in directory General_data.
+[shiny, Save()] INFO,NL_05min_CovMod*.cfg config file  saved in directory General_data.
+-----------------------------------------------------------------------------------
+[shiny, Save()] Saving Filtered, Calibrated and predicted data in  S:/Box Sync/AirSensEUR/Fieldtests/Shiny/NL_05min/General_data/General.Rdata 
+-----------------------------------------------------------------------------------
+[shiny, Save()] INFO, Saving Index of warming of sensors
+[shiny, Save()] INFO, Saving Index of temperature and humisity out of interval of tolerance
+[shiny, Save()] INFO, Saving Index of invalid sensor data
+[shiny, Save()] INFO, Saving Index of sensor data Outliers
+[shiny, Save()] INFO, Saving Index of reference data Outliers
+-----------------------------------------------------------------------------------
