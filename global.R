@@ -137,6 +137,7 @@ cat("[Shiny] INFO, Check or install packages needed to run the script\n")
 # visualtisation of reactive HTML object used with dygraphs				--> htmltools, threadr
 # Saving the time series created with dygraphs                          --> htmlwidgets, webshot
 # Projection of coordinates for leaflet                                 --> OSMscale
+# inesrting rows with NAs in a dataframe                                --> berryFunctions
 # library(bitops)
 #
 list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "shinyBS"         , "shinyalert"      , "shinycssloaders" , "shinyWidgets"    ,
@@ -151,8 +152,7 @@ list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "
                    "data.table"      , "BMS"             , "rlist"           , 
                    "fields"          , "shape"           , "tools"           , "R.utils"         ,  
                    "stringr"         , "rmarkdown"       , "xtable"          , "knitr"           ,
-                   "leaflet"         , 
-                   "dygraphs"        , "htmltools"       , "htmlwidgets"     , "webshot"         , "OSMscale") 
+                   "leaflet"         , "dygraphs"        , "htmltools"       , "htmlwidgets"     , "webshot"         , "OSMscale"        , "berryFunctions") 
 
 Load.Packages(list.Packages)
 # if error on plyr then type install.packages("plyr") at the console
@@ -167,7 +167,7 @@ Load.Packages(list.Packages)
 list.packages.github <- c("52North/sensorweb4R", "skgrange/threadr")
 for (i in list.packages.github) {
     
-    # removing author name anad version number
+    # removing author name and version number
     lib.i <- tail(unlist(strsplit(i, split = "/")), n = 1)
     lib.i <- head(unlist(strsplit(lib.i, split = "@")), n = 1)
     
