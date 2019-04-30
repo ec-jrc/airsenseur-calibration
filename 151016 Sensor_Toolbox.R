@@ -940,8 +940,38 @@ Estimated.y <- function(x, Model, Length = NULL) {
 #================================================================CR
 ### Cal_Line: Function calibration function and plot calibration line (VS 170428)
 #================================================================CR
+Find_Max_CCF <- function(x,y) {
+    # https://stackoverflow.com/questions/10369109/finding-lag-at-which-cross-correlation-is-maximum-ccf
+    # This function will return the maximum CCF value along with corresponding lag value. 
+    # x,y      Input to this function are a and b which are nothing but two time series.
+    
+    # keep only complete cases
+    DataXY <- data.frame(x = x, y = y) 
+    DataXY <- DataXY[complete.cases(DataXY),]
+    
+    d <- ccf(DataXY$x, DataXY$y, plot = FALSE) # , lag.max = length(x)/2
+    cor     = d$acf[,,1]
+    abscor  = abs(d$acf[,,1])
+    lag     = d$lag[,,1]
+    res     = data.frame(cor,lag)
+    absres  = data.frame(abscor, lag)
+    absres_max = res[which.max(absres$abscor),]
+    return(absres_max)
+}
+insertRow <- function(existingDF, newrow, r) {
+    # Add new row to dataframe, at specific row-index, not appended?
+    # https://stackoverflow.com/questions/11561856/add-new-row-to-dataframe-at-specific-row-index-not-appended
+    # existingDF   Dataframe to add a row
+    # newrow       Added row
+    # r             row number where to add newrow to  existingDF
+    
+    existingDF <- rbind(existingDF,newrow)
+    existingDF <- existingDF[order(c(1:(nrow(existingDF) - 1), r - 0.5)),]
+    row.names(existingDF) <- 1:nrow(existingDF)
+    return(existingDF)
+}
 Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL, line_position, Couleur, Sensor_name = NULL, f_coef1, f_coef2, f_R2, 
-                     lim = NULL, marges = NULL, Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt((max(x, na.rm = T) - min(x, na.rm = T)))) {
+                     lim = NULL, marges = NULL, Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt((max(x, na.rm = T) - min(x, na.rm = T))), Auto.Lag = FALSE) {
     # This Function estimates the calibration function, plots the calibration line and write the equation above the plot at line_position
     # The regression equation can be weithed (1/sy^2) or not if s_y = Null
     
@@ -961,6 +991,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     # marges        : margin of graph, if NULL set as c(4,4,3,0.5)). If you don't want to set the margin, set to "NO"
     # Weighted      : Logical, default is false. If true used weighted fitting base on standard deviations of y for each lag (sd^2/sum(sd^2))
     # Lag_interval  : numerical, double, default sqrt((max(x, na.rm = T) - min(x, na.rm = T)), width of each lag used for estimating laf interval
+    # Auto.Lag      : logical, default is FaLSE If Auto.Lag is TRUE, y is changed using the lag at which cross correlation between x and y is maximum using ccf( )
     
     # Return: the estimated model 
     
@@ -984,13 +1015,35 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         lim = cbind(Xrange, Yrange)
     }
     
-    #Put O3, sensor reponses and standard deviation of sensor responses in a matrix remove NA of x and y
-    # browser()
+    # check autocorelation and Lag of y versus x, adding NAs at the begining or end of x, y, s_y and Matrice
+    if (Auto.Lag) {
+        
+        #browser()
+        Lag <- Find_Max_CCF(x,y)
+        cat(paste0("[Cal_line] INFO, there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y, if lag is <> 0\n"))
+        if (Lag$lag != 0) {
+            
+            if (Lag$lag > 0) {
+                x <- c(x, rep(NA, Lag$lag))
+                y <- c(rep(NA, Lag$lag), y)
+                if (!is.null(s_y)) s_y <- c(rep(NA, Lag$lag), s_y)
+                if (!is.null(Matrice)) Matrice <- berryFunctions::insertRows(Matrice, seq_along(Lag$lag))
+            } else {
+                x <- c(rep(NA, Lag$lag, x))
+                y <- c(y, rep(NA, Lag$lag))
+                if (!is.null(s_y)) s_y <- c(s_y, rep(NA, Lag$lag))
+                if (!is.null(Matrice)) Matrice <- berryFunctions::insertRows(Matrice, seq(from = nrow(Matrice) - Lag$lag, to = nrow(Matrice))) 
+            }
+        }
+    } else Lag <- "Lag correction not requested"
+    
+    # Put reference and sensor reponses and standard deviation of sensor responses in a matrix remove NA of x and y
     if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) DataXY <- data.frame(x = x, y = y) else {
         DataXY    <- data.frame(x = x, y = y, s_y = s_y)
         DataXY$wi <- DataXY$s_y^-2/sum(DataXY$s_y^-2)
         # colnames(DataXY) <- c("x","y","s_y","wi")
     }
+    
     # adding Covariates for multilinear model
     #browser()
     if (Mod_type == "MultiLinear")                                    DataXY[, Covariates]    <- Matrice[, Covariates]
@@ -1018,7 +1071,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                 dplyr::summarise(SD = sd(y, na.rm = T), x = mean(x, na.rm = T), Count = n(), y = mean(y, na.rm = T), !!covariates := mean(!!covariates, na.rm = T)) %>% 
                 dplyr::mutate(SumWI = sum(SD^2, na.rm = T)) %>% 
                 dplyr::mutate(wi = SumWI/SD^2)  %>%
-                dplyr::select(- c(ID, SumWI))
+                dplyr::select(-c(ID, SumWI))
         } else {
             
             # creating index, group by and take the mean of x and y
@@ -1029,7 +1082,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                 dplyr::summarise(SD = sd(y, na.rm = T), x = mean(x, na.rm = T), Count = n(), y = mean(y, na.rm = T)) %>% 
                 dplyr::mutate(SumWI = sum(SD^2, na.rm = T)) %>% 
                 dplyr::mutate(wi = SumWI/SD^2)  %>%
-                dplyr::select(- c(ID, Count, SumWI))
+                dplyr::select(-c(ID, Count, SumWI))
         }
     } 
     
@@ -1059,7 +1112,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
           
             points(DataXY$x, DataXY$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
             par(new = TRUE)
-            arrows(DataXY$x, DataXY$y - DataXY$SD, DataXY$x, DataXY$y + DataXY$SD, length=0.05, angle=90, code=3, col = Couleur)  
+            arrows(DataXY$x, DataXY$y - DataXY$SD, DataXY$x, DataXY$y + DataXY$SD, length = 0.05, angle = 90, code = 3, col = Couleur)  
         } 
         # display equations and R^2
         mtext(sprintf(paste0(Sensor_name, "Linear: y= ", f_coef1,"+ ", f_coef2," x",", R2=", f_R2,", RMSE=", f_coef1,",AIC= %.1f"), # ", s(Res)=",f_coef1,
@@ -1091,7 +1144,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         # display equations and R^2
         par(bg = "blue")
         mtext(sprintf(paste0("Quantile regression tau 0.5: y= ",f_coef1,"+ ",f_coef2," x"),coef(Model)[1], coef(Model)[2])
-              ,line = line_position,adj = 1,padj = 0, col = Couleur,cex=0.9) 
+              ,line = line_position,adj = 1,padj = 0, col = Couleur,cex = 0.9) 
         
     } else if (Mod_type == 'gam') {
         
@@ -1100,11 +1153,11 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Estimated <- data.frame(x = x, y = y)
         if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) {
             # Let gam89 decide for k and estimate the best alpha
-            Model <- gam(y~s(x), family=Gamma(link=log), data = Estimated) 
+            Model <- gam(y~s(x), family = Gamma(link = log), data = Estimated) 
             #Model <- gam(y~s(x, k=5), family=Gamma(link=log), data = Estimated) 
         } else {
             # Let gam89 decide for k and estimate the best alpha
-            Model <- gam(y~s(x), family=Gamma(link=log), data = Estimated, weights = wi) 
+            Model <- gam(y~s(x), family = Gamma(link = log), data = Estimated, weights = wi) 
             #Model <- gam(y~s(x, k=5), family=Gamma(link=log), weights = wi) 
         }
         print(summary(Model))
@@ -1113,7 +1166,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Estimated <- Estimated.y(DataXY$x, Model)
         Estimated <- Estimated[order(Estimated$x),]
         par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "") 
+        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
         #plot(x,Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "")
         
         # display equations and R^2
@@ -1203,18 +1256,23 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Linear.Model <- lm(y ~ x, data = DataXY)
         A0 <- coef(Linear.Model)[1]
         A1 <- coef(Linear.Model)[2]
-        A2 <- (A0 + A1 * mean(DataXY$y, na.rm = T)) / mean(DataXY$Temperature, na.rm = TRUE)^1.75
+        #A2 <- (A0 + A1 * mean(DataXY$y, na.rm = T)) / mean(DataXY$Temperature, na.rm = TRUE)^1.75
+        # index of row with median temperature
+        index.mdT <- which(DataXY$Temperature == median(DataXY$Temperature, na.rm = TRUE))[1]
+        A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (DataXY[index.mdT, "Temperature"])^1.75
         
         # Fitting model
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
             
             Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY, 
                            start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75), 
-                           model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+                           model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                           lower = c(-Inf,-Inf,-Inf, 0.4), upper = c(+Inf, +Inf, +Inf, 4))
             
         } else Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY, 
                               start = list(a0 = A0, a1 = A1,  a2 = A2, n = 1.75), 
-                              weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+                              weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                              lower = c(-Inf,-Inf,-Inf, 0.4), upper = c(+Inf, +Inf, +Inf, 4))
         
         print(summary(Model))
         
@@ -1229,22 +1287,27 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     } else if (Mod_type == 'K_power') {
         
         #browser()
-        # Setting Initial values
+        # Setting Initial values for RNO = a1 + a2 NO + a3 T^a4 
         Linear.Model <- lm(y ~ x, data = DataXY)
         A0 <- coef(Linear.Model)[1]
         A1 <- coef(Linear.Model)[2]
-        A2 <- (A0 + A1 * mean(DataXY$y, na.rm = T)) / (273.15 + mean(DataXY$Temperature, na.rm = TRUE))^1.75
+        #A2 <- (A0 + A1 * mean(DataXY$y, na.rm = T)) / (273.15 + mean(DataXY$Temperature, na.rm = TRUE))^1.75
+        # index of row with median temperature
+        index.mdT <- which(DataXY$Temperature == max(DataXY$Temperature, na.rm = TRUE))[1]
+        A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (273.15 + DataXY[index.mdT, "Temperature"])^1.75
         
         # Fitting model
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
             
             Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, 273.15 + Temperature), data = DataXY, 
                            start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75), 
-                           model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+                           model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                           lower = c(-Inf,-Inf,-Inf, 0.4), upper = c(+Inf, +Inf, +Inf, 4))
             
         } else Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, 273.15 + Temperature), data = DataXY, 
                               start = list(a0 = A0, a1 = A1,  a2 = A2, n = 1.75), 
-                              weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+                              weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                              lower = c(-Inf,-Inf,-Inf, 0.4), upper = c(+Inf, +Inf, +Inf, 4))
         
         print(summary(Model))
         
@@ -1444,7 +1507,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
               ,line=line_position,adj = 1,padj = 0, col = Couleur, cex = 0.875)
         
     } else if (Mod_type == 'ExpDecayInc_Int') {
-        #browser()
+        
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y), k = 0.05, intercept = min(y)), model = TRUE)
         } else {
@@ -1543,7 +1606,6 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         
     } else if (Mod_type == 'Sigmoid') {
         
-        #browser()
         #nls.control(maxiter = 500, tol = 1e-05, minFactor = 1/4096, printEval = TRUE, warnOnly = TRUE)
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             # Model <- nls(y~f_Sigmoid(x, MIN, MAX, X50, Hill), data=DataXY, start=list(MIN=min(y),MAX=max(y),X50=mean(x), Hill=3)
@@ -2537,7 +2599,9 @@ umxRenameFile <- function(baseFolder = "Finder", Missing = FALSE, findStr = NA, 
                 }
             }
         }    
-    }  else { # it is a missing String added at position 2 splitted with Split of the file name
+    }  else {
+        
+        # it is a missing String added at position 2 splitted with Split of the file name
         a = a[grep(pattern = replaceStr, x = a, invert = TRUE)]
         message("found ", length(a), " possible files")
         for (fn in a) {
