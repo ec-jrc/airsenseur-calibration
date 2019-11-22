@@ -109,7 +109,7 @@
 #
 # change 180118: ASEPanel04Read and ASEPanel04File functions existed in 151016 Sens_Toolbox.R and in Functions4ASE.R. We keept the ones in Functions4ASE.R only.
 # 
-# change 180125: slope_Orth, solve problem of egative uncertainties, set-up different small bugs stopping the code, improve grafical plots
+# change 180125: slope_Orth, solve problem of negative uncertainties, set-up different small bugs stopping the code, improve grafical plots
 # change 190110: Cal_line: solve error when all s_y are NA, remove x= TRUE and y= TRUE of all nlsLM function since this argument is not allowed, error in "Michelis", replace MIN with intercept
 # change 190301: Cal_Line: include weighted regression based on standard deviation of y's per lag
 
@@ -203,27 +203,38 @@ stopWhenError <- function(FUN) {
 #================================================================CR
 ### slope_orth: Function Orthogonal regression
 #================================================================CR
-slope_orth <- function(Xlabel, Ylabel, Title, DQO.I = NA, LV = NA, Units = NULL, Disk = NA, WD = NA, Dir = NA, Mat, uxi = NULL, 
-                       lim = NULL, Sensor_name = NULL, variable.uxi = FALSE, f_coef1 = NULL, f_coef2 = NULL, f_R2 = NULL, nameModel = NULL, SavePlot = TRUE) {
+slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL, 
+                       DQO.1 = NA, LV = NA, Units = NULL, Disk = NA, WD = NA, Dir = NA, 
+                       Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, variable.ubss = FALSE,
+                       lim = NULL, f_coef1 = NULL, f_coef2 = NULL, f_R2 = NULL, nameModel = NULL, SavePlot = TRUE,
+                       calib = NULL) {
+    
+    # Save graphic file of the orthogonal regression, square of residuals and uncertainty: 
+    #                 "mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", 
+    #                 and "Mat": "case", "Date", "xis", "yis","ubsRM", "ubss", "RS", "Ur", "U", "Rel.bias", "Rel.RSS"
+    
     # Xlabel, Ylabel : label On the x And y axis
     # Title          : title to appear On the top of the scatter plot of x And y values
-    # DQO.I          : numeric, data qualtiy objective for the expanded uncertainty, same unit as Mat$yis, defaul NA. If NA no DQO.I, horizontal line is plotted
+    # Sensor_name    : name of the sensor to be written in front of the calibration equation. If NULL, do not print sensor name.
+    # DQO.1          : numeric, data qualtiy objective for the expanded uncertainty, same unit as Mat$yis, defaul NA. If NA no DQO.1, horizontal line is plotted
     # LV             : numeric, limit value for Mat$xis, same unit as Mat$xis, default value = NA, plot a vertical line at LV if not NA
     # Units          : character vector, units for the expanded uncertainty, Xis, Yis
     # Disk, WD, Dir  : where you put the graphic files (Disk, working directory, directory), It is sufficient if only Dir is supplied
+    # Mat            : Data.table or DataFrame of data including Case number, Date, x And y + optional ubsRM if ubsRM is not constant for all reference values. Idem for ubs.
+    # ubsRM          : numeric (default = NULL ), random standard uncertainty of the reference data, xis, given as a constant value for all xis reference values
+    # variable.ubsRM : logical, if FALSE (default = FALSE ), ubsRM is used as constant random standard uncertainties for all xis. 
+    #                  If TRUE ubsRM given in Mat and is used for xis
+    # ubss           : numeric (default = NULL ), random standard uncertainty of the sensor data, yis, given as a constant value for all yis
+    # variable.ubss  : logical, if FALSE (default = FALSE ), ubss is used as constant random standard uncertainties for all yis. 
+    #                  If TRUE ubss given in Mat and is used for each yis
     # lim            : passing variable for the limits of the Etalonnage function (cbind(c(minX,maxX),c(minY,maxY)) or NULL)
-    # Sensor_name    : name of the sensor to be written in front of the calibration equation. If NULL, do not print sensor name.
-    # Mat            : DataFrame of data including Case number, Date, x And y + optional uxi if uxi is not constant for all reference values
-    # uxi            : numeric (default = NULL ), random standard uncertainty of the results of the reference method, xis, given as a constant value for all xis reference values
-    # variable.uxi   : logical, if FALSE (default = FALSE ), uxi is used as constant random standard uncertainties for all xis reference values. 
-    #                  If TRUE uxi given in Mat and is used for each reference values
-    # f_coef1, f_coef2, f_R2: number of digit for intercept, slope and R2 using sprintf syntax. 
+    # f_coef1, 
+    # f_coef2, 
+    # f_R2           : number of digit for intercept, slope and R2 using sprintf syntax. 
     #                         f_coef1 is used both for intercept and s(Res), f_coef2 is used for all parameters of the model apart from the intercept
     # nameModel      : name of model to be used to save uncertainty plots, character, default NULL
     # SavePlot       : logical, default is TRUE if TRUE uncertainty plts are saved
-    # return a list with the orthogonal regression: 
-    #                 "mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", 
-    #                 and "Mat": "case", "Date", "xis", "yis","uxi", "RS", "Ur", "U", "Rel.bias", "Rel.RSS"
+    # calib          : Output of function U.orth.DF, default is null. If null, the orthoganl regression is recalculated
     
     # 
     # Homogeneity of variance is tested For the calculation of RSS
@@ -233,324 +244,221 @@ slope_orth <- function(Xlabel, Ylabel, Title, DQO.I = NA, LV = NA, Units = NULL,
     # the number of valid measurment (nb), the centred rout mean square of error (CRMSE), the normalised mean standard deviation (NMSD)
     # and Mat with relative expanded uncertainty
     
-    #checking that the mat dataFrame is not empty
-    if (nrow(Mat)>0) {
+    # checking if calib is alrady available in order not to redo the calculation 
+    if (is.null(calib)) {
         
-        # Creating the Directory to save plots
-        Dir <- file.path(c(Disk, WD , Dir)[which(!sapply(list(c(Disk, WD , Dir)), is.na))])
-        if (!dir.exists(Dir)) dir.create(Dir, showWarning = TRUE, recursive = TRUE)
+        #checking that the mat dataFrame is not empty
+        if (exists("Mat") && !is.null(Mat) && nrow(Mat)>0) {
+            
+            
+            Mat$Max.ubsRM <- sqrt(RSS/(nb-2) + Mat$bias^2)
+            Mat$Max.RSD   <- sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis
+            
+            # Printing
+            cat("\n")
+            cat("--------------------------------\n")
+            cat(sprintf("mean of x   : %.1g +/- %.1g",mo,sdo),"\n")
+            cat(sprintf("Intercept b0: %.4g +/- %.4g",mm,sdm), "\n")
+            cat(sprintf("Slope b1    : %.4g +/- %.4g",b1,ub1),"\n")
+            cat(sprintf("Intercept b0: %.4g +/- %.4g",b0,ub0), "\n")
+            cat(sprintf("R2: %.4g",Correlation^2), "\n")
+            if (Fitted.RS && rtest$p.value < 0.01) { 
+                cat("The residuals are not constant. RSS are fitted with a general Additive model (k=5) see in returned matrix. \n")
+            } else 
+            {
+                cat("The residuals are constant. RSS is calculated with equation for constant residuals:")
+                cat(sprintf("RSS: %.4g ", Mat$RSS[1]), "\n")
+            }
+            cat(sprintf("RMSE : %.4g ",rmse), "\n")
+            cat(sprintf("mbe  : %.4g ",mbe), "\n")
+            cat(sprintf("CRMSE: %.4g ",CRMSE), "\n")
+            cat(sprintf("NMSD : %.4g ",NMSD), "\n")
+            cat(sprintf("n    : %.4g ",nb), "\n")
+            
+            
+            calib <- list(mo,sdo, mm,sdm, b1, ub1, b0, ub0, RSS, rmse, mbe, Correlation, nb, CRMSE, NMSD, Mat)
+            
+            # resuming the par values
+            on.exit(par(mar=op))
+            
+        } else{
+            cat("The Mat dataFrame is empty. Returning NAs.")
+            calib <- list(mo = NA,sdo = NA, mm = NA,sdm = NA, b1 = NA, ub1 = NA, b0 = NA, ub0 = NA, RSS = NA,rmse = NA, mbe = NA, Correlation = NA, nb = NA, CRMSE = NA, NMSD = NA, Mat = NA)
+        } 
+    } else {
         
-        # saving the original par values in case they would be modified in this function
-        op <- par(no.readonly = TRUE)
-        # Passing and resuming the par values
-        on.exit(par(op))
-        par(mar=c(4,4,2,0.5))
-        par(new=FALSE)
+    }
+    
+    # Creating the Directory to save plots
+    Dir <- file.path(c(Disk, WD , Dir)[which(!sapply(list(c(Disk, WD , Dir)), is.na))])
+    if (!dir.exists(Dir)) dir.create(Dir, showWarning = TRUE, recursive = TRUE)
+    
+    # saving the original par values in case they would be modified in this function
+    op <- par(no.readonly = TRUE)
+    # Passing and resuming the par values
+    on.exit(par(op))
+    par(mar = c(4,4,2,0.5))
+    par(new = FALSE)
+    
+    #-----------------[1]----------------------
+    # Plots scatterplot of orthogonal regression
+    #------------------------------------------
+    Gamme <- Etalonnage(x          = calib$Mat[["xis"]], 
+                        s_x        = NULL, 
+                        y          = calib$Mat[["yis"]], 
+                        s_y        = NULL, 
+                        AxisLabelX = Xlabel, 
+                        AxisLabelY = Ylabel, 
+                        Title      = paste0("Orthogonal regression for sensor ", Sensor_name, " versus reference data") , 
+                        Marker     = 19, 
+                        Couleur    = 'blue', 
+                        lim        = NULL, 
+                        XY_same    = TRUE, 
+                        digitround = NULL, 
+                        marges     = NULL, 
+                        PlotAxis   = "s"
+    )
+    
+    # Overlay new plot
+    par(new = TRUE)
+    # Set same margin for the line and Etalonnage
+    par(mar=c(Gamme[,"mar12"],Gamme[,"mar34"]))
+    # Plotting orthogonal regression line
+    plot(calib$Mat[["xis"]], calib$b1 * calib$Mat[["xis"]] + calib$b0, 
+         type = "l", 
+         col  = "red",
+         xlim = Gamme[,1], 
+         ylim = Gamme[,2],
+         axes = FALSE ,
+         xlab = "",
+         ylab = ""
+    )
+    if (is.null(f_coef1)) f_coef1 <- "%.2f"
+    if (is.null(f_coef2)) f_coef2 <- "%.2f"
+    if (is.null(f_R2))    f_R2    <- "%.4f"
+    mtext(sprintf(paste0(Sensor_name, ", y= ",f_coef1,"+ ",f_coef2," x",", R2=",f_R2,", RMSE=",f_coef1), # ", s(Res)=",f_coef1,
+                  calib$b0, 
+                  calib$b1, 
+                  calib$Correlation^2, 
+                  #sd(b1 * Mat$xis + b0 - Mat$yis), 
+                  calib$rmse),
+          line = 1,
+          adj  = 1,
+          padj = 0,
+          col  = "red",
+          cex  = 0.875)
+    
+    # Saving the plot of orthogonal regression
+    dev.copy(png,filename = file.path(Dir,paste0(nameModel, "_Scatter.png")), units = "cm", res = 300, width = 22, height = 22);
+    dev.off()
+    
+    #-----------------[2]----------------------
+    # Plots square of absolute residuals versus xis
+    #------------------------------------------
+    if (!is.null(Units)) Ylab = paste0("Square of Residuals in (", Units,")^2") else Ylab = "Square of Residuals"
+    gamme <- Etalonnage(x          = calib$Mat[["xis"]], 
+                        s_x        = NULL, 
+                        y          = calib$Mat[["RS"]], 
+                        s_y        = NULL, 
+                        AxisLabelX = Xlabel,
+                        AxisLabelY = Ylab, 
+                        Title      = paste0("Square of residuals of orthogonal regression for sensor ", Sensor_name)  , 
+                        Marker     = 19, 
+                        Couleur    = 'blue', 
+                        lim        = NULL, 
+                        XY_same    = FALSE, 
+                        digitround = NULL, 
+                        marges     = NULL, 
+                        PlotAxis   = "s"
+    )
+    
+    # if  the square of residuals are fitted
+    if (calib$RS.Fitted) { 
         
-        # Setting coloumn names and adding uxi as constant values
-        colnames(Mat) <- c("case", "Date", "xis", "yis","uxi")[1:length(colnames(Mat))]
-        if (!variable.uxi) if (!is.null(uxi)) Mat$uxi <- rep(uxi, nrow(Mat)) else{ cat("[slope_orth] ERRROR, value of u(xi) not given. Stopping the function"); return(0) } 
-        
-        # Filtering for the validation data only
-        Mat <- subset(Mat, !is.na(Mat$xis) & !is.na(Mat$yis))
-        
-        #Orthogonal regression (see annex b of equivalence method)
-        nb     <- nrow(Mat)
-        mo     <- mean(Mat$xis)
-        mm     <- mean(Mat$yis)
-        sdo    <- sd(Mat$xis)
-        sdm    <- sd(Mat$yis)
-        Sxx    <- sum((Mat$xis - mo)^2)
-        Syy    <- sum((Mat$yis - mm)^2)
-        Sxy    <- sum((Mat$xis - mo) * (Mat$yis - mm))
-        b1     <- (Syy - Sxx + sqrt((Syy- Sxx)^2 + 4*Sxy^2))/(2*Sxy)
-        b0     <- mm - b1 * mo
-        ub1    <- sqrt((Syy - (Sxy^2/Sxx))/((nb-2)*Sxx))
-        ub0    <- sqrt(ub1^2 * sum(Mat$xis^2)/nb)
-        
-        # Regression statistics for Target Diagram (see delta tool user guide)
-        rmse  <- sqrt((sum((Mat$yis - (b0 + b1 * Mat$xis))^2))/nb)
-        mbe   <- mean(Mat$yis - Mat$xis)
-        mae   <- mean(abs(Mat$yis - Mat$xis))
-        CRMSE <- sqrt(mean(((Mat$yis - mm) - (Mat$xis - mo))^2))
-        NMSD  <- (sd(Mat$yis) - sd(Mat$xis)) / sd(Mat$xis)
-        Correlation <- cor(Mat$xis,Mat$yis)
-        
-        #Plots scatterplot of orthogonal regression
-        Gamme <- Etalonnage(x          = Mat$xis, 
-                            s_x        = NULL, 
-                            y          = Mat$yis, 
-                            s_y        = NULL, 
-                            AxisLabelX = Xlabel, 
-                            AxisLabelY = Ylabel, 
-                            Title      = paste0("Orthogonal regression for sensor ", Sensor_name, " versus reference data") , 
-                            Marker     = 19, 
-                            Couleur    = 'blue', 
-                            lim        = NULL, 
-                            XY_same    = TRUE, 
-                            digitround = NULL, 
-                            marges     = NULL, 
-                            PlotAxis   = "s"
-        )
-        
+        # plotting the line of the regression of the square of residuals
         # Overlay new plot
         par(new = TRUE)
         # Set same margin for the line and Etalonnage
-        par(mar=c(Gamme[,"mar12"],Gamme[,"mar34"]))
+        par(mar=c(gamme[,"mar12"],gamme[,"mar34"]))
         # Plotting orthogonal regression line
-        plot(Mat$xis, b1 * Mat$xis + b0, 
+        order.xis <- order(calib$Mat$xis)
+        plot(x    = calib$Mat[["xis"]][order.xis], 
+             y    = calib$Mat[["RS"]][order.xis], 
              type = "l", 
              col  = "red",
-             xlim = Gamme[,1], 
-             ylim = Gamme[,2],
+             xlim = gamme[,"Xlim"], 
+             ylim = gamme[,"Ylim"],
              axes = FALSE ,
              xlab = "",
-             ylab = ""
-        )
-        if (is.null(f_coef1)) f_coef1 <- "%.2f"
-        if (is.null(f_coef2)) f_coef2 <- "%.2f"
-        if (is.null(f_R2))    f_R2    <- "%.4f"
-        mtext(sprintf(paste0(Sensor_name, ", y= ",f_coef1,"+ ",f_coef2," x",", R2=",f_R2,", RMSE=",f_coef1), # ", s(Res)=",f_coef1,
-                      b0, 
-                      b1, 
-                      cor(Mat$xis,Mat$yis)^2, 
-                      #sd(b1 * Mat$xis + b0 - Mat$yis), 
-                      sqrt(sum((b1 * Mat$xis + b0 - Mat$yis)^2)/(length(b1 * Mat$xis + b0 - Mat$yis) - 2))
-        ),
-        line = 1,
-        adj  = 1,
-        padj = 0,
-        col  = "red",
-        cex  = 0.875
-        )
-        
-        # Saving the plot of orthogonal regression
-        dev.copy(png,filename = file.path(Dir,paste0(nameModel, "_Scatter.png")), units = "cm", res = 300, width = 22, height = 22);
-        dev.off()
-        
-        # Plots square of absolute residuals versus xis
-        # Squares of Residuals and bias (vector of values)
-        Mat$RS   <- (Mat$yis - (b0 + b1 * Mat$xis))^2
-        Mat$bias <- (b0 + (b1 - 1) * Mat$xis)
-        # Sum of squares of Residuals (one constant value)
-        RSS     <- sum(Mat$RS)
-        
-        if (!is.null(Units)) Ylab = paste0("Square of Residuals in (", Units,")^2") else Ylab = "Square of Residuals"
-        gamme <- Etalonnage(x          = Mat$xis, 
-                            s_x        = NULL, 
-                            y          = Mat$RS, 
-                            s_y        = NULL, 
-                            AxisLabelX = Xlabel,
-                            AxisLabelY = Ylab, 
-                            Title      = paste0("Square of residuals of orthogonal regression for sensor ", Sensor_name)  , 
-                            Marker     = 19, 
-                            Couleur    = 'blue', 
-                            lim        = NULL, 
-                            XY_same    = FALSE, 
-                            digitround = NULL, 
-                            marges     = NULL, 
-                            PlotAxis   = "s"
-        )
-        
-        # Checking if RS - Mat$uxi^2 < 0 that make an error using sqrt(RS - Mat$uxi^2) of the ree.RSS. Replacing with 0
-        if (any((Mat$RS - Mat$uxi^2) <= 0)) {
-            
-            cat(" Some \"Square or residuals - u(xi)^2\" are negative. \"sqrt(RSS/(n-2) - u(xi)^2\" cannot be calculated nor ux(i) can be > RSS.\n 
-                You can decrease uxi, check in df Mat: x and max(uxi).\n
-                For now, RSS/(nb-2) - Mat$uxi^2 is set to 0 when negative.\n")
-            neg.RS <- which(RSS/(nb-2) - Mat$uxi^2 <= 0)
-            Mat[neg.RS, "RS"] <- Mat[neg.RS, "uxi"]^2 + 0.001 * min(Mat$xis) # adding 0.1 % of min(xis) to avoid problem of 0 with gam fitting
-            
-            # Recalculating RSS when Mat$RS are changed
-            RSS     <- sum(Mat$RS)
-            
-            # plotting an error
-            # plot(1,1,col="white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1)
-            # text(1,1,"slope_orth, ERROR: random uncertainty of the reference method too big, some uncertainties are negative.")
-            # dev.copy(png,filename = file.path(Dir,paste0(nameModel, "_U.png")), units = "cm", res = 300, width = 22, height = 22);
-            # dev.off()
-            
-        }  else {
-            
-            # mat$RS are not changed and they are already calculated
-            cat("All \"Squares of Residuals - u(xi)^2\" are positive. \"sqrt(RSS/(n-2) - u(xi)^2\" can be calculated, check in df Mat: x and max(uxi).\n")
-            
-        }
-        
-        # tesing significance of correlation between s and square of absolute reisduals - The calculation does not work only possibility the constrant RSS
-        rtest <- cor.test(Mat$xis, Mat$RS)
-        print(rtest, quote = FALSE)
-        cat(sprintf("probability of H0 (r=0): %f, if <0.05, correlation is demonstrated, if > 0.95 there is no correlation",rtest$p.value), "\n")
-        
-        # if fitting the square of residuals is needed
-        if (rtest$p.value < 0.05) { 
-            
-            cat("The residuals are not constant. RSS is calculated after applying a gam fitting .\n")
-            
-            #z <- lm((Mat$yis - (b0 + b1 * Mat$xis))^2 ~ Mat$xis)
-            # Fitting with gam
-            # if any y value is zero getting Warning: Error in eval: non-positive values not allowed for the 'gamma' family (we had 0.5 % of min(xis) to avoid this
-            z <- gam( Mat$RS ~ s(Mat$xis), family = Gamma(link=log) )
-            Mat$RS <- fitted(z) 
-            
-            # plotting the line of the regression of the square of residuals
-            # Overlay new plot
-            par(new = TRUE)
-            # Set same margin for the line and Etalonnage
-            par(mar=c(gamme[,"mar12"],gamme[,"mar34"]))
-            # Plotting orthogonal regression line
-            order.xis <- order(Mat$xis)
-            plot(x    = Mat[order.xis, "xis"], 
-                 y    = Mat[order.xis, "RS"], 
-                 type = "l", 
-                 col  = "red",
-                 xlim = gamme[,"Xlim"], 
-                 ylim = gamme[,"Ylim"],
-                 axes = FALSE ,
-                 xlab = "",
-                 ylab = ""
-            )
-            mtext(sprintf(paste0("The correlation is significant (p = %.3f), Fitting a Generalized additive model (k = 5)"), rtest$p.value),
-                  line = 1,
-                  adj  = 1,
-                  padj = 0,
-                  col  = "red",
-                  cex  = 0.875
-            )
-            #lines (x = Mat$xis, y = Mat$RS, type = "l", col = "red")
-            
-            #### Calculating uncertainty
-            Mat$Ur <- 2 * sqrt(Mat$RS - Mat$uxi^2 + Mat$bias^2)/Mat$xis * 100
-            Mat$U  <- 2 * sqrt(Mat$RS - Mat$uxi^2 + Mat$bias^2)  
-            
-            #### Calculating parameters for modified Target diagram
-            Mat$Rel.bias <- 2 * (b0/Mat$xis + (b1 - 1))
-            Mat$Rel.RSS  <- 2 * (sqrt( Mat$RS - uxi^2) / Mat$xis)
-            
-            
-        } else {
-            
-            cat("The residuals are constant. RSS is calculated with equation for constant residuals.\n")
-            cat(sprintf("RSS is the square root of sum of squares of Residuals divided by n - 2: %f", sqrt(sum((Mat$yis/(b0+b1*Mat$xis)-1)^2))/nb^2), "\n")
-            # No need to lot a fitted line in this case
-            
-            mtext(sprintf(paste0("The correlation between x and the squares of residuals is not significant p = %.3f, RSS = "), rtest$p.value),
-                  line = 1,
-                  adj  = 1,
-                  padj = 0,
-                  col  = "red",
-                  cex  = 0.875
-            )
-            
-            #### Calculating uncertainty
-            Mat$Ur <- 2 * sqrt(RSS/(nb-2) - Mat$uxi^2 + Mat$bias^2)/Mat$xis * 100
-            Mat$U  <- 2 * sqrt(RSS/(nb-2) - Mat$uxi^2 + Mat$bias^2)  
-            
-            #### Calculating parameters for modified Target diagram
-            Mat$Rel.bias <- 2 * (b0/Mat$xis + (b1 - 1))
-            Mat$Rel.RSS  <- 2 * (sqrt( RSS/(nb - 2) - uxi^2) / Mat$xis)
-            
-            
-        }    
-        
-        # saving plots of squares of residuals with fitted model
-        dev.copy(png,filename = file.path(Dir,paste0(nameModel, "_SqrRes.png")), units = "cm", res = 300, width = 22, height = 22);
-        dev.off()
-        
-        #Plots Expanded Uncertainty
-        if (!is.null(Units)) Ylab = paste0("Expanded uncertainty in ", Units) else Ylab="Expanded uncertainty"
-        order.xis <- order(Mat$xis)
-        plot(Mat[order.xis, "xis"], 
-             Mat[order.xis, "U"], 
-             xlab=Xlabel, 
-             ylab = Ylab, 
-             main=Title , 
-             col='blue', 
-             type = "l", 
-             ylim= c(0, max(Mat$U, na.rm = T))
-        )
-        
-        if (!is.na(LV)) {
-            abline(v=LV)
-            text(x = LV, 
-                 y = 0 + 0.05 * (max(Mat[order.xis, "U"], na.rm = T) - 0), 
-                 labels = "LV")  
-        } 
-        if (!is.na(DQO.I)) {
-            abline(h=DQO.I) # in ppb
-            text(x = min(Mat[order.xis, "xis"], na.rm = T) + 0.05 * (max(Mat[order.xis, "xis"], na.rm = T) - min(Mat[order.xis, "xis"], na.rm = T)), 
-                 y = DQO.I, 
-                 labels = "DQO.I")  
-        } 
-        # UAT = 0.35 /1.91 * 78/46
-        # LAT = 0.25 /1.91 * 78/46
-        # lines(Mat[Mat$xis> LAT, "xis"], Mat[Mat$xis> LAT, "xis"]*DQO.I, col="black", lwd=3)
-        # lines(Mat[Mat$xis< LAT, "xis"], rep(LAT*DQO.I, length.out = length(Mat[Mat$xis< LAT, "xis"])), col="black", lwd=3)
-        # text(5, LAT*DQO.I+2, "Class 1")
-        # DQO.I = 0.75
-        # lines(Mat[Mat$xis> UAT, "xis"], Mat[Mat$xis> UAT, "xis"]*DQO.I, col="black")
-        # lines(Mat[Mat$xis< UAT, "xis"], rep(UAT*DQO.I, length.out = length(Mat[Mat$xis< UAT, "xis"])), col="black")
-        # text(5, UAT*DQO.I+2, "Class 2")
-        grid(nx = NULL, ny = NULL, lty = 2, col = "grey")
-        dev.copy(png,filename = file.path(Dir,paste0(nameModel,"_U.png")), units = "cm", res = 300, width = 22, height = 22);
-        dev.off()
-        
-        Mat$Max.uxi <- sqrt(RSS/(nb-2) + Mat$bias^2)
-        Mat$Max.RSD <- sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis
-        
-        # Printing
-        cat("\n")
-        cat("--------------------------------\n")
-        cat(sprintf("mean of x   : %.1g +/- %.1g",mo,sdo),"\n")
-        cat(sprintf("Intercept b0: %.4g +/- %.4g",mm,sdm), "\n")
-        cat(sprintf("Slope b1    : %.4g +/- %.4g",b1,ub1),"\n")
-        cat(sprintf("Intercept b0: %.4g +/- %.4g",b0,ub0), "\n")
-        cat(sprintf("R2: %.4g",Correlation^2), "\n")
-        if (rtest$p.value < 0.05) { 
-            cat("The residuals are not constant. RSS are fitted with a general Additive model (k=5) see in returned matrix. \n")
-        } else 
-        {
-            cat("The residuals are constant. RSS is calculated with equation for constant residuals:")
-            cat(sprintf("RSS: %.4g ",Mat$RSS[1]), "\n")
-        }
-        cat(sprintf("RMSE : %.4g ",rmse), "\n")
-        cat(sprintf("mbe  : %.4g ",mbe), "\n")
-        cat(sprintf("CRMSE: %.4g ",CRMSE), "\n")
-        cat(sprintf("NMSD : %.4g ",NMSD), "\n")
-        cat(sprintf("n    : %.4g ",nb), "\n")
-        
-        
-        calib <- list(mo,sdo, mm,sdm, b1, ub1, b0, ub0, RSS, rmse, mbe, Correlation, nb, CRMSE, NMSD, Mat)
-        
-        # resuming the par values
-        on.exit(par(mar=op))
-        
-    } else{
-        cat("The Mat dataFrame is empty. Returning NAs.")
-        calib <- list(mo = NA,sdo = NA, mm = NA,sdm = NA, b1 = NA, ub1 = NA, b0 = NA, ub0 = NA, RSS = NA,rmse = NA, mbe = NA, Correlation = NA, nb = NA, CRMSE = NA, NMSD = NA, Mat = NA)
-    } 
+             ylab = "")
+        mtext("The correlation is significant. Fitting a Generalized additive model (k = 5)",
+              line = 1, adj  = 1, padj = 0, col  = "red", cex  = 0.875)
+    } else {
+        mtext("The sum of square residual (RSS) set to constant, likely because the correlation between x and the squares of residuals is not significant",
+              line = 1, adj  = 1, padj = 0, col  = "red", cex  = 1)
+    }    
     
-    names(calib) <- c("mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", "Mat")
-    print(data.frame(x=Mat$xis, 
-                     uxi = Mat$uxi, 
-                     Max.uxi=sqrt(RSS/(nb-2) + Mat$bias^2), 
-                     Max.RSD = sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis, 
-                     Decrease.uxi = (Mat$uxi - sqrt(RSS/(nb-2) + Mat$bias^2)) > 0))
-    #browser()
+    # saving plots of squares of residuals with fitted model
+    dev.copy(png,filename = file.path(Dir,paste0(nameModel, "_SqrRes.png")), units = "cm", res = 300, width = 22, height = 22);
+    dev.off()
+    
+    #-----------------[3]----------------------
+    # Plots Expanded Uncertainty
+    #------------------------------------------
+    if (!is.null(Units)) Ylab = paste0("Expanded uncertainty in ", Units) else Ylab="Expanded uncertainty"
+    order.xis <- order(calib$Mat$xis)
+    plot(calib$Mat[["xis"]][order.xis], 
+         calib$Mat[["U"]][order.xis], 
+         xlab=Xlabel, 
+         ylab = Ylab, 
+         main=Title , 
+         col='blue', 
+         type = "l", 
+         ylim= c(0, max(calib$Mat$U, na.rm = T))
+    )
+    
+    if (!is.na(LV)) {
+        abline(v=LV)
+        text(x = LV, 
+             y = 0 + 0.05 * (max(calib$Mat[order.xis, "U"], na.rm = T) - 0), 
+             labels = "LV")  
+    } 
+    if (!is.na(DQO.1)) {
+        abline(h=DQO.1) # in ppb
+        text(x = min(calib$Mat[order.xis, "xis"], na.rm = T) + 0.05 * (max(calib$Mat[order.xis, "xis"], na.rm = T) - min(calib$Mat[order.xis, "xis"], na.rm = T)), 
+             y = DQO.1, 
+             labels = "DQO.1")  
+    } 
+    # UAT = 0.35 /1.91 * 78/46
+    # LAT = 0.25 /1.91 * 78/46
+    # lines(Mat[Mat$xis> LAT, "xis"], Mat[Mat$xis> LAT, "xis"]*DQO.1, col="black", lwd=3)
+    # lines(Mat[Mat$xis< LAT, "xis"], rep(LAT*DQO.1, length.out = length(Mat[Mat$xis< LAT, "xis"])), col="black", lwd=3)
+    # text(5, LAT*DQO.1+2, "Class 1")
+    # lines(Mat[Mat$xis< UAT, "xis"], rep(UAT*DQO.1, length.out = length(Mat[Mat$xis< UAT, "xis"])), col="black")
+    # text(5, UAT*DQO.1+2, "Class 2")
+    grid(nx = NULL, ny = NULL, lty = 2, col = "grey")
+    dev.copy(png,filename = file.path(Dir,paste0(nameModel,"_U.png")), units = "cm", res = 300, width = 22, height = 22);
+    dev.off()
+    
     return(calib)
 }
 
 #================================================================CR
 ### U.orth.DF: Function Orthogonal regression without plotting (Vs 180505)
 #================================================================CR
-U.orth.DF <- function(Mat, uxi = NULL, variable.uxi = FALSE) {
-    # Mat            : DataFrame of data including Case number, Date, x And y + optional uxi if uxi is not constant for all reference values
-    # uxi            : numeric (default = NULL ), random standard uncertainty of the results of the reference method, xis, given as a constant value for all xis reference values
-    # variable.uxi   : logical, if FALSE (default = FALSE ), uxi is used as constant random standard uncertainties for all xis reference values. 
-    #                  If TRUE uxi given in Mat and is used for each reference values
+U.orth.DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, variable.ubss = FALSE, Fitted.RS = FALSE) {
+    # Mat            : Data.table or DataFrame of data including Case number, Date, x And y + optional ubsRM if ubsRM is not constant for all reference values. 
+    #                  Idem for ubs.
+    # Mat            : DataFrame of data including Case number, Date, x And y + optional ubsRM if ubsRM is not constant for all reference values
+    # ubsRM            : numeric (default = NULL ), random standard uncertainty of the results of the reference method, xis, given as a constant value for all xis reference values
+    # variable.ubsRM   : logical, if FALSE (default = FALSE ), ubsRM is used as constant random standard uncertainties for all xis reference values. 
+    #                  If TRUE ubsRM given in Mat and is used for each reference values
+    # Fitted.RS      : logical, default is FALSE. If TRUE the square residuals (RS) can be fitted using a General Additive Model, provided that the probability that the 
+    #                  correlation between xis and RS is null is lower than 0.01, (p < 0.01)
+    
     # return a list with the orthogonal regression: 
     #                 "mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", 
-    #                 and "Mat": "case", "Date", "xis", "yis","uxi", "RS", "Ur", "U", "Rel.bias", "Rel.RSS"
+    #                 and "Mat": "case", "Date", "xis", "yis","ubsRM", "RS", "Ur", "U", "Rel.bias", "Rel.RSS"
     
     # 
     # Homogeneity of variance is tested For the calculation of RSS
@@ -561,69 +469,77 @@ U.orth.DF <- function(Mat, uxi = NULL, variable.uxi = FALSE) {
     # and Mat with relative expanded uncertainty
     
     #checking that the mat dataFrame is not empty
-    if (nrow(Mat)>0) {
+    if (exists("Mat") && !is.null(Mat) && nrow(Mat)>0) {
         
-        # saving the original par values in case they would be modified in this function
-        op <- par(no.readonly = TRUE)
-        # Passing and resuming the par values
-        on.exit(par(op))
-        par(mar=c(4,4,2,0.5))
-        par(new=FALSE)
-        
-        # Setting coloumn names and adding uxi as constant values
-        colnames(Mat) <- c("case", "Date", "xis", "yis","uxi")[1:length(colnames(Mat))]
-        if (!variable.uxi) if (!is.null(uxi)) Mat$uxi <- rep(uxi, nrow(Mat)) else{ cat("[slope_orth] ERRROR, value of u(xi) not given. Stopping the function"); return(0) } 
-        
+        # Setting column names and adding ubsRM and ubss as constant values
+        colnames(Mat) <- c("case", "Date", "xis", "yis","ubsRM", "ubss")[1:length(colnames(Mat))]
+        if (!"data.table" %in% class(Mat)) Mat <- data.table(Mat, key = "Date")
+        if (!variable.ubsRM) {
+            if (!is.null(ubsRM)) {
+                Mat$ubsRM <- rep(ubsRM, nrow(Mat)) 
+            } else {
+                if ("ubsRM" %in% names(Mat)) return("[U.orth.DF] ERRROR, value of u(ubsRM) not given. Stopping the function. \n")
+            }  
+        } 
+        if (!variable.ubss) {
+            if (!is.null(ubss)) {
+                Mat$ubss   <- rep(ubss, nrow(Mat))   
+            } else { 
+            if (!"ubs" %in% names(Mat)) return("[slope_orth] ERROR, value of u(ubs) not given. Stopping the function. \n")
+            }
+        }
         # Filtering for the validation data only
-        Mat <- subset(Mat, !is.na(Mat$xis) & !is.na(Mat$yis))
+        Mat <- Mat[complete.cases(Mat[,.(xis,yis)])]
         
         #Orthogonal regression (see annex b of equivalence method)
         nb     <- nrow(Mat)
-        mo     <- mean(Mat$xis)
-        mm     <- mean(Mat$yis)
-        sdo    <- sd(Mat$xis)
-        sdm    <- sd(Mat$yis)
-        Sxx    <- sum((Mat$xis - mo)^2)
-        Syy    <- sum((Mat$yis - mm)^2)
-        Sxy    <- sum((Mat$xis - mo) * (Mat$yis - mm))
+        mo     <- mean(Mat[["xis"]])
+        mm     <- mean(Mat[["yis"]])
+        sdo    <- sd(Mat[["xis"]])
+        sdm    <- sd(Mat[["yis"]])
+        Sxx    <- sum((Mat[["xis"]] - mo)^2)
+        Syy    <- sum((Mat[["yis"]] - mm)^2)
+        Sxy    <- sum((Mat[["xis"]] - mo) * (Mat[["yis"]] - mm))
         b1     <- (Syy - Sxx + sqrt((Syy- Sxx)^2 + 4*Sxy^2))/(2*Sxy)
         b0     <- mm - b1 * mo
         ub1    <- sqrt((Syy - (Sxy^2/Sxx))/((nb-2)*Sxx))
         ub0    <- sqrt(ub1^2 * sum(Mat$xis^2)/nb)
         
         # Regression statistics for Target Diagram (see delta tool user guide)
-        rmse  <- sqrt((sum((Mat$yis - (b0 + b1 * Mat$xis))^2))/nb)
-        mbe   <- mean(Mat$yis - Mat$xis)
-        mae   <- mean(abs(Mat$yis - Mat$xis))
-        CRMSE <- sqrt(mean(((Mat$yis - mm) - (Mat$xis - mo))^2))
-        NMSD  <- (sd(Mat$yis) - sd(Mat$xis)) / sd(Mat$xis)
-        Correlation <- cor(Mat$xis,Mat$yis)
+        rmse  <- sqrt((sum((Mat[["yis"]] - (b0 + b1 * Mat[["xis"]]))^2))/(nb-2))
+        mbe   <- mean(Mat[["yis"]] - Mat[["xis"]])
+        mae   <- mean(abs(Mat[["yis"]] - Mat[["xis"]]))
+        CRMSE <- sqrt(mean(((Mat[["yis"]] - mm) - (Mat[["xis"]] - mo))^2))
+        NMSD  <- (sd(Mat[["yis"]]) - sd(Mat$xis)) / sd(Mat[["xis"]])
+        Correlation <- cor(Mat[["xis"]],Mat[["yis"]])
         
-        # Plots square of absolute residuals versus xis
+        # Squares of Residuals and bias (vector of values)
+        Mat[,   RS := (Mat[["yis"]] - (b0 + b1 * Mat[["xis"]]))^2]
+        Mat[, bias := (b0 + (b1 - 1) * Mat[["xis"]])]
+        
         # Squares of Residuals and bias (vector of values)
         Mat$RS   <- (Mat$yis - (b0 + b1 * Mat$xis))^2
         Mat$bias <- (b0+(b1-1)*Mat$xis)
         # Sum of squares of Residuals (one constant value)
         RSS     <- sum(Mat$RS)
         
-        # Checking if RS - Mat$uxi^2 < 0 that make an error using sqrt(RS - Mat$uxi^2) of the ree.RSS. Replacing with 0
-        if (any((Mat$RS - Mat$uxi^2) <= 0)) {
+        # Checking if RS - Mat$ubsRM^2 < 0 that make an error using sqrt(RS - Mat$ubsRM^2) of the ree.RSS. Replacing with 0
+        neg.RSS <- which(RSS/(nb-2) - Mat[["ubsRM"]]^2 <= 0)
+        if (length(neg.RSS) > 0) {
             
-            cat(" Some \"Square or residuals - u(xi)^2\" are negative. \"sqrt(RSS/(n-2) - u(xi)^2\" cannot be calculated nor ux(i) can be > RSS.\n 
-                You can decrease uxi, check in df Mat: x and max(uxi).\n
-                For now, RSS/(nb-2) - Mat$uxi^2 is set to 0 when negative.\n")
-            neg.RS <- which(RSS/(nb-2) - Mat$uxi^2 <= 0)
-            Mat[neg.RS, "RS"] <- Mat[neg.RS, "uxi"]^2 + 0.001 * min(Mat$xis) # adding 0.1 % of min(xis) to avoid problem of 0 with gam fitting
+            # adding 0.1 % of min(xis) to avoid problem of 0 with gam fitting
+            Mat[neg.RSS, RS := Mat[neg.RSS, ubsRM]^2 + 0.001 * min(Mat[["xis"]])]
             
             # Recalculating RSS when Mat$RS are changed
-            RSS     <- sum(Mat$RS)
+            RSS     <- sum(Mat[["xis"]])
             
         }  else {
             
             # mat$RS are not changed and they are already calculated
-            cat("All \"Squares of Residuals - u(xi)^2\" are positive. \"sqrt(RSS/(n-2) - u(xi)^2\" can be calculated, check in df Mat: x and max(uxi).\n")
+            cat("The \"Sum of Squares of Residuals - u(ubsRM)^2\" is always negative \"sqrt(RSS/(n-2) - u(ubsRM)^2\" can be calculated, check in df Mat: x and max(ubsRM).\n")
             
         }
+        
         
         # tesing significance of correlation between s and square of absolute reisduals - The calculation does not work only possibility the constrant RSS
         rtest <- cor.test(Mat$xis, Mat$RS)
@@ -631,7 +547,9 @@ U.orth.DF <- function(Mat, uxi = NULL, variable.uxi = FALSE) {
         cat(sprintf("probability of H0 (r=0): %f, if <0.05, correlation is demonstrated, if > 0.95 there is no correlation",rtest$p.value), "\n")
         
         # if fitting the square of residuals is needed
-        if (rtest$p.value < 0.05) { 
+        if (Fitted.RS && rtest$p.value < 0.01) {
+            
+            RS.Fitted <- TRUE
             
             cat("The residuals are not constant. RSS is calculated after applying a gam fitting .\n")
             
@@ -642,33 +560,32 @@ U.orth.DF <- function(Mat, uxi = NULL, variable.uxi = FALSE) {
             Mat$RS <- fitted(z) 
             
             #### Calculating uncertainty
-            Mat$Ur <- 2 * sqrt(Mat$RS - Mat$uxi^2 + Mat$bias^2)/Mat$xis * 100
-            Mat$U  <- 2 * sqrt(Mat$RS - Mat$uxi^2 + Mat$bias^2)  
+            Mat$Ur <- 2 * sqrt(Mat$ubss^2 + Mat$RS - Mat$ubsRM^2 + Mat$bias^2)/Mat$xis * 100
+            Mat$U  <- 2 * sqrt(Mat$ubss^2 + Mat$RS - Mat$ubsRM^2 + Mat$bias^2)  
             
             #### Calculating parameters for modified Target diagram
             Mat$Rel.bias <- 2 * (b0/Mat$xis + (b1 - 1))
-            Mat$Rel.RSS  <- 2 * (sqrt( Mat$RS - uxi^2) / Mat$xis)
-            
-            
+            Mat$Rel.RSS  <- 2 * (sqrt(Mat$ubss^2 + Mat$RS - ubsRM^2) / Mat$xis)
+
         } else {
+            
+            RS.Fitted <- FALSE
             
             cat("The residuals are constant. RSS is calculated with equation for constant residuals.\n")
             cat(sprintf("RSS is the square root of sum of squares of Residuals divided by n - 2: %f", sqrt(sum((Mat$yis/(b0+b1*Mat$xis)-1)^2))/nb^2), "\n")
             # No need to lot a fitted line in this case
             
             #### Calculating uncertainty
-            Mat$Ur <- 2 * sqrt(RSS/(nb-2) - Mat$uxi^2 + Mat$bias^2)/Mat$xis * 100
-            Mat$U  <- 2 * sqrt(RSS/(nb-2) - Mat$uxi^2 + Mat$bias^2)  
+            Mat$Ur <- 2 * sqrt(Mat$ubss^2 + RSS/(nb-2) - Mat$ubsRM^2 + Mat$bias^2)/Mat$xis * 100
+            Mat$U  <- 2 * sqrt(Mat$ubss^2 + RSS/(nb-2) - Mat$ubsRM^2 + Mat$bias^2)  
             
             #### Calculating parameters for modified Target diagram
             Mat$Rel.bias <- 2 * (b0/Mat$xis + (b1 - 1))
-            Mat$Rel.RSS  <- 2 * (sqrt( RSS/(nb - 2) - uxi^2) / Mat$xis)
-            
-            
+            Mat$Rel.RSS  <- 2 * (sqrt(Mat$ubss^2 + RSS/(nb - 2) - ubsRM^2) / Mat$xis)
         }    
         
-        Mat$Max.uxi <- sqrt(RSS/(nb-2) + Mat$bias^2)
-        Mat$Max.RSD <- sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis
+        Mat$Max.ubsRM <- sqrt(RSS/(nb-2) + Mat$bias^2)
+        Mat$Max.RSD   <- sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis
         
         # Printing
         cat("\n")
@@ -678,7 +595,7 @@ U.orth.DF <- function(Mat, uxi = NULL, variable.uxi = FALSE) {
         cat(sprintf("Slope b1    : %.4g +/- %.4g",b1,ub1),"\n")
         cat(sprintf("Intercept b0: %.4g +/- %.4g",b0,ub0), "\n")
         cat(sprintf("R2: %.4g",Correlation^2), "\n")
-        if (rtest$p.value < 0.05) { 
+        if (Fitted.RS && rtest$p.value < 0.01) { 
             cat("The residuals are not constant. RSS are fitted with a general Additive model (k=5) see in returned matrix. \n")
         } else 
         {
@@ -692,10 +609,7 @@ U.orth.DF <- function(Mat, uxi = NULL, variable.uxi = FALSE) {
         cat(sprintf("n    : %.4g ",nb), "\n")
         
         
-        calib <- list(mo,sdo, mm,sdm, b1, ub1, b0, ub0, RSS, rmse, mbe, Correlation, nb, CRMSE, NMSD, Mat)
-        
-        # resuming the par values
-        on.exit(par(mar=op))
+        calib <- list(mo,sdo, mm,sdm, b1, ub1, b0, ub0, RSS, rmse, mbe, Correlation, nb, CRMSE, NMSD, Mat, RS.Fitted)
         
     } else {
         
@@ -703,12 +617,13 @@ U.orth.DF <- function(Mat, uxi = NULL, variable.uxi = FALSE) {
         calib <- list(mo = NA,sdo = NA, mm = NA,sdm = NA, b1 = NA, ub1 = NA, b0 = NA, ub0 = NA, RSS = NA,rmse = NA, mbe = NA, Correlation = NA, nb = NA, CRMSE = NA, NMSD = NA, Mat = NA)
     } 
     
-    names(calib) <- c("mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", "Mat")
-    # print(data.frame(x            = Mat$xis, 
-    #                  uxi          = Mat$uxi, 
-    #                  Max.uxi      = sqrt(RSS/(nb-2) + Mat$bias^2), 
-    #                  Max.RSD      = sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis, 
-    #                  Decrease.uxi = (Mat$uxi - sqrt(RSS/(nb-2) + Mat$bias^2)) > 0))
+    names(calib) <- c("mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", "Mat", "RS.Fitted")
+    print(data.frame(x              = Mat$xis, 
+                     ubsRM          = Mat$ubsRM, 
+                     Max.ubsRM      = sqrt(RSS/(nb-2) + Mat$bias^2), 
+                     Max.RSD        = sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis, 
+                     Decrease.ubsRM = (Mat$ubsRM - sqrt(RSS/(nb-2) + Mat$bias^2)) > 0))
+    
     return(calib)
 }
 
@@ -861,7 +776,6 @@ f_normal_density <- function(x, mu, sigma, Density = NULL, Diam_APS = NULL) {
     # density:  density of particles (mean density?)
     # C         numeric: constant use to translate the distibution so that the values at left and rignt are qual to zero
     
-    #browser()
     if (!is.null(Density)) {
         
         # index of diameters in x coming from the APS instrument to be corrected for the particle density
@@ -887,7 +801,6 @@ f_log10normal_density <- function(x, mu, sigma, Density = NULL) {
     # sigma:    numeric, the standard deviation of the log normal distribution
     # density:  density of particles (mean density?)
     
-    #browser()
     if (!is.null(Density)) {
         
         # index of diameters in x coming from the APS instrument to be corrected for the particle density
@@ -971,7 +884,8 @@ insertRow <- function(existingDF, newrow, r) {
     return(existingDF)
 }
 Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL, line_position, Couleur, Sensor_name = NULL, f_coef1, f_coef2, f_R2, 
-                     lim = NULL, marges = NULL, Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt((max(x, na.rm = T) - min(x, na.rm = T))), Auto.Lag = FALSE) {
+                     lim = NULL, marges = NULL, Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt((max(x, na.rm = T) - min(x, na.rm = T))), 
+                     Auto.Lag = FALSE, Plot_Line = TRUE) {
     # This Function estimates the calibration function, plots the calibration line and write the equation above the plot at line_position
     # The regression equation can be weithed (1/sy^2) or not if s_y = Null
     
@@ -980,6 +894,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     # Mod_type      : type of calibration model: linear, ...
     # Multi.File    : char, default is NULL, path.file of the config file used for calibration with multivariates
     # Matrice       : Input Matrix of data (e. g. Pre_cal_df)
+    # Covariates    : character vectors with column names of the covariates found in Matrice and needed for calibration model
     # line position : for mtext of the regression equation
     # Couleur       : color of the line and color font of the equation
     # Sensor_name   : name of the sensor to be written in front of the calibration equation. If NULL, sensor name is not printed
@@ -992,33 +907,36 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     # Weighted      : Logical, default is false. If true used weighted fitting base on standard deviations of y for each lag (sd^2/sum(sd^2))
     # Lag_interval  : numerical, double, default sqrt((max(x, na.rm = T) - min(x, na.rm = T)), width of each lag used for estimating laf interval
     # Auto.Lag      : logical, default is FaLSE If Auto.Lag is TRUE, y is changed using the lag at which cross correlation between x and y is maximum using ccf( )
+    # Plot_Line     : logical, default is TRUE. If TRUE the calibration line is added using par(new=TRUE) to an existaing scatterplot
     
-    # Return: the estimated model 
+    # Return: the estimated model , plot a calibration is Plot_Line is TRUE
     
     # saving the original par() values
-    op <- par(no.readonly = TRUE)
-    # resuming the par values
-    on.exit(par(op))
-    
-    # settings the margins
-    if (is.null(marges)) {
-        Margin <- c(4,4,3,0.5)
-        par(mar = c(4,4,3,0.5))	
-    } else {
-        Margin <- par("mar")
-    }
-    
-    #Define the limits of the graphs
-    if (is.null(lim)) {
-        Xrange <- c(min(x), max(x))
-        Yrange <- c(min(y), max(y))
-        lim = cbind(Xrange, Yrange)
+    if (Plot_Line) {
+        
+        op <- par(no.readonly = TRUE)
+        # resuming the par values
+        on.exit(par(op))
+        
+        # settings the margins
+        if (is.null(marges)) {
+            Margin <- c(4,4,3,0.5)
+            par(mar = c(4,4,3,0.5))	
+        } else {
+            Margin <- par("mar")
+        }
+        
+        #Define the limits of the graphs
+        if (is.null(lim)) {
+            Xrange <- c(min(x, na.rm = T), max(x, na.rm = T))
+            Yrange <- c(min(y, na.rm = T), max(y, na.rm = T))
+            lim = cbind(Xrange, Yrange)
+        }
     }
     
     # check autocorelation and Lag of y versus x, adding NAs at the begining or end of x, y, s_y and Matrice
     if (Auto.Lag) {
         
-        #browser()
         Lag <- Find_Max_CCF(x,y)
         cat(paste0("[Cal_line] INFO, there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y, if lag is <> 0\n"))
         if (Lag$lag != 0) {
@@ -1038,23 +956,20 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     } else Lag <- "Lag correction not requested"
     
     # Put reference and sensor reponses and standard deviation of sensor responses in a matrix remove NA of x and y
-    if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) DataXY <- data.frame(x = x, y = y) else {
-        DataXY    <- data.frame(x = x, y = y, s_y = s_y)
-        DataXY$wi <- DataXY$s_y^-2/sum(DataXY$s_y^-2)
+    if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) DataXY <- data.table(x = x, y = y) else {
+        DataXY    <- data.table(x = x, y = y, s_y = s_y)
+        DataXY[ wi := DataXY$s_y^-2/sum(DataXY$s_y^-2)]
         # colnames(DataXY) <- c("x","y","s_y","wi")
     }
     
     # adding Covariates for multilinear model
-    #browser()
-    if (Mod_type == "MultiLinear")                                    DataXY[, Covariates]    <- Matrice[, Covariates]
-    if (any(Mod_type %in% c("exp_kT", "exp_kK","T_power","K_power"))) DataXY[, "Temperature"] <- Matrice[, "Temperature"]
+    if (Mod_type == "MultiLinear")                                    DataXY <- cbind(DataXY, Matrice[, ..Covariates])
+    if (any(Mod_type %in% c("exp_kT", "exp_kK","T_power","K_power"))) DataXY[, Temperature := Matrice[["Temperature"]]]
     
     # removing NA of any variables in DATAXY
-    DataXY <- DataXY %>% 
-        filter(complete.cases(DataXY))
+    DataXY <- DataXY[complete.cases(DataXY[, .SD])]
     
     # Creating weights from the standard deviations within lags
-    #browser()
     if (Weighted) {
         
         #lag_distance <- round((range(DataXY$x, na.rm = T)[2] - range(DataXY$x, na.rm = T)[1])/Lag_numbers)
@@ -1095,9 +1010,11 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Sensor_name <- paste0(Sensor_name, ", ")
     }
     
-    # Linear Model, if s_y is not null calculate weights wi and use them in the regression
-    if (Mod_type == 'Linear') {
-        #browser()
+    if (Mod_type == 'GAM_GAUSS') {  
+        Model <- gam(y ~ s(x), family = gaussian(link = identity), data = DataXY)
+        
+    } else if (Mod_type == 'Linear') {
+        # Linear Model, if s_y is not null calculate weights wi and use them in the regression
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- lm(y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
         } else {
@@ -1138,7 +1055,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         print(summary(Model))
         
         # plotting calibration lines without plotting axis
-        par(new = TRUE)#, mar=Margin)
+        par(new = TRUE)
         plot(DataXY$x,Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
         
         # display equations and R^2
@@ -1165,9 +1082,12 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         # plotting calibration lines without plotting axis
         Estimated <- Estimated.y(DataXY$x, Model)
         Estimated <- Estimated[order(Estimated$x),]
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
-        #plot(x,Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "")
+        if (Plot_Line) {
+            
+            par(new = TRUE)#, mar=Margin)
+            plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
+            #plot(x,Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "")
+        }
         
         # display equations and R^2
         par(bg = "blue")
@@ -1176,7 +1096,6 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         
     } else if (Mod_type == 'exp_kT' | Mod_type == 'exp_kK') {
         
-        #browser()
         # Setting Initial values
         Linear.Model <- lm(y ~ x, data = DataXY)
         A0 <- coef(Linear.Model)[1]
@@ -1211,7 +1130,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             
             # display equations and R^2
             mtext(sprintf(paste0(Sensor_name, "Power: y = ",f_coef1,"+ ",f_coef2," x + exp(",f_coef2," T_Celsius + ", f_coef2,"), RMSE=",f_coef1,",AIC= %.1f"),
-                          Model$model$a0, Model$model$a1, Model$model$k, Model$model$C,
+                          coef(Model)[1],coef(Model)[2],coef(Model)[3],coef(Model)[4],
                           sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                           AIC(Model))
                   ,line = line_position,adj = 1,padj = 0,col = Couleur,cex = 0.875)
@@ -1242,24 +1161,25 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             
             # display equations and R^2
             mtext(sprintf(paste0(Sensor_name, "Power: y = ",f_coef1,"+ ",f_coef2," x + exp(",f_coef2," T_Kelvin + ", f_coef2,"), RMSE=",f_coef1,",AIC= %.1f"),
-                          Model$model$a0, Model$model$a1, Model$model$k, Model$model$C,
+                          coef(Model)[1],coef(Model)[2],coef(Model)[3],coef(Model)[4],
                           sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                           AIC(Model))
                   ,line = line_position,adj = 1,padj = 0,col = Couleur,cex = 0.875) 
         }
         print(summary(Model))
         
-    } else if (Mod_type == 'T_power') {
+    } else if (any(Mod_type %in% c('T_power', 'K_power'))) {
         
-        #browser()
         # Setting Initial values
         Linear.Model <- lm(y ~ x, data = DataXY)
         A0 <- coef(Linear.Model)[1]
         A1 <- coef(Linear.Model)[2]
-        #A2 <- (A0 + A1 * mean(DataXY$y, na.rm = T)) / mean(DataXY$Temperature, na.rm = TRUE)^1.75
-        # index of row with median temperature
-        index.mdT <- which(DataXY$Temperature == median(DataXY$Temperature, na.rm = TRUE))[1]
-        A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (DataXY[index.mdT, "Temperature"])^1.75
+        
+        # Transforming Celsius in Kelvin if needed
+        if (Mod_type == 'K_power') DataXY[, "Temperature"] <- 273.15 + DataXY[, "Temperature"]
+        # index of row with max temperature
+        index.mdT <- which(DataXY$Temperature == max(DataXY$Temperature, na.rm = TRUE))[1]
+        A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (DataXY[index.mdT, "Temperature"])^1.75  
         
         # Fitting model
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
@@ -1267,60 +1187,29 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY, 
                            start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75), 
                            model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
-                           lower = c(-Inf,-Inf,-Inf, 0.4), upper = c(+Inf, +Inf, +Inf, 4))
+                           lower = c(-Inf,-Inf,-Inf, 0.1), upper = c(+Inf, +Inf, +Inf, 5))
             
         } else Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY, 
                               start = list(a0 = A0, a1 = A1,  a2 = A2, n = 1.75), 
                               weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
-                              lower = c(-Inf,-Inf,-Inf, 0.4), upper = c(+Inf, +Inf, +Inf, 4))
+                              lower = c(-Inf,-Inf,-Inf, 0.1), upper = c(+Inf, +Inf, +Inf, 5))
         
         print(summary(Model))
         
-        #browser()
         # display equations and R^2
-        mtext(sprintf(paste0(Sensor_name, "Power: y = ", f_coef1," + ",f_coef2," x + ",f_coef2," T_Celsius^", f_coef2, ", RMSE=",f_coef1,", AIC= %.1f"),
-                      Model$model$a0, Model$model$a1, Model$model$a2, Model$model$n,
-                      sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
-                      AIC(Model))
-              ,line = line_position,adj = 1,padj = 0,col = Couleur,cex = 0.875)
-        
-    } else if (Mod_type == 'K_power') {
-        
-        #browser()
-        # Setting Initial values for RNO = a1 + a2 NO + a3 T^a4 
-        Linear.Model <- lm(y ~ x, data = DataXY)
-        A0 <- coef(Linear.Model)[1]
-        A1 <- coef(Linear.Model)[2]
-        #A2 <- (A0 + A1 * mean(DataXY$y, na.rm = T)) / (273.15 + mean(DataXY$Temperature, na.rm = TRUE))^1.75
-        # index of row with median temperature
-        index.mdT <- which(DataXY$Temperature == max(DataXY$Temperature, na.rm = TRUE))[1]
-        A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (273.15 + DataXY[index.mdT, "Temperature"])^1.75
-        
-        # Fitting model
-        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+        if (Mod_type == 'T_power') {
             
-            Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, 273.15 + Temperature), data = DataXY, 
-                           start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75), 
-                           model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
-                           lower = c(-Inf,-Inf,-Inf, 0.4), upper = c(+Inf, +Inf, +Inf, 4))
+            Equation <- paste0(Sensor_name, "Power: y = ", f_coef1," + ",f_coef2," x + ",f_coef2," T_Celsius^", f_coef2, ", RMSE=",f_coef1,", AIC= %.1f")
             
-        } else Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, 273.15 + Temperature), data = DataXY, 
-                              start = list(a0 = A0, a1 = A1,  a2 = A2, n = 1.75), 
-                              weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
-                              lower = c(-Inf,-Inf,-Inf, 0.4), upper = c(+Inf, +Inf, +Inf, 4))
-        
-        print(summary(Model))
-        
-        #browser()
-        # display equations and R^2
-        mtext(sprintf(paste0(Sensor_name, "Power: y = ", f_coef1," + ",f_coef2," x + ",f_coef2," T_Celsius^", f_coef2, ", RMSE=",f_coef1,", AIC= %.1f"),
-                      Model$model$a0, Model$model$a1, Model$model$a2, Model$model$n,
-                      sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
-                      AIC(Model))
-              ,line = line_position,adj = 1,padj = 0,col = Couleur,cex = 0.875)
+        } else if (Mod_type == 'K_power') Equation <- paste0(Sensor_name, "Power: y = ", f_coef1," + ",f_coef2," x + ",f_coef2," T_Kelvins^", f_coef2, ", RMSE=",f_coef1,", AIC= %.1f")
+            
+            
+            mtext(sprintf(Equation,
+                          coef(Model)[1],coef(Model)[2],coef(Model)[3],coef(Model)[4],
+                          sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
+                  ,line = line_position,adj = 1,padj = 0,col = Couleur,cex = 0.875)
         
     } else if (Mod_type == 'MultiLinear') {
-        #browser()
         if (!is.null(Multi.File)) { 
             
             if (file.exists(Multi.File)) {
@@ -1333,7 +1222,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                                              header           = TRUE, 
                                              row.names        = NULL, 
                                              comment.char     = "#"
-                                             #, stringsAsFactors = FALSE
+                                             , stringsAsFactors = FALSE
                 )
                 
                 # set Formula for all Covariates
@@ -1343,19 +1232,25 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                     # Covariates whithout Intercept, Enables and not forced
                     Cov.MinusInt <- Multi.File.df$Covariates[which(Multi.File.df$Enabled & !Multi.File.df$Forced)][Multi.File.df$Covariates != "Intercept"]
                     # their degree of polynomial
-                    Degrees <-  Multi.File.df[Multi.File.df$Covariates == Cov.MinusInt, "degree"]
+                    Degrees <-  Multi.File.df[Multi.File.df$Covariates %in% Cov.MinusInt, "degree"]
                     if (exists("Formula.Cov.MinusInt")) rm(Formula.Cov.MinusInt)
-                    for (j in 1:length(Cov.MinusInt)) {
+                    for (j in seq_along(Cov.MinusInt)) {
                         
                         # Formaula of the covarariates depending if it is fitted with "ExpGrowth"
                         if (Degrees[j] == "ExpGrowth") {
                             
-                            Formula.Covar <- paste0("C * exp(k * ", Cov.MinusInt[j],")")
+                            Formula.Covar <- paste0("C.", Multi.File.df$Covariates[j] ," * exp(k.",Multi.File.df$Covariates[j] ," * ", Cov.MinusInt[j],")")
                             
-                        } else Formula.Covar <- paste0("I(",Cov.MinusInt[j],"^",seq(1:Degrees[j]),")",collapse = "+")
+                        } else {
+                            if (any("ExpGrowth" %in% Degrees)) {
+                                
+                                Formula.Covar <- paste0("a.",Cov.MinusInt[j],seq(Degrees[j])," * I(",Cov.MinusInt[j],"^",seq(1:Degrees[j]),")",collapse = "+") 
+                                
+                            } else Formula.Covar <- paste0("I(",Cov.MinusInt[j],"^",seq(1:Degrees[j]),")",collapse = "+")  
+                        } 
                         
                         # adding the formuala for the covariates
-                        if (exists("Formula.Cov.MinusInt")) Formula.Cov.MinusInt <- paste0(Formula.Cov.MinusInt, Formula.Covar, collapse = "+") else Formula.Cov.MinusInt <- Formula.Covar
+                        if (exists("Formula.Cov.MinusInt")) Formula.Cov.MinusInt <- paste0(c(Formula.Cov.MinusInt, Formula.Covar), collapse = "+") else Formula.Cov.MinusInt <- Formula.Covar
                         
                         # Deleting the formula of the current covariates
                         rm(Formula.Covar)
@@ -1405,10 +1300,64 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         # Fitting
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             if (is.MultiFile) {
-                if (any("ExpGrowth" %in% Degrees)) {
+                if (!is.null(Degrees) && any("ExpGrowth" %in% Degrees)) {
+                    
+                    # Setting starting values of coefficients
+                    A0 = coef(lm(y ~ x, data = DataXY))[1]
+                    A1 = coef(lm(y ~ x, data = DataXY))[2]
+                    # select data to avoid undefined log (use >0) or negative log and hence negative k (use >1) 
+                    Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 1) 
+                    Start.Value   <- list(a0 = A0,a1 = A1)
+                    Lower.values  <- c(-Inf, -Inf)
+                    Upper.values  <- c(Inf, Inf)
+                    
+                    Degrees.ExpGrowth <- which(Degrees == "ExpGrowth")
+                    for (j in Degrees.ExpGrowth) {
+                        
+                        # Formula of the covarariates and final formula
+                        if (exists("Formula.ExpGrowth")) rm(Formula.ExpGrowth)
+                        Formula.ExpGrowth <- as.formula(paste("log(y[Positives] - (A0 + A1 * x[Positives])) ~ ", Multi.File.df$Covariates[j], "[Positives]"))
+                        
+                        Model.0 <- lm(Formula.ExpGrowth, data = DataXY)
+                        assign(paste0("C.", Multi.File.df$Covariates[j]), coef(Model.0)[1])
+                        assign(paste0("k.", Multi.File.df$Covariates[j]), coef(Model.0)[2])
+                        Start.Value[paste0("C.", Multi.File.df$Covariates[j])] <- exp(get(paste0("C.", Multi.File.df$Covariates[j])))
+                        Start.Value[paste0("k.", Multi.File.df$Covariates[j])] <- get(paste0("k.", Multi.File.df$Covariates[j]))
+                        Lower.values  <- c(Lower.values, -Inf, 0)
+                        Upper.values  <- c(Upper.values,  Inf, Inf)
+                    }
+                    
+                    # polynoms
+                    for (j in seq_along(Multi.File.df$degree)[-c(Degrees.ExpGrowth, which(Multi.File.df$Covariates == "Intercept"))]) {
+                        
+                        # degree of polynomial
+                        Degrees <-  as.numeric(Multi.File.df[j,"degree"])
+                            
+                        # Formula of the covarariates and final formula
+                        if (exists("Formula.Poly")) rm(Formula.Poly)
+                        Formula.Poly <- as.formula(paste("y ~ x ", paste0("I(",Multi.File.df[j,"Covariates"],"^",seq(1:Degrees),")",collapse = "+"), sep = "+"))
+                        
+                        Model.0 <- lm(Formula.Poly, data = DataXY)
+                        for (k in seq(1:Degrees)) {
+                            assign(paste0("a.", Multi.File.df$Covariates[j], k), coef(Model.0)[2 + k]) 
+                            Start.Value[paste0("a.", Multi.File.df$Covariates[j], k)] <- get(paste0("a.", Multi.File.df$Covariates[j], k))
+                            Lower.values  <- c(Lower.values, -Inf)
+                            Upper.values  <- c(Upper.values,  Inf)
+                        } 
+                    }
                     
                     #fitting with Exponential growth
-                    Model <- nlsLM(Formula.Covariates, data = DataXY, start = list(a0 = 19.3524  , a1 =  0.3506, C = 1, k = 0.005), model = TRUE, trace = F)
+                    #browser()
+                    Model <- nlsLM(Formula.Covariates, data = DataXY,
+                                   start = Start.Value, 
+                                   # start = list(a0 = A0, #coef(lm(y ~ x, data = DataXY))[1], 
+                                   #              a1 = A1, # coef(lm(y ~ x, data = DataXY))[2], 
+                                   #              C = C0, 
+                                   #              k = k0,
+                                   #              aRelative_humidity1 = 0),
+                                   lower = Lower.values, upper = Upper.values,
+                                   control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                                   model = TRUE, trace = F)
                     
                 } else Model <- lm(Formula.Covariates, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
             } else Model <- lm(Formula.Covariates, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
@@ -1417,8 +1366,16 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                 if (any("ExpGrowth" %in% Degrees)) {
                     
                     #fitting with Exponential growth
-                    Model <- nlsLM(Formula.Covariates, data = DataXY, start = list(a0 = min(DataXY$y), a1 = 0.25, C = 1, k = 2), 
-                                   model = TRUE, trace = F, weights = wi)
+                    nlsLM(Formula.Covariates, data = DataXY,
+                          start = Start.Value, 
+                          # start = list(a0 = A0, #coef(lm(y ~ x, data = DataXY))[1], 
+                          #              a1 = A1, # coef(lm(y ~ x, data = DataXY))[2], 
+                          #              C = C0, 
+                          #              k = k0,
+                          #              aRelative_humidity1 = 0),
+                          lower = Lower.values, upper = Upper.values,
+                          control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                          model = TRUE, trace = F, weights = wi)
                     
                 } else Model <- lm(Formula.Covariates, data = DataXY, model = TRUE, x = TRUE, y = TRUE, weights = wi)
             } else Model <- lm(Formula.Covariates, data = DataXY, model = TRUE, x = TRUE, y = TRUE, weights = wi)
@@ -1509,16 +1466,16 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     } else if (Mod_type == 'ExpDecayInc_Int') {
         
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
-            Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y), k = 0.05, intercept = min(y)), model = TRUE)
+            Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), model = TRUE)
         } else {
-            Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y), k = 0.05, intercept = min(y)), weights = wi, model = TRUE)
+            Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), weights = wi, model = TRUE)
         }
         print(summary(Model))
         
         # plotting calibrationn lines without plotting axis
         Estimated <- Estimated.y(DataXY$x, Model) 
         par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "") 
+        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
         
         # display equations and R^2
         mtext(sprintf(paste0(Sensor_name, "Exp. decay inc.: ys = ",f_coef2,"(1-exp(-",f_coef2,"x))+",f_coef1,",RMSE=",    #", s(Res)=",f_coef1,
@@ -1527,23 +1484,23 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                       coef(Model)[2],
                       coef(Model)[3], 
                       #sd(resid(Model)), 
-                      sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)),
+                      sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                       AIC(Model)), 
-              line=line_position,adj = 1,padj = 0, col = Couleur, cex = 0.875)
+              line =line_position,adj = 1,padj = 0, col = Couleur, cex = 0.875)
         
     } else if (Mod_type == 'ExpDecayDec_Int') {
         
-        if (is.null(s_y)|| any(s_y == 0) || all(is.na(s_y))) {
-            Model <- nls(y~f_ExpDD_Int(x, C, k,intercept), data=DataXY, start=list(C=max(y), k=0.05, intercept=min(y)), model = TRUE)
+        if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) {
+            Model <- nls(y~f_ExpDD_Int(x, C, k,intercept), data = DataXY, start=list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), model = TRUE)
         } else {
-            Model <- nls(y~f_ExpDD_Int(x, C, k,intercept), data=DataXY, start=list(C=max(y), k=0.05, intercept=min(y)), weights = wi, model = TRUE)
+            Model <- nls(y~f_ExpDD_Int(x, C, k,intercept), data = DataXY, start=list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), weights = wi, model = TRUE)
         }
         print(summary(Model))
         
         # plotting calibrationn lines without plotting axis
         Estimated <- Estimated.y(DataXY$x, Model) 
         par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "") 
+        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
         
         # display equations and R^2
         mtext(sprintf(paste0(Sensor_name, "Exp. decay dec: y = ",f_coef2,"exp(-",f_coef2,"x))+",f_coef1,",RMSE=",   #", s(Res)=",f_coef1,
@@ -1559,10 +1516,10 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     } else if (Mod_type == 'Michelis') {
         
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
-            Model <- nlsLM(y ~ MIN + f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y), km=mean(y)/4, MIN = min(y)), model = TRUE)
+            Model <- nlsLM(y ~ MIN + f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y, na.rm = T), km=mean(y)/4, MIN = min(y, na.rm = T)), model = TRUE)
             #Model <- nlsLM(y~ MIN + SSmicmen(x, Vmax, km), data=DataXY, start=list(Min = min(y),getInitial(y~ SSmicmen(x, Vmax, km), data=DataXY)))
         } else {
-            Model <- nlsLM(y ~ f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y), km=mean(y)/4, MIN = min(y)), weights = wi, model = TRUE)
+            Model <- nlsLM(y ~ f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y, na.rm = T), km=mean(y)/4, MIN = min(y, na.rm = T)), weights = wi, model = TRUE)
             #Model <- nlsLM(y~ MIN + SSmicmen(x, Vmax, km), data=DataXY, weights = wi)
         }
         print(summary(Model))
@@ -1570,7 +1527,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         # plotting calibrationn lines without plotting axis
         Estimated <- Estimated.y(DataXY$x, Model) 
         par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "") 
+        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
         
         # display equations and R^2
         mtext(sprintf(paste0(Sensor_name, "Michelis: y = ",f_coef2,"/(",f_coef2,"+x)+",f_coef1,",RMSE=",f_coef1,",AIC= %.1f"), # ", s(Res)=", f_coef1,
@@ -1578,16 +1535,16 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                       coef(Model)[2],
                       coef(Model)[3],
                       #sd(resid(Model)), 
-                      sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)),
+                      sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                       AIC(Model))
-              ,line=line_position,adj = 1,padj = 0, col = Couleur, cex = 0.875)
+              ,line = line_position,adj = 1,padj = 0, col = Couleur, cex = 0.875)
         
     } else if (Mod_type == 'Logarithmic') {
         
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
-            Model <- nls(y ~ f_log(x,a,b), data = DataXY, start = list(a = min(y), b = 10), model = TRUE)
+            Model <- nls(y ~ f_log(x,a,b), data = DataXY, start = list(a = min(y, na.rm = T), b = 10), model = TRUE)
         } else {
-            Model <- nls(y ~ f_log(x,a,b), data = DataXY, start = list(a = min(y), b = 10), weights = wi, model = TRUE)
+            Model <- nls(y ~ f_log(x,a,b), data = DataXY, start = list(a = min(y, na.rm = T), b = 10), weights = wi, model = TRUE)
         }
         print(summary(Model))
         
@@ -1600,9 +1557,9 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                       coef(Model)[1],
                       coef(Model)[2], 
                       #sd(resid(Model)), 
-                      sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)),
+                      sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                       AIC(Model)),
-              line=line_position,adj = 1,padj = 0, col = Couleur, cex = 0.875)
+              line = line_position,adj = 1, padj = 0, col = Couleur, cex = 0.875)
         
     } else if (Mod_type == 'Sigmoid') {
         
@@ -1610,10 +1567,10 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             # Model <- nls(y~f_Sigmoid(x, MIN, MAX, X50, Hill), data=DataXY, start=list(MIN=min(y),MAX=max(y),X50=mean(x), Hill=3)
             #               , control = list(maxiter = 500, tol=1e-2, minFactor = 1/1024, printEval = TRUE, warnOnly=FALSE), trace=TRUE)
-            Model <- nlsLM(DataXY$y ~ f_Sigmoid(x, MIN, Asym, xmid, Hill), data = DataXY, start = list(MIN = min(y), Asym = max(y), xmid = mean(x), Hill = 3)
+            Model <- nlsLM(DataXY$y ~ f_Sigmoid(x, MIN, Asym, xmid, Hill), data = DataXY, start = list(MIN = min(y, na.rm = T), Asym = max(y), xmid = mean(x, na.rm = T), Hill = 3)
                            , control = list(maxiter = 500, tol = 1e-2, minFactor = 1/1024, printEval = TRUE, warnOnly = FALSE), trace = FALSE, model = TRUE)
         } else {
-            Model <- nlsLM(y ~ f_Sigmoid(x, MIN, Asym, xmid, Hill), data = DataXY, start=list(MIN=min(y),Asym=max(y),xmid=mean(x), Hill =3 ), weights = wi
+            Model <- nlsLM(y ~ f_Sigmoid(x, MIN, Asym, xmid, Hill), data = DataXY, start=list(MIN=min(y, na.rm = T),Asym=max(y),xmid=mean(x, na.rm = T), Hill = 3), weights = wi
                            , control = list(maxiter = 500, tol = 1e-82, minFactor = 1/1024, printEval = TRUE, warnOnly = FALSE), trace = FALSE, model = TRUE)
             #Model <- nlsLM(y ~ MIN + SSlogis(x, Asym, xmid, scal) , data=DataXY, start=list(MIN=min(y),Asym=max(y),xmid=mean(x), scal = 3), weights = wi , 
             #               control = list(maxiter = 500, tol=1e-2, minFactor = 1/(1024*32), printEval = TRUE, warnOnly=FALSE), trace=TRUE, model = TRUE)
@@ -1680,26 +1637,15 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         } else Model <- nlsLM(y ~ f_Normal(x, mu, sigma), data = DataXY, start = list(mu = MU, sigma = SIGMA), model = TRUE, weights = wi)
         print(summary(Model))
         
-        # plotting calibrationn lines without plotting axis
-        # Estimated <- Estimated.y(DataXY$x, Model, Length = nrow(DataXY)) 
-        # par(new = TRUE)#, mar=Margin)
-        # plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l", xaxt = "n", yaxt = "n" , xlab = "", ylab = "") 
-        # 
-        # # display equations and R^2
-        # mtext(sprintf(paste0(Sensor_name, "NO_B4_expkT: ys = (",f_coef1, "+ ", f_coef2, " NO) / (",f_coef1, " sqrt(",f_coef1," T))", ",RMSE=",f_coef1,",AIC= %.1f"), # "s(Res)=",f_coef1,
-        #               coef(Model)[1],
-        #               coef(Model)[2],
-        #               coef(Model)[3],
-        #               coef(Model)[4],
-        #               sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
-        #               AIC(Model))
-        #       ,line = line_position, adj = 1, padj = 0, col = Couleur, cex = 0.875)
-        
-        
-    }
-    #summary(Model)
+    } else if (Mod_type == 'bi_Normal') {
+        Model <- nlsLM(y ~  K1* dnorm(x, mu1, sigma1) + K2* dnorm(x, mu2, sigma2) + C ,
+                       data    = DataXY,
+                       start   = list(mu1 = MU1, sigma1 = 0.2, K1 = K1, mu2 = MU2, K2 = K2, sigma2 = 0.2, C = C),
+                       model   = TRUE, trace = T)
+    } else cat("[Cal_Line] unknown calibration model\n")
+    
     # resuming the par values
-    on.exit(par(op))
+    if(Plot_Line) on.exit(par(op))
     
     return(Model)
 }
@@ -1707,21 +1653,21 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
 #================================================================CR
 ### Function Measurement Function x = f(y) once Calibration function (y = f(x) of sensor is established e.g with Cal_Line
 #================================================================CR
-Meas_Function <- function (y, Mod_type, Model, covariates = NULL, Matrice = NULL) {
+Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL, Matrice = NULL) {
     # This function estimates the x value using a calibration model (Model)
     # y            : Sensor data to be converted to concentration level using the reverse calibration function (Model)
     # Mod_type     : type of calibration function: Linear, Quadratic, Sigmoid
     # Model        : the calibration function
     # covariates   : vectors of strings representing the covariates when model needs covariates
+    # degrees      : vector of string, degrees of the covariates for multiLinear calibration
     # Matrice      : Covariates values, data.frame, default is NULL
     
-    #browser()
     if (Mod_type == 'Linear' || Mod_type == 'Linear.Robust') {
         
         return((y - Model$Coef[1])/Model$Coef[2])
         
     } else if (Mod_type == 'MultiLinear') {
-        #browser()
+        
         # convert any column of Matrice that is not numeric (Date) to numeric
         if (!all(grepl(pattern = "numeric", x = sapply(lapply(Matrice, class), "[", 1)))) {
             cat("[Meas_Function] INFO, some covariates are not numeric. Converting to numeric.\n")
@@ -1742,7 +1688,7 @@ Meas_Function <- function (y, Mod_type, Model, covariates = NULL, Matrice = NULL
                     
                     # Getting the degrees of j in poly() (e. g. I(Temperature^1) )
                     Cov.Index <- grep(pattern = j, x = names(Model$Coef)[3:length(Model$Coef)]) 
-                    Power = as.numeric(sub(pattern= ")", 
+                    Power = as.numeric(sub(pattern = ")", 
                                            replacement = "",
                                            x = sub(pattern = ".*\\^", 
                                                    replacement = "", 
@@ -1771,9 +1717,23 @@ Meas_Function <- function (y, Mod_type, Model, covariates = NULL, Matrice = NULL
             Matrice <- NewMatrice
             rm(NewMatrice)
         }
-        #browser()
         if (class(Matrice) != "matrix") Matrice <- as.matrix(Matrice)
-        M.Cov <- Matrice %*% Model$Coef[3:length(Model$Coef)]
+        if (any("ExpGrowth" %in% Degrees)) {
+            
+            Degrees.Exp <- which("ExpGrowth" == Degrees)
+            for (j in Degrees.Exp) {
+                
+                Coef.Growth <- grep(pattern = paste0("k.",covariates[j]), x = Model$Tidy$term)
+                M.Cov.Growth <- Model$Coef[Coef.Growth - 1] * exp(Model$Coef[Coef.Growth] * Matrice[,covariates[j]])
+                if (exists("M.Cov")) M.Cov <- M.Cov + M.Cov.Growth else M.Cov <- M.Cov.Growth 
+            }
+            for (j in seq_along(covariates)[-Degrees.Exp]) {
+                
+                Coef.Not.Growth  <- grep(pattern = paste0("a.",covariates[j]), x = Model$Tidy$term)
+                M.Cov.Not.Growth <- Matrice[, grep(pattern = covariates[j], colnames(Matrice))] %*% t(Model$Coef[Coef.Not.Growth])
+                if (exists("M.Cov")) M.Cov <- M.Cov + M.Cov.Not.Growth else M.Cov <- M.Cov.Not.Growth 
+            }
+        } else M.Cov <- Matrice %*% Model$Coef[3:length(Model$Coef)]
         Estimated <- as.vector((y - (Model$Coef[1] + M.Cov ))/Model$Coef[2])
         return(Estimated)
         
@@ -1792,7 +1752,7 @@ Meas_Function <- function (y, Mod_type, Model, covariates = NULL, Matrice = NULL
         return(x$root)
         
     } else if (Mod_type == 'Cubic') {
-        #browser()
+        
         require(polynom)
         
         CubicRootValue <- function(y) {
@@ -1820,7 +1780,6 @@ Meas_Function <- function (y, Mod_type, Model, covariates = NULL, Matrice = NULL
         
     } else if (Mod_type == "gam") { # checking if the model was fitted from gam function
         
-        #browser()
         return(predict(Model, newdata = data.frame(x = y[!is.na(y)], y = rep(numeric(0), length = length(y[!is.na(y)]))), type = "response"))
         
     } else if (Mod_type == 'Exponential') {
@@ -1838,31 +1797,28 @@ Meas_Function <- function (y, Mod_type, Model, covariates = NULL, Matrice = NULL
         
     } else if (Mod_type == 'exp_kT') {
         
-        #browser()
         # model f_exp_kT: return( (y - (a0 + C.exp(k * Temperature)))/ a1) )
         Estimated <- as.vector( (y - (Model$Coef[1] + exp(Model$Coef[4] * Matrice$Temperature +  Model$Coef[3])) ) / Model$Coef[2])
         return(Estimated)
         
     } else if (Mod_type == 'exp_kK') {
         
-        #browser()
         # model f_exp_kT: return( (y - (a0 + C.exp(k * Temperature)))/ a1) )
         Estimated <- as.vector((y - (Model$Coef[1] + exp(Model$Coef[4] * (273.15 + Matrice$Temperature) +  Model$Coef[3])) )/Model$Coef[2])
         return(Estimated)
         
     } else if (Mod_type == 'T_power') {
         
-        #browser()
         # model T_power: return( (y - (a0 + a2 T^n))/ a1) 
         return(as.vector((y - (Model$Coef[1] + Model$Coef[3] * Matrice$Temperature^Model$Coef[4])) / Model$Coef[2]))
         
     } else if (Mod_type == 'K_power') {
         
-        #browser()
         # model T_power: return( (y - (a0 + a2 T^n))/ a1) 
         return(as.vector((y - (Model$Coef[1] + Model$Coef[3] * (273.15 + Matrice$Temperature)^Model$Coef[4])) / Model$Coef[2]))
         
     } else if (Mod_type == 'Michelis') {
+        
         # model f_Michelis: return(Vmax*x/(km +x) + intercept)
         if (any(!is.na(y) & y < Model$Coef[3] ) | any(!is.na(y) & y > Model$Coef[1])) { # in case value out of bound and value is not NA
             print("Some Y value out of limits of the model", quote = FALSE)
@@ -2356,14 +2312,14 @@ Fitting_distrib <- function(Air_Pol, ug, coeff_ppb, Dist_xlab, Dist_range, BandW
     #-----------------------------------CR
     # Subtracting the minimum d_Air_Pol$x if negative - Defining "Air_Pol_final"
     #-----------------------------------CR
-    if (min(d_Air_Pol$x)<-10000) {
-        Air_Pol_final <- Air_Pol - min(d_Air_Pol$x) + 0.0001
-        print(sprintf("minmum x_density: %.3f was subtracted",min(d_Air_Pol$x)))
+    if (min(d_Air_Pol$x, na.rm = T)<-10000) {
+        Air_Pol_final <- Air_Pol - min(d_Air_Pol$x, na.rm = T) + 0.0001
+        print(sprintf("minmum x_density: %.3f was subtracted",min(d_Air_Pol$x, na.rm = T)))
         d_Air_Pol<- density(Air_Pol_final, bw = h, adjust = 1, kernel = "gaussian", na.rm = TRUE) # returns the density data 
-        print(sprintf("minmum x_density: %.3f",min(d_Air_Pol$x)))
+        print(sprintf("minmum x_density: %.3f",min(d_Air_Pol$x, na.rm = T)))
     }
     else {
-        print(sprintf("minmum x_density: %.1f was not added",min(d_Air_Pol$x)))
+        print(sprintf("minmum x_density: %.1f was not added",min(d_Air_Pol$x, na.rm = T)))
         Air_Pol_final <- Air_Pol # do not add anything becasue the minimum value is not negative
     }
     
@@ -2371,8 +2327,8 @@ Fitting_distrib <- function(Air_Pol, ug, coeff_ppb, Dist_xlab, Dist_range, BandW
     ## density plot of d_Air_Pol - one parameter - reference density plot
     #-----------------------------------CR
     par(mar=c(5, 0.5, 0, 0.5))
-    plot(d_Air_Pol, xlim = c(min(0,d_Air_Pol$x),quantile(Air_Pol, probs = 0.98)), xlab = Dist_xlab, ylab = "", main = "", cex.lab=3, cex.axis=2.5)
-    polygon(c(min(d_Air_Pol$x),d_Air_Pol$x,quantile(Air_Pol, probs = 0.98)), c(0,d_Air_Pol$y,0), col="red", border="blue")
+    plot(d_Air_Pol, xlim = c(min(0,d_Air_Pol$x, na.rm = T),quantile(Air_Pol, probs = 0.98)), xlab = Dist_xlab, ylab = "", main = "", cex.lab=3, cex.axis=2.5)
+    polygon(c(min(d_Air_Pol$x, na.rm = T),d_Air_Pol$x,quantile(Air_Pol, probs = 0.98)), c(0,d_Air_Pol$y,0), col="red", border="blue")
     
     #-----------------------------------CR
     # calculating the Mode of the data variable
@@ -2505,11 +2461,11 @@ Fit_Hist <- function(Air_Pol, ug, coeff_ppb, Dist_range, bins, distribution, to_
     Log_Air_Pol <- log(Air_Pol)
     mu <- mean(Log_Air_Pol)
     sigma <- sd(Log_Air_Pol)
-    x <- seq( min(Air_Pol), max(Air_Pol), length.out=250)
+    x <- seq( min(Air_Pol, na.rm = T), max(Air_Pol), length.out=250)
     y <- f_lnorm_2Par(x,mu,sigma)
     par(mar=c(5, 2, 0, 0))
-    plot(x, y, xlim = c(min(0,x),max(x)), xlab = Dist_xlab, ylab = "", main = "", type = "l", cex.lab=3, cex.axis=2.5)
-    polygon(c(min(x),x,max(x)), c(0,y,0), col="red", border="blue")
+    plot(x, y, xlim = c(min(0,x),max(x, na.rm = T)), xlab = Dist_xlab, ylab = "", main = "", type = "l", cex.lab=3, cex.axis=2.5)
+    polygon(c(min(x, na.rm = T),x,max(x, na.rm = T)), c(0,y,0), col="red", border="blue")
     
     print(sprintf("Mu (mean of log): %.1f", mu), quote = FALSE)
     print(sprintf("Sigma (sd of log): %.1f",sigma), quote = FALSE)
@@ -2657,3 +2613,204 @@ loadRData <- function(fileName) {
 #================================================================CR
 ### 170609 MG : ASEPanel04Read Reading the sensor config file     --> 180118 transfered to Function4ASE.R
 #================================================================CR
+
+# transform NaN into Na
+nan.to.na <- function(x) {x[which(is.nan(x))] <- NA; return(x)}
+
+#================================================================CR
+# Checking if there are coordinates for the reference data separated by a comma and project if needed
+#================================================================CR
+get_Coord.Ref  <- function(Coordinates.chr, ShinyUpdate = False, session = NULL, ID.Long = NULL, ID.Lat = NULL) { # feed back of coordinates into the ui
+    # Coordinates.chr       : character string with long and lat coordinates separated with comma
+    # ShinyUpdate           : logical default is FALSE, if TRUE update 2 Shiny select input with decimaldegree of LOng and Lat
+    # ID.Long               : Shiny SelectInput ID for longitude
+    # ID.Lat                : Shiny SelectInput ID for latitude
+    
+    # return a numeric vector with decimal degrees of long and lat coordinates after projection from degree-minute-second notation if needed
+    
+    # checking if the separator is ","
+    if (grepl(pattern =  ",", x = Coordinates.chr)) {
+        
+        # Checking is the coordinates are in spherical or decimal format, projection to OpenStreet map
+        if (grepl(pattern = paste0(c("N","S", "E", "W", "d"), collapse = "|" ), x = Coordinates.chr)) {
+            
+            # extract spherical coordinates
+            Ref.coord_LON  <- unlist(strsplit(x = Coordinates.chr, split = ","))[1]
+            Ref.coord_LAT  <- unlist(strsplit(x = Coordinates.chr, split = ","))[2]
+            # transform spherical coordinates to decimal degrees for later projection
+            Ref.coord_d    <- OSMscale::degree(Ref.coord_LAT, Ref.coord_LON, digits = 5)
+            # Project the spherical coordinates in Mercator web WS84 of OPenStreet view - This is not needed, map correct without projection
+            #Ref.coord_p    <- OSMscale::projectPoints(Ref.coord_d[1], Ref.coord_d[2], to=OSMscale::pll())
+            Ref.coord_LAT  <- Ref.coord_d[1,1]
+            Ref.coord_LON  <- Ref.coord_d[1,2]
+            
+            # updating coordinates of reference station
+            updateTextInput(session = session, 
+                            inputId = ID.Long,  
+                            value   = Ref.coord_LON)
+            updateTextInput(session = session, 
+                            inputId = ID.Lat,  
+                            value   = Ref.coord_LAT)
+        } else {
+            
+            Ref.coord_LON <- as.numeric(strsplit(x = Coordinates.chr, split = ",")[[1]][1])
+            Ref.coord_LAT <- as.numeric(strsplit(x = Coordinates.chr, split = ",")[[1]][2])
+        }
+        
+        # update Shiny Select input s
+        return(paste0(Ref.coord_LON, ",", Ref.coord_LAT))
+        
+    } else {
+        cat("[get_Coord.Ref] ERROR Coordinates are not comma separated")
+        return(paste0(NA,NA))
+    } 
+}
+
+#================================================================CR
+# Aggreation of time series in dataframe
+#================================================================CR
+DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60, keyDate = "date", SameClass = NULL) { 
+    # Use data.table to average a data frame
+    # DF            : dataframe to be aggregated, shall include the PosixCT column "date" (default), or another name of POSIXct column on which to aggregate
+    # Cols.for.Avg  : vector of charaters, default NULL. If not NULL the returned columns Cols.for.Avg + "date" is returned
+    # width         : numeric, default is 60. Size in minutes of the window used for averaging
+    # keyDate       : chr, defalt "date, name of the column of DF which hold the POSIXct on which 
+    # 
+    # return        : aggregated data.table starting on the first full hour discarding empty rows and transforming nan to na
+
+    # Previous code used timeAverage and later RcppRoll::roll_mean whcih but needed to complete dataframes with all date. 
+    # We use now data.table which is faster
+    
+    # checking the size of window, at least two times the width
+    if (nrow(DF) > width * 2) {
+        
+        # Select columns
+        if (!is.null(Cols.for.Avg)) {
+            Columns <- c(keyDate, Cols.for.Avg) 
+            DF <- DF[,Columns, with = FALSE]  
+        } 
+        
+        if (is.data.table(DF)) {
+            
+            DF[, Agg := lubridate::ceiling_date(data.frame(DF)[, keyDate], unit = ifelse(width <= 60, paste0(width,"minute"), paste0(width/60, "hour")))]
+            DF[, (keyDate) := NULL]
+            data.table::setnames(DF, c("Agg"), keyDate)
+            data.table::setkeyv(DF, keyDate)
+            
+        } else {
+            
+            if (is.data.frame(DF)) {
+                
+                # Add aggregated time
+                DF$Agg <- lubridate::ceiling_date(DF[[keyDate]], unit = paste0(width,"minute"))
+                
+                # Rename Agg as date
+                DF[[keyDate]] <- NULL
+                names(DF) <- sub(pattern = "Agg", replacement = keyDate, x = names(DF))
+                
+                # convert to data time
+                DF <- data.table::data.table(DF, key = keyDate)
+                
+            } else {
+                
+                cat("Unknow class of DF\n")
+                return()
+                
+            }
+        }
+        
+        # Aggregate mean of Aggreagted time
+        # https://stackoverflow.com/questions/12603890/pass-column-name-in-data-table-using-variable
+        date <- quote(get(keyDate))
+        # https://stackoverflow.com/questions/26663053/getting-na-when-summarizing-by-columns-in-data-table
+        DF.Agg.DT <- DF[, lapply(.SD, mean, na.rm = TRUE), by = eval(date)]
+        DF.Agg.DT[, (keyDate) := date] 
+        #DF.Agg.DT[, date := NULL] # if keydate = "date", this will delete date?
+        
+        # replace nan with
+        DF.Agg.DT <- DF.Agg.DT[, lapply(.SD, nan.to.na)]
+        
+        return(DF.Agg.DT)
+        
+        # # For RcppRoll::roll_mean: makes complete row of times series
+        # DF <- DF %>%
+        #     tidyr::complete(date = seq(round(min(date, na.rm = TRUE), units = "hours"), 
+        #                                round(max(date, na.rm = TRUE), units = "hours"), width)) %>% 
+        #     filter(date >= round(min(date, na.rm = TRUE), units = "hours"))
+        # 
+        # # Aggregating using the mean with window size 
+        # DF.avg   <- DF
+        # DF.avg[, -which(names(DF) == "date")] <- lapply(DF[, -which(names(DF) == "date")], function(x) RcppRoll::roll_mean(x , n = width, na.rm = TRUE, by = width, fill = NA, align = "left"))
+        # #DF.avg$date <- DF$date
+        # DF.avg   <- DF.avg[seq(1, nrow(DF.avg), width),] 
+        # DF.avg[] <- lapply(DF.avg, nan.to.na)
+        # rm(DF)
+        # # discarding rows with all NAs added to complete the minute time series
+        # Index.DF.avg   <- which(sapply(seq_along(DF.avg$date), function(i) all(is.na(DF.avg[i, -which(names(DF.avg) == "date")]))))
+        # if (length(Index.DF.avg) > 0 ) DF.avg <- DF.avg[-Index.DF.avg,]
+        # return(data.frame(DF.avg))
+        
+    } else return(cat("[DF_avg] ERROR, the selected dataframe is too short for averaging"))
+} 
+
+#================================================================CR
+# OS-independent way to select directory interactively in R
+# https://stackoverflow.com/questions/48218491/os-independent-way-to-select-directory-interactively-in-r
+#================================================================CR
+# First a helper function to load packages, installing them first if necessary
+# Returns logical value for whether successful
+ensure_library = function (lib.name){
+    x = require(lib.name, quietly = TRUE, character.only = TRUE)
+    if (!x) {
+        install.packages(lib.name, dependencies = TRUE, quiet = TRUE)
+        x = require(lib.name, quietly = TRUE, character.only = TRUE)
+    }
+    x
+}
+
+select_directory_method = function() {
+    # Tries out a sequence of potential methods for selecting a directory to find one that works 
+    # The fallback default method if nothing else works is to get user input from the console
+    if (!exists('.dir.method')){  # if we already established the best method, just use that
+        # otherwise lets try out some options to find the best one that works here
+        if (exists('utils::choose.dir')) {
+            .dir.method = 'choose.dir'
+        } else if (rstudioapi::isAvailable() & rstudioapi::getVersion() > '1.1.287') {
+            .dir.method = 'RStudioAPI'
+            ensure_library('rstudioapi')
+        } else if(ensure_library('tcltk') & 
+                  class(try({tt  <- tktoplevel(); tkdestroy(tt)}, silent = TRUE)) != "try-error") {
+            .dir.method = 'tcltk'
+        } else if (ensure_library('gWidgets2') & ensure_library('RGtk2')) {
+            .dir.method = 'gWidgets2RGtk2'
+        } else if (ensure_library('rJava') & ensure_library('rChoiceDialogs')) {
+            .dir.method = 'rChoiceDialogs'
+        } else {
+            .dir.method = 'console'
+        }
+        assign('.dir.method', .dir.method, envir = .GlobalEnv) # remember the chosen method for later
+    }
+    return(.dir.method)
+}
+choose_directory = function(method = select_directory_method(), title = 'Select data directory') {
+    # https://stackoverflow.com/questions/48218491/os-independent-way-to-select-directory-interactively-in-r
+    switch (method,
+            'choose.dir' = choose.dir(caption = title),
+            'RStudioAPI' = selectDirectory(caption = title),
+            'tcltk' = tk_choose.dir(caption = title),
+            'rChoiceDialogs' = rchoose.dir(caption = title),
+            'gWidgets2RGtk2' = gfile(type = 'selectdir', text = title),
+            readline('Please enter directory path: ')
+    )
+}
+choose_file = function(method = select_directory_method(), title = 'Select file') {
+    # https://stackoverflow.com/questions/48218491/os-independent-way-to-select-directory-interactively-in-r
+    switch (method,
+            'choose.dir' = choose.file(caption = title),
+            'RStudioAPI' = selectFile(caption = title),
+            'tcltk' = tk_choose.files(caption = title),
+            'rChoiceDialogs' = rchoose.files(caption = title),
+            'gWidgets2RGtk2' = gfile(type = 'open', text = title),
+            readline('Please enter file: ')
+    )
+}
