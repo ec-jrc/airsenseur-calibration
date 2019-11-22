@@ -1,8 +1,117 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
+# New release V0.15 (V0.14 is not distributed, V0.15 includes both changes of v0.14 and v0.15)
+# 2019-11-20   E51 - bug corection: When downloading InfluxDB data in minutes values, not all data are downloaded, only the 1st 10000 within 30 day period.
+#                    Problem with downloading of a maximum of 10000 records (lines) from the InfluxDB. The maximum number (10000) of records 
+#                    has been defined ad 10000/(24*60/Mean) where mean is the "Averaging" to be set when downloading the sensor data from the Influx DB
+#              E52 - bug corection: Impossible to calibrate with a linear model when a MultiLinear calibration model already exists. This is because the word "Linear" is included into the word "MultiLinear". 
+#                    Corrected. 
+#              E53 - bug corection: Mistake when plotting a "Drift" of calibrated sensor data: when computing the difference between calibrated sensor data minus reference data, this is called "residual",
+#                    if any calibrated sensor data or reference data is missing, the residual should not be computed. Corrected using only complete.cases for estimating residuals.
+#              E54 - bug corection: When calibrating a sensor using a multiLinear calibration model with another sensor (2) among the covariates. The app may crash if the the calibrated value of 
+#                    sensor 2 are not yet computed. An alert message is now displayed and the app does not crash anymore.
+#              E55 - Bug Correction, When calibrating a sensor using a multiLinear calibration model with a list of "Covariates for calibration" of the sideBarLayout that is different from the 
+#                    covariate list of the MultiLinear, the App crashes. Now corrected with a shinyalert message. The app does not cash anymore.
+#              N96 - Under NavBar Menu "Help", the user manual now directly shows the Google Doc document without need for downloading a pdf. It seems that the position of box and arrows
+#                    in figures is messed up.
+#              E56 - Bug correction impossible to save graphic file of matrix plot in calibration and prediction. Corrected by setting the dimension of the graphic file. The fixed 
+#                    dimension may create distorsion of the plotted R2 and equation equation
+#              N97 - The process of reshaping the airsenseur.db is now much faster using function spread of tidyverse in function sqlite2df()
+#              E57 - bug corection: when loading reference data using an rdata file there was a bug for the names of the fields in dataframe reference.i. Added support for temperature, 
+#                                   humidity and pressure in the reference data.
+#              N98 - bug corection: Added message to keep UTC time zone when downloading sensor data using InfluxDB uner NavbarMenu "Getdata", tab "Sensor Data".
+#              E58 - bug corection: When plotting a time series using Dygraphs, the last selected day was excluded from computation and plotting as selection returned a type Date 
+#                                   without time values. Corrected adding one day to the last selected date. All dygraph time series plots used the local time zone. Now set to UTC.
+#              N99 - Checking if R runs in 32-bist system, advising to switch to a 64-bit system for efficiency
+#             N100 - In the map showing the locations for calibration and prediction, all AirSensEUR and reference station sites with at least 0.0001 decimal degree of difference different 
+#                    are plotted with grey circles and blue markers. This can show the path in mobility when it will be needed or for calibration at multiple sites.
+#                    The extent of the map is automatically set to the bounds of the GPS coordinates during the calibration or prediction time interval.
+#             N101 - In order to avoid the confusion with separator of longitude and latitude of the reference station, the coordinates are entered in 2 different text input, see "GetData"
+#              E59 - bug corection: In NavBarMenu "DataTreatment", mainTaPanel "PlotFiltering", the plots of Warming, Temp & Hmidity, Invalid and Outliers always used the date/time selected 
+#                                   for the first sensor, under "Range of dates for plotting outliers", whatever sensor being selected. Corrected: now the Range of dates for plotting outliers
+#                                   is selected for each sensor.
+#              N83 - When computing time averegae means, openAir::timeAverage is replaced with rcpp::roll_mean for save cpu time
+#                    Lately: The speed of the code for averaging dataframe from minute to hours is improved using data.table package 
+#              E61 - Bug correction solved: crash when CovMod Config file is empty. Solved using read_csv instead of read.csv
+#              E62 - bug corection: When the last date of General.Rdata ends before the last date of Refdata without any Influx Data available for the new dates in RefData, the reactive GENERAL function is triggered
+#                    GENERAL is run and the resulting dataframe General.df does not include the outliers columns yet. Consequently the Outliers discarding module is run at each startup. 
+#                    This is now solved by using all.equal instead of identical and comparing only common colums of saved Genera.Rdata files and the returned dataframe of function GENERAL.?
+#              E63 - bug corection: In function GENERAL, merge of data frames RefData and InfluxData is replaced with merge of data.tables to increase speed
+#              N92 - improvement of download of reference data with a_i_p server for minutes values, managing, valid data, flagged data and aggregation
+#             N102 - The "Cal" button was added in the "Range of dates for plotting covariates:", tab "SetTime" of the Sidebar Layout of the "Data Treatment" NavBar menu. Clicking this button will set the
+#                    dates of "Range of dates for plotting covariates:" to the ones of "Range of dates for calibration:".
+#              N82 - reduce the time for detection of outliers: go parallel computing with different version for linux and windows
+#                    Instead of using parallel computing the roll_apply function to compute Median Average Deviation is replaced with caTools::runmad in function my.Rm.Outliers. Time gain: from 77 sec 
+#                    to less than 2 sec for big dataframes.
+#              E64 - bug corection: When loading and saving being ojects (General.Rdata or models.RDS), the files and object soemtimes becomes very big because some garbage in the environment is loaded and saved.
+#                    Typically it becomes impossible to work with quantile calibration model (called Linear.robust using rq()). This now solved by creating a new environment before loading 
+#                    or saving these obects. Serailizing and unserializing also helps removing the garbage.
+#              N93 - Passwords are also hidden in the tabPanel GetData Panel
+#              N89 - Dew point deficit added among the variables to matrix plots and calibration of model provided that reference data include temperature and humidity
+#                    For reference data, Ref.Absolute_humidity and Ref.Td_deficit are added, and for AirSensEUR, Absolute_humidity and Td_deficit are added. This is consistent with previously created 
+#                    General.Rdata file, for which these variables are added if missing.
+#              E60 - bug corection: The problems of plotting the uncertainty, scatter plot and orthogonal regression is solved using a TabSetPanel under menu "data treatment" - "Prediction" - "Uncertainty"
+#              E61 - bug corection: Wrong calculation of the DateIn and DateEND selection for all plots: DateIN <- min(.. replaced with DateIN <- max(.. and DateEND <- max(.. replaced with DateEND <- min(..
+#              E50 - bug corection: In "GetData" when changing sensor shield, the App start turning around exchanging shield file
+#                    The use the config file of chemical shield has been completely changed with obligation to delete General data and re doing all data tretment.
+#             N103 - General data is now saved in CSV rather than in Rdata. It is saved and opened with data.table fread and fwrite to speed up the process
+#              E49 - bug corection: Add the between sampler uncertainty is the calculation of sensor uncertainty. This is now d
+#                    A new parameter was added into the Side Layout , u(bs), between sensor uncertainty and U(xi) is renamed u(bsRM), between reference data uncertainty. This is for the calculation 
+#                    of the emasurement uncertainty, see CEN TC 264 WG 42 protocl of evaluation of gas sensors
+#              E64 - bug corection: When SETTIME is read, a consistency check of available data dates and dates of outliers, validity, calibration and prediction is carried oout in order to avoid a crash of the App.
+#                    Dates are corrected if needed
+#             N104 - the TabPanel "Influx Sensor Data", "SOS Sensor Data", "Refernce Data" and "General Sensor Data" show now the begining and ending date of dataframes.
+#             N105 - general improvement of data download and data treatment by using package data.table. Only the download of SOS data is still to be improved
+#              E23 - bug corection: Following a first data treatment with one ASE box When selecting a 2nd different ASE box in Navbar Menu SelectASE, there is generally a crash of the code.
+#                    The App has been rewritten, limiting the reactivity that was causing the crash of the App. uploading of of all data is now carried out when selecting an ASE box
+#                    with resetting of all data set. It should be now possible to switch between ASE box depending how deep you go with the data treatment.
+
+#  ----#TO BE DONE  : ----
+# BUG CORRECTIONS
+#              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user
+#              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA. 
+#                   Change substraction to V or nA
+#             E15 - If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
+#             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers 
+#                   and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
+#             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
+#             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instead of the data series ime zone ("UTC") when discarding values.
+#             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the startvalues
+             
+# NEW FEATURES needed: ----
+#              N2 - Calibration with linear.robust: add RMSE on statterplot ...
+#              N3 - Add model calibration: neural network model in the list of possible calibration method.
+#              N5 - Add model resulting of laboratory experiments for calibration.
+#              N6 - In NavBar menu "Help": add videos on how to use the shiny interface.
+#              N7 - Do Filtering and conversion only for the selected sensor, not for all sensors.
+#              N8 - add "Sensor" and "Reference" in front of covariates in the comboBox of SideBar "Calib"
+#             N11 - Add evaluation tools: Sensor Evaluation Toolbox (SET) (Barak Fishbain).
+#             N12 - For invalid data: allow to resume data to initial value if CheckBoxes "Enable Outlier discarding" set to FALSE. 
+#             N13 - Detect nearest AQMS using GPS coodinates and and download with SOS
+#             N15 - Add support for OPC-N3-2 and MOx sensor
+#             N17 - In getData Time-shield add a 2nd time average to be applied after download, in order to avoid to modify the raw downloaded data if averaging time is changed
+#             N19 - When downloading the SOS data make a query average to download less data as for InfluxQL
+#             N20 - TabSet Calib, add unit for slope and intercept, 
+#             N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
+#             N22 - Enter the width of rolling window for oulier detection in hours instead of numbers of data, e. g. 19 for a rolling window of 3 hours with 10 minutes average time
+#             N27 - automatic order of rows of files "ASE_name"_valid_"sensor.name".cfg" based on the "in" dates
+#             N28 - Add an observer to open the correct sideBar tabPanel according to the selected tabPanel in the mainPanel
+#             N29 - There may be an error when adding dataFrame with subsequent download if a delay has been implemented before or if the Delay is modified between two downloads
+#             N30 - add the log mainTabPanel in the GetData NavBar menu
+#             N31 - Upload concentration levels after calibration to Client SOS and Influx (Grafana) servers
+#             N51 - Every time a .png files for rawData, scatterPlots, time series, matrix, Uncertainty, drift and targetDiagram exists in Calibration, mModelled_gas, 
+#                   General_Data should not create a new plot and rather uses the .png plot instead
+#             N52 - Add the possibility to invalidate humidity transient
+#             N53 - Create a button "Delete" of AirSensEUR in NavBar menu "SelectASE"
+#             N54 - Finish Shiny App Manual
+#             N88 - Add interactive selection of points in the matrix plots of covariates, calibration and prediction
+#             N89 - Add the possibility to set some of the coefficients of calibration models with plotty
+#            N106 - Add the possibility to use several calibration models at different date interval
+#            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
+# 
 # New release V0.13
-# 2019-03-21 : E43 - In NavBarMenu "GetData", sideBarLayout tab "reference data", there was several errors when adding new reference data. Now new data with new dates can be added
+# 2019-04-30 : E43 - In NavBarMenu "GetData", sideBarLayout tab "reference data", there was several errors when adding new reference data. Now new data with new dates can be added
 #                    and new variables for existing dates can be added when using the "csv" download type. The time average that takes cpu is only carried out if the date interval of 
 #                    time series is different than the requested "Averaging time in min" in tab "Time-shield" or if the date in the reference data files do not fall on full hours 
 #                    (00:00 or 00:00:00). 
@@ -20,60 +129,19 @@
 #                                   replaced with max(Reference.i$date, na.rm = T) > DownloadSensor$DateEND.Ref.prev
 #              E47 - Bug Corrected: When sensor or reference data are manually added into the GetData NavBarMenu, the dataFrame DF$General was not updated since the only possibility
 #                    to update it was either that General dataframe is not yet read or existi (DF.NULL$Init = TRUE) and 2nd possibility was to change the time delay between sensor and reference 
-#                    (Change.Delay() = TRUE). The following tests are added to check if they are new reference or sensor data: isTRUE(DownloadSensor()$DateEND.General.prev < DownloadSensor()$DateEND.Ref.prev) 
+#                    (Change.Delay() = TRUE). The following tests are added to check if they are new reference or sensor data: isTRUE(DownloadSensor()$DateEND.General.prev < 
+#                    DownloadSensor()$DateEND.Ref.prev) 
 #                    isTRUE(DownloadSensor()$DateEND.General.prev < DownloadSensor()$DateEND.Influx.prev)  and isTRUE(DownloadSensor()$DateEND.General.prev < DownloadSensor()$DateEND.SOS.prev)
-#              N94 - two new crosscheck Boxes are added into the menu bar "DataTreatment" - sideBar layout AND tab "Calib" called: "Sync.Cal" and "Sync.Pred". When calibrating if "Sync.cal" is checked, before calibration
-#                    there is an automatic process that look for the lag that results in the best synchronisation of sensor and reference data (including cross-sensitivities). A message in the console 
-#                    will indicate if the lag <> 0. " Sync.Pred" is used for the same purpose when predicting with an existing calibration model. 
+#              N94 - two new crosscheck Boxes are added into the menu bar "DataTreatment" - sideBar layout AND tab "Calib" called: "Sync.Cal" and "Sync.Pred". When calibrating if "Sync.cal" is 
+#                    checked, before calibration there is an automatic process that look for the lag that results in the best synchronisation of sensor and reference data (including cross-sensitivities). 
+#                    A message in the console #                    will indicate if the lag <> 0. " Sync.Pred" is used for the same purpose when predicting with an existing calibration model. 
 #                    Do not play too much with these parameters for no reasons, they consume a lot of cpu time. Suggestion: use "TimeSeries" to plotand check if a lag can be identified.
 #                    Advise try to calibrate with a linear model and check "Sync.Back" or "Sunc.Pred" to check if any lag can be evidenced.
-#              N95   menu bar "DataTreatment" - sideBar layout AND tab "Calib" called: A NEW SELECT INPUT IS ADDED "ubs(xi), between sensor uncertainty" with no effect for now. It will be used for uncertainty calibration
+#              N95   menu bar "DataTreatment" - sideBar layout AND tab "Calib" called: A NEW SELECT INPUT IS ADDED "ubs(xi), between sensor uncertainty" with no effect for now. 
+#                    It will be used for uncertainty calibration
 # 
-#  ----#TO BE DONE  : ----
-# BUG CORRECTIONS
-#              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made it transparent for user
-#              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA. Change substraction to V or nA
-#             E15 - If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
-#             E23 - Following a first data treatment with one ASE box When selecting a 2nd different ASE box in Navbar Menu SelectASE, there is generally a crash of the code.
-#             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers 
-#                   and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
-#             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
-#             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instaed of the data series ime zone ("UTC") when discarding values.
-#             E49 - Add the between sampler uncertainty is the calculation of sensor uncertainty
-#             E50 - In "GetData" when changing sensor shield, the App start turning around excahnging shield file
-#              
-# NEW FEATURES needed: ----
-#              N2 - Calibration with linear.robust: add RMSE on statterplot ...
-#              N3 - Add model calibration: neural network model in the list of possible calibration method.
-#              N5 - Add model resulting of laboratory experiments for calibration.
-#              N6 - In NavBar menu "Help": add videos on how to use the shiny interface.
-#              N7 - Do Filtering and conversion only for the selected sensor, not for all sensors.
-#              N8 - add "Sensor" and "Reference" in front of covariates in the comboBox of SideBar "Calib"
-#             N11 - Add evaluation tools: Sensor Evaluation Toolbox (SET) (Barak Fishbain).
-#             N12 - For invalid data: allow to resume data to initial value if CheckBoxes "Enable Outlier discarding" set to FALSE. 
-#             N13 - Detect nearest AQMS using GPS coodinates and and download with SOS
-#             N15 - Add support for OPC-N2 and MOx sensor
-#             N17 - In getData Time-shield add a 2nd time average to be applied after download, in order to avoid to modify the raw downloaded data if averaging time is changed
-#             N19 - When downloading the SOS data make a query average to download less data as for InfluxQL
-#             N20 - TabSet Calib, add unit for slope and intercept, 
-#             N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
-#             N22 - Enter the width of rolling window for oulier detection in hours instead of numbers of data, e. g. 19 for a rolling window of 3 hours with 10 minutes average time
-#             N27 - automatic order of rows of files "ASE_name"_valid_"sensor.name".cfg" based on the "in" dates
-#             N28 - Add an observer to open the correct sideBar tabPanel according to the selected tabPanel in the mainPanel
-#             N29 - There may be an error when adding dataFrame with subsequent download if a delay has been implemented before or if the Delay is modified between two downloads
-#             N30 - add the log mainTabPanel in the GetData NavBar menu
-#             N31 - Upload concentration levels after calibration to Client SOS and Influx (Grafana) servers
-#             N51 - Every time a .png files for rawData, scatterPlots, time series, matrix, Unceratinty, drift and targetDiagram exists in Calibration, mModelled_gas, 
-#                   General_Data should not create a new plot and rather uses the .png plot instead
-#             N52 - Add the possibility to invalidate humidity transient
-#             N53 - Create a button "Delete" of AirSensEUR in NavBar menu "SelectASE"
-#             N54 - Finish Shiny App Manual
-#             N82 - reduce the time for detection of outliers: go parallel computing with different version for linux and windows
-#             N83 - replace time average with roll_mean for save cpu time
-#             N88 - Add interactive selection of points in the matrix plots of covariates, calibration and prediction
-#             N89 - Add the possibility to set some of the coefficients of calibration models
 # 
-# New release V0.13
+# New release V0.12
 # 2019-01-15 : N71 - The MainTabPanel "MultiLinear" (before Multivariates) now shows the content of the MultiLinear file of the selected sensor. The display content of the MultiLinear is updated 
 #                    every time a file is saved.
 #              E27 - Bug Correction in Ind.Sens.Out: Outliers.Sens$Forced was never set to TRUE when the columns c("Out.", "Out.Warm.", "Out.TRh.", "Out.Invalid.", "Out.Warm.TRh.", "Out.Warm.TRh.Inv." 
@@ -111,20 +179,23 @@
 #              E25 - Additionally, when changing the covariates in the UI that do not correspond to the list of covariates of the sensor_Multi file, it becomes impossible to calibrate. Solved
 #              N87 - The times series plot in the mainTabPanels of Filtering, covariates, calibration, Prediction and RawData are now interactive, use mouse to select time ranges.
 #               E3 - The unit of y axis for the plot outliers of reference values is incorrect, it is not raw unit but ppb, ppm or ug/m3. Solved
-#              E42 - There was a error in the detection of warming time when an AirSensEUR box re-starts after a long inactive period. The wrming necessary after re-starting was not included. Corrected.
+#              E42 - There was a error in the detection of warming time when an AirSensEUR box re-starts after a long inactive period. The wrming necessary after re-starting was not included. 
+#              Corrected.
 #              N89 - Absolute humidity added among the variables to matrix plots and calibration of model.
 #              N90 - Added detection of dates for each new Reference data to add to the previously downloaded Reference data. Only if the time-interval of the new Reference
 #                    data is not equal to the UserMins, then TimeAverage is carried out as from the previous Reference data.
 
 # New release v0.11
-# 2018-11-11 : N66 - For all plots of MainTabPanel "PlotFiltering" (warming, Temperature and Humidity, NegValues, Invalid and Outliers) when the time span is lower or equal than the number of tick mark of X axis
-#                    the time of day is added to the dates on the x axis labels.
+# 2018-11-11 : N66 - For all plots of MainTabPanel "PlotFiltering" (warming, Temperature and Humidity, NegValues, Invalid and Outliers) when the time span is lower or equal than the number of tick 
+#                    mark of X axis #                    the time of day is added to the dates on the x axis labels.
 # 2018-11-11 : N67 - Adapting the dimension of all plot windows to resolution 1920 x 1280 (see also N1)
-# 2018-11-12 : N68 - NarBar Menu "Data Treatment". The first time that the tab is opened, the Merging of Influx, SOS and ref data is automatically launched. No need to click on button "Merge Inluc <- SOS <- Ref".
-# 2018-11-13 : N69 - NarBar Menu "Data Treatment". Change of behaviour of checkBox "savePlot": it is necessary to check it everytime a plot must be saved. "Save Plot" also alows saving the ReportMarkDown (see below N76).
+# 2018-11-12 : N68 - NarBar Menu "Data Treatment". The first time that the tab is opened, the Merging of Influx, SOS and ref data is automatically launched. No need to click on button 
+#                    "Merge Influx <- SOS <- Ref".
+# 2018-11-13 : N69 - NarBar Menu "Data Treatment". Change of behaviour of checkBox "savePlot": it is necessary to check it everytime a plot must be saved. "Save Plot" also alows saving the 
+#                    ReportMarkDown (see below N76).
 # 2018-11-13 : N70 - All scaterplots were modified so that the Tick marks of the X and Y axis used pretty values.
-# 2018-11-13 : N71 - Navbar "Data Treatment", sideBar list box "List of covariates to plot" and "List of covariates to calibrate": the variables "date" and "sensor_modelled" were added. This allows observing the 
-#                    drift of sensor values (raw and calibrated). It is then possible to use time and calibrated sensors in MultiLinear calibration. 
+# 2018-11-13 : N71 - Navbar "Data Treatment", sideBar list box "List of covariates to plot" and "List of covariates to calibrate": the variables "date" and "sensor_modelled" were added. 
+#                    This allows observing the drift of sensor values (raw and calibrated). It is then possible to use time and calibrated sensors in MultiLinear calibration. 
 #                    Under MainTabPanel "Calibration", a new TabPanel called "Multivariates" allows setting the degree of polynomial of any covariates. Status of all Co_variates shall be "Enabled". 
 #                    "Forced" will be used in future to set the coefficients of polynomial of Co-variates, it does not work yet, and should be set to "FALSE". WORK IN PROGRESS
 #                    Plot.Covariates can use now data calibrated sensor data. It is also possible to calibrate sensor (e. g. O3) using values of calibrated sensors (e. g. NO2).
@@ -133,22 +204,26 @@
 # 2018-11-25 : N76 - NavBar "dataTreatment", MainTabPanel "report Markdown". This is a 1st tentative of automatic reporting. Work in progress. It needs that the Polt of calibration and extrapolation, both scatterplots and
 #                    timeSeries are saved using button "Save Plot". WORK IN PROGRESS
 # 2018-11-25 : N77 - Dynamic allocation of sensors name in User Interface and config file. This will be helpful when CO2 and PM will be included into the App.
-# 2018-12-02 : N78 - General improvement of reactivity and use of memory, allowing to manage larger datatests (e. g. minute values) with accepting time for data treatment except for the detection of outliers is still a long process.
-#                    The datasets and config files are no more saved during data treatment allowing faster reaction. However, it is necessary to click of button "Save" to save data and config not to loose your work.
-# 2018-12-03 :  N4 - NavBar "getData", new mainTabPanels to display of dataframes of downloaded inlfux, SOS and ref in navBar menu "getdata". It would be good to add the summary table shown in "Navbar "DataTeatment" - "Config".
+# 2018-12-02 : N78 - General improvement of reactivity and use of memory, allowing to manage larger datatests (e. g. minute values) with accepting time for data treatment except for the detection 
+#                    of outliers is still a long process. The datasets and config files are no more saved during data treatment allowing faster reaction. However, it is necessary to click of 
+#                    button "Save" to save data and config not to loose your work.
+# 2018-12-03 :  N4 - NavBar "getData", new mainTabPanels to display of dataframes of downloaded inlfux, SOS and ref in navBar menu "getdata". It would be good to add the summary table shown in 
+#                    "Navbar "DataTeatment" - "Config".
 # 2018-12-02 :  N1 - All plots use now the whole heigth of display and resize for any for plotting.
 # 2018-12-03 :  N9 - The names of Model calibration are listed without the airsenseur name and sensor name in the list of Calibration model to ease reading
 # 2018-12-06 : N79 - When the App is busy computing, a spinner is displayed to inform users about data treatment is going on
 # 2018-12-10 : N80 - my.rm.outliers: the computing time for detecting outliers has been divided by two, computing the min and max of interval of tolerance within one rollapply
-# 2018-12-11 : N81 - navbar "DataTreatment" - "PlotFltering", a new tab is added, called StatFiltering which gives the counts of all fileterd data (warming, temperature/humidity, Invalid, outliers, negative reference) for each sensor
-# 2018-12-12 : Bug Correction: E2 - When the averaging time (GetData in time-shield tab) is decreased, it is necessary to repeat all downloading, merging and calculation (warming, T/RH, outiers, conv and cal)
-#                                   because raw data with initial time average are no more available (input$UserMins)
+# 2018-12-11 : N81 - navbar "DataTreatment" - "PlotFltering", a new tab is added, called StatFiltering which gives the counts of all fileterd data (warming, temperature/humidity, Invalid, outliers, 
+#                   negative reference) for each sensor
+# 2018-12-12 : Bug Correction: E2 - When the averaging time (GetData in time-shield tab) is decreased, it is necessary to repeat all downloading, merging and calculation (warming, T/RH, outiers, 
+#                                   conv and cal) because raw data with initial time average are no more available (input$UserMins)
 #                                   In the NavBar menu "Get Data" of the SideBar Layout, thre is a new SelectInput "Averaging time in min for extrapolated data" that allow to change the averging time of the "Extrapolation mainTabPnale,
 #                                   e. g. having all the calibration Datatremant with 1 minute averaging time and the extapolation with hourly values.
-# 2018-11-02 : Bug correction: E19 - By mistake the detection of outliers is launched when the extent of slider input for dates (Set.Time())) is read: sliderInput of reference data are repaced with dateRange, easier to use
+# 2018-11-02 : Bug correction: E19 - By mistake the detection of outliers is launched when the extent of slider input for dates (Set.Time())) is read: sliderInput of reference data are repaced 
+#                                    with dateRange, easier to use
 # 2018-11-09 : Bug Correction: reset button SavePlot after a plot is saved. It is necessary to check again "SavePlot" to save a new plot 
-# 2018-11-13 : Bug Correction in SETTIME, the time zone of all dates were set to the time zone of RefData. This is changed to setting to the time zone of DownloadSensor$DateIN.General.prev if it exists then to 
-#              DateIN.Influx.prev if it exists then to DateIN.SOS.prev  if it exists otherwise it is set to "UTC"
+# 2018-11-13 : Bug Correction in SETTIME, the time zone of all dates were set to the time zone of RefData. This is changed to setting to the time zone of DownloadSensor$DateIN.General.prev 
+#             if it exists then to DateIN.Influx.prev if it exists then to DateIN.SOS.prev  if it exists otherwise it is set to "UTC"
 # 2018-11-13 : Bug Correction: when changing the "Delay in min, add minutes to sensor time" was changed General.df was recalculated and saved. However, the delay was not saved into the AsE-Name_Server.cfg file
 #                              resulting into an error at the next Delay changes, see in reactive function General().
 # 2018-11-16 : Bug Correction: NavBar "Data Treatmemt", sideBar button save, when clicking on save, General.df was saved without the outliers and calibrated sensor values.
