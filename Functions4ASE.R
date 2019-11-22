@@ -4497,7 +4497,7 @@ GENERAL  <- function(WDoutput, UserMins, RefData, InfluxData, SOSData, Delay, va
             General$Ref.Absolute_humidity <- NA_real_
             General$Ref.Td_deficit        <- NA_real_
             Ref.both.Temp.Hum <- which(complete.cases(General[, c("Ref.Temp", "Ref.RH")]))
-            General[Ref.both.Temp.Hum, Ref.Absolute_humidity := threadr::absolute_humidity(Ref.RH[Ref.both.Temp.Hum, Ref.Temp], General[Ref.both.Temp.Hum, Ref.RH])]
+            General[Ref.both.Temp.Hum, Ref.Absolute_humidity := threadr::absolute_humidity(General[Ref.both.Temp.Hum, Ref.Temp], General[Ref.both.Temp.Hum, Ref.RH])]
             Td <- weathermetrics::humidity.to.dewpoint(rh = General[Ref.both.Temp.Hum, Ref.RH], t = General[Ref.both.Temp.Hum, Ref.Temp], temperature.metric = "celsius") 
             General[Ref.both.Temp.Hum, Ref.Td_deficit := General[Ref.both.Temp.Hum, Ref.Temp] - Td]
         }
