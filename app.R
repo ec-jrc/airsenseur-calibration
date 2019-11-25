@@ -502,7 +502,12 @@ ui <- navbarPage(title = "AirSensEUR v0.15", id = "ASE", theme = shinytheme("cer
                                                        tabsetPanel(id = "TabCalibration",
                                                                    tabPanel("Map"             , icon = icon("map-marker", lib = "glyphicon")   , leafletOutput("mymapCal", height = 800)),
                                                                    tabPanel("Scatterplot"     , icon = icon("line-chart", lib = "font-awesome"), plotOutput("Calibration") ),
-                                                                   tabPanel("SummaryCal"      , icon = icon("list-alt"  , lib = "glyphicon")   , verbatimTextOutput("SummaryCal")),
+                                                                   tabPanel("SummaryCal"      , icon = icon("list-alt"  , lib = "glyphicon")   ,
+                                                                            tableOutput("SummaryCal.Cal"),
+                                                                            tableOutput("SummaryCal.Coefficients"),
+                                                                            tableOutput("SummaryCal.Tidy"),
+                                                                            tableOutput("SummaryCal.Glance.Title"),
+                                                                            tableOutput("SummaryCal.Glance")),
                                                                    tabPanel("Calibrated"      , icon = icon("line-chart", lib = "font-awesome"), plotOutput("Calibrated") ),
                                                                    tabPanel("TimeSeries"      , icon = icon("stats"     , lib = "glyphicon")   , withSpinner(dygraphOutput("ts_Cal_dygraphs", height = 750), type = 8) , width = "96%"),
                                                                    tabPanel("Residual Matrix" , icon = icon("th"        , lib = "glyphicon")   , withSpinner(plotOutput("ResCalMatrix"), type = 8) ),
@@ -569,11 +574,11 @@ ui <- navbarPage(title = "AirSensEUR v0.15", id = "ASE", theme = shinytheme("cer
                                                                    )
                                                        ) 
                                               ),
-                                              tabPanel("Report MarkDown", icon = icon("bars"), h3("work in progress..."), htmlOutput("renderedReport"),
+                                              tabPanel("Report MarkDown", icon = icon("bars")   , h3("work in progress..."), htmlOutput("renderedReport"),
                                                        downloadButton("report", "Generate report")),
-                                              tabPanel("DataTable"    , icon = icon("bars")  , withSpinner(DT::dataTableOutput(outputId = "DataTable"), type = 8) ),
-                                              #tabPanel("Retrieved"    , icon = icon("signal"), withSpinner(plotOutput(outputId = "Retrieved"), type = 8) ),
-                                              tabPanel("RawData"      , icon = icon("signal"), withSpinner(htmlOutput("ts_RawData_dygraphs"), type = 8) , width = "96%"),
+                                              tabPanel("DataTable"      , icon = icon("bars")   , withSpinner(DT::dataTableOutput(outputId = "DataTable"), type = 8) ),
+                                              #tabPanel("Retrieved"     , icon = icon("signal") , withSpinner(plotOutput(outputId = "Retrieved"), type = 8) ),
+                                              tabPanel("RawData"        , icon = icon("signal") , withSpinner(htmlOutput("ts_RawData_dygraphs"), type = 8) , width = "96%"),
                                               tabPanel("Log"            , icon = icon("list-ol"), verbatimTextOutput("console"))
                                   )
                                   , width = 9)
@@ -1012,7 +1017,7 @@ server <- function(input, output, session) {
             } 
             
             # Initial DownloadSensor
-            progress$set(message = "[Shiny] INFO, Initial DownlaodSensor", value = 0.4)
+            progress$set(message = "[Shiny] INFO, Initial DownloadSensor", value = 0.4)
             Download <<- reactiveValues(Sensor = DownloadSensor())
             
             # Initial SetTime
@@ -2595,7 +2600,7 @@ server <- function(input, output, session) {
                                                             label   = "Range of dates for plotting covariates:",
                                                             format  = "yyyy-mm-dd",
                                                             start   = Set$Time$Cov.Date.IN[i.sensors()][i], 
-                                                            end     = Set$Time$Cov.Date.END[i.sensors()][i],
+                                                            end     = as.Date(Set$Time$Cov.Date.END[i.sensors()][i]),
                                                             weekstart = 1,
                                                             min     = Set$Time$Valid.IN[i.sensors()][i], 
                                                             max     = Set$Time$Valid.END[i.sensors()][i] 
@@ -2632,7 +2637,7 @@ server <- function(input, output, session) {
                                                             label   = "Range of dates for calibration:",
                                                             format  = "yyyy-mm-dd",
                                                             start   = Set$Time$DateCal.IN[i.sensors()][i], 
-                                                            end     = Set$Time$DateCal.END[i.sensors()][i],
+                                                            end     = as.Date(Set$Time$DateCal.END[i.sensors()][i]),
                                                             weekstart = 1,
                                                             min = Set$Time$Valid.IN[i.sensors()][i], 
                                                             max = Set$Time$Valid.END[i.sensors()][i] 
@@ -2678,7 +2683,7 @@ server <- function(input, output, session) {
                                                             label   = "Range of dates for plotting calibration:",
                                                             format  = "yyyy-mm-dd",
                                                             start   = Set$Time$DatePlotCal.IN[i.sensors()][i], 
-                                                            end     = Set$Time$DatePlotCal.END[i.sensors()][i],
+                                                            end     = as.Date(Set$Time$DatePlotCal.END[i.sensors()][i]),
                                                             weekstart = 1,
                                                             min = Set$Time$Valid.IN[i.sensors()][i], 
                                                             max = Set$Time$Valid.END[i.sensors()][i] 
@@ -2710,7 +2715,7 @@ server <- function(input, output, session) {
                                                             label   = "Range of dates for Prediction:",
                                                             format  = "yyyy-mm-dd",
                                                             start   = Set$Time$DateMeas.IN[i.sensors()][i], 
-                                                            end     = Set$Time$DateMeas.END[i.sensors()][i],
+                                                            end     = as.Date(Set$Time$DateMeas.END[i.sensors()][i]),
                                                             weekstart = 1,
                                                             min = Set$Time$Valid.IN[i.sensors()][i], 
                                                             max = Set$Time$Valid.END[i.sensors()][i] 
@@ -2741,7 +2746,7 @@ server <- function(input, output, session) {
                                                             label   = "Range of dates for plotting predicted data:",
                                                             format  = "yyyy-mm-dd",
                                                             start   = Set$Time$DatePlotMeas.IN[i.sensors()][i], 
-                                                            end     = Set$Time$DatePlotMeas.END[i.sensors()][i],
+                                                            end     = as.Date(Set$Time$DatePlotMeas.END[i.sensors()][i]),
                                                             weekstart = 1,
                                                             min = Set$Time$Valid.IN[i.sensors()][i], 
                                                             max = Set$Time$Valid.END[i.sensors()][i] 
@@ -4168,9 +4173,11 @@ server <- function(input, output, session) {
         
         # REPORT SERVER ----
         output$renderedReport <- renderUI({   
-            includeMarkdown(knitr::knit(file.path(DirShiny, 'report.Rmd')) )
+            includeMarkdown(knitr::knit(file.path(DirShiny, 'report.Rmd')))
         })
-        
+        Render_report <- eventReactive(CalSet()$cal, {
+            knitr::knit(file.path(DirShiny, 'report.Rmd'))
+        })
         # download report
         output$report <- downloadHandler(filename <- file.path(CalSet()$WDModelled_gas, paste0(AirsensEur.name(),"__",CalSet()$name.sensor,"__",CalSet()$Cal,"__.docx")),
                                          content <-
@@ -4511,8 +4518,8 @@ server <- function(input, output, session) {
             # Make sure it closes when we exit this reactive, even if there's an error
             progress$set(message = "[shiny, Downloaded()] INFO, Detecting downloaded data in airsenseur.db, Influx, SOS and Reference and General files", value = 0.2)
             
-            if (is.null(Download$Sensor[["DateIN.db.prev"]]))  DateIN.db.prev  <- "NULL" else DateIN.db.prev  <- format(ymd_hms(Download$Sensor[["DateIN.db.prev"]]) , "%Y-%m-%d %H:%M")
-            if (is.null(Download$Sensor[["DateEND.db.prev"]])) DateEND.db.prev <- "NULL" else DateEND.db.prev <- format(ymd_hms(Download$Sensor[["DateEND.db.prev"]]), "%Y-%m-%d %H:%M")
+            if (is.null(Download$Sensor[["DateIN.db.prev"]]))  DateIN.db.prev  <- "NULL" else DateIN.db.prev  <- format(ymd_hms(Download$Sensor[["DateIN.db.prev"]]) , "%Y-%m-%d %H:%M:%S")
+            if (is.null(Download$Sensor[["DateEND.db.prev"]])) DateEND.db.prev <- "NULL" else DateEND.db.prev <- format(ymd_hms(Download$Sensor[["DateEND.db.prev"]]), "%Y-%m-%d %H:%M:%S")
             
             progress$set(message = "[shiny, Downloaded()] INFO, Detecting downloaded data in airsenseur.db, Influx, SOS and Reference and General files", value = 0.5)
             
@@ -4699,39 +4706,39 @@ server <- function(input, output, session) {
             name.gas.name.sensor <- data.frame(
                 name.gas           = Config$all[["sens2ref"]]$name.gas, 
                 name.sensor        = as.character(Config$all[["sens2ref"]]$name.sensor), 
-                Out.Ref.IN         = sapply(seq_along(Config$all[["sens2ref"]]$gas.reference2use), function(i) format(input[[paste0("Out.Ref.Date",i)]][1], format = "%y-%m-%d %H:%M")),
-                Out.Ref.END        = sapply(seq_along(Config$all[["sens2ref"]]$gas.reference2use), function(i) format(input[[paste0("Out.Ref.Date",i)]][2], format = "%y-%m-%d %H:%M")),
+                Out.Ref.IN         = sapply(seq_along(Config$all[["sens2ref"]]$gas.reference2use), function(i) format(input[[paste0("Out.Ref.Date",i)]][1], format = "%Y-%m-%d %H:%M:%S")),
+                Out.Ref.END        = sapply(seq_along(Config$all[["sens2ref"]]$gas.reference2use), function(i) format(input[[paste0("Out.Ref.Date",i)]][2], format = "%Y-%m-%d %H:%M:%S")),
                 stringsAsFactors   = FALSE)
             Sensors.Outliers <- data.frame( 
                 # in uiFiltering date plot for sensors and Referencces
-                Out.Sens.IN         = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Out.Sens.Date",i)]][1], format = "%y-%m-%d %H:%M")),
-                Out.Sens.END        = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Out.Sens.Date",i)]][2], format = "%y-%m-%d %H:%M")),
+                Out.Sens.IN         = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Out.Sens.Date",i)]][1], format = "%Y-%m-%d %H:%M:%S")),
+                Out.Sens.END        = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Out.Sens.Date",i)]][2], format = "%Y-%m-%d %H:%M:%S")),
                 
                 # in uiSetTime Valid, Cal, Prediction and Plotting dates 
                 Sens.Inval.Out     = sapply(seq_along(list.gas.sensors()), function(i) input[[paste0("Sens.Inval.Out",i)]]),
                 Apply.Invalid      = sapply(seq_along(list.gas.sensors()), function(i) input[[paste0("Apply.Invalid",i )]]),
                 
                 # Valid date
-                Valid.IN             = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Valid",i)]][1], format = "%y-%m-%d %H:%M")),
-                Valid.END            = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Valid",i)]][2], format = "%y-%m-%d %H:%M")),
+                Valid.IN             = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Valid",i)]][1], format = "%Y-%m-%d %H:%M:%S")),
+                Valid.END            = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Valid",i)]][2], format = "%Y-%m-%d %H:%M:%S")),
                 
                 # Date for plotting covariates
-                Cov.Date.IN          = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Date",i)]][1], format = "%y-%m-%d %H:%M")),
-                Cov.Date.END         = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Date",i)]][2], format = "%y-%m-%d %H:%M")),
+                Cov.Date.IN          = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Date",i)]][1], format = "%Y-%m-%d %H:%M:%S")),
+                Cov.Date.END         = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("Date",i)]][2], format = "%Y-%m-%d %H:%M:%S")),
                 
                 # Calibration dates
-                DateCal.IN          = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DateCal",i)]][1], format = "%y-%m-%d %H:%M")),
-                DateCal.END         = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DateCal",i)]][2], format = "%y-%m-%d %H:%M")), 
+                DateCal.IN          = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DateCal",i)]][1], format = "%Y-%m-%d %H:%M:%S")),
+                DateCal.END         = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DateCal",i)]][2], format = "%Y-%m-%d %H:%M:%S")), 
                 # Plotting Calibration dates
-                DatePlotCal.IN      = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DatePlotCal",i)]][1], format = "%y-%m-%d %H:%M")),
-                DatePlotCal.END     = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DatePlotCal",i)]][2], format = "%y-%m-%d %H:%M")),
+                DatePlotCal.IN      = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DatePlotCal",i)]][1], format = "%Y-%m-%d %H:%M:%S")),
+                DatePlotCal.END     = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DatePlotCal",i)]][2], format = "%Y-%m-%d %H:%M:%S")),
                 
                 # Extratpolation date
-                DateMeas.IN         = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DateMeas",i)]][1], format = "%y-%m-%d %H:%M")),
-                DateMeas.END        = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DateMeas",i)]][2], format = "%y-%m-%d %H:%M")),
+                DateMeas.IN         = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DateMeas",i)]][1], format = "%Y-%m-%d %H:%M:%S")),
+                DateMeas.END        = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DateMeas",i)]][2], format = "%Y-%m-%d %H:%M:%S")),
                 # Prediction date for plotting
-                DatePlotMeas.IN     = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DatePlotMeas",i)]][1], format = "%y-%m-%d %H:%M")),
-                DatePlotMeas.END    = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DatePlotMeas",i)]][2], format = "%y-%m-%d %H:%M")),
+                DatePlotMeas.IN     = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DatePlotMeas",i)]][1], format = "%Y-%m-%d %H:%M:%S")),
+                DatePlotMeas.END    = sapply(seq_along(list.gas.sensors()), function(i) format(input[[paste0("DatePlotMeas",i)]][2], format = "%Y-%m-%d %H:%M:%S")),
                 
                 stringsAsFactors = FALSE)
             if (nrow(Sensors.Outliers) > 0) {
@@ -6832,12 +6839,7 @@ server <- function(input, output, session) {
                                                " using model ", CalSet()$Cal, " to unit ", CalSet()$unit.sensor,"\n"))
                                     
                                     # Loading Model.i either as Rdata list or as a RDS file
-                                    if (grepl(pattern = "rdata", x = name.Model.i)) {
-                                        load(name.Model.i)
-                                        # even though the lsit was save with name Model it is called x!!! Renaming
-                                        Model.i <- x
-                                        remove(x)
-                                    } else if (grepl(pattern = "rds", x = name.Model.i)) {
+                                    if (extension(name.Model.i) == ".rdata") Model.i <- load_obj(name.Model.i) else if (extension(name.Model.i) == ".rds") {
                                         
                                         if (file.exists(name.Model.i)) {
                                             
@@ -8036,12 +8038,7 @@ server <- function(input, output, session) {
                                 
                                 # loading the calibration file
                                 name.Model.i <- file.path(CalSet()$WDoutputMod, CalSet()$Cal)       # if you use a for loop, replace CalSet()$Cal with input[[paste0("Cal",k)]]))
-                                if (grepl(pattern = "rdata", x = name.Model.i)) {
-                                    load(name.Model.i)
-                                    # even though the lsit was save with name Model it is called x!!! Renaming
-                                    Model.i <- x
-                                    remove(x)
-                                } else if (grepl(pattern = "rds", x = name.Model.i)) {
+                                if (extension(name.Model.i) == ".rdata") Model.i <- load_obj(name.Model.i) else if (extension(name.Model.i) == ".rds") {
                                     
                                     # Read model object as a RDS object
                                     if (file.exists(name.Model.i)) {
@@ -8187,11 +8184,12 @@ server <- function(input, output, session) {
             on.exit(progress$close())
         })
         # NavBar"Data Treatment", mainTabPanel SummaryCal - Calibration  ----
-        output$SummaryCal   <- renderPrint({
-            
-            Table.SummaryCal()
-            
-        } )
+        output$SummaryCal.Cal  <- renderText(SummaryCal.Cal())
+        SummaryCal.Cal <- reactive({if (!is.null(Table.SummaryCal()$Equation)) Table.SummaryCal()$Equation else Table.SummaryCal()$Call})
+        output$SummaryCal.Coefficients  <- renderText({"\n Coefficients"})
+        output$SummaryCal.Tidy <- renderTable({Table.SummaryCal()$Tidy}, digits = 10)
+        output$SummaryCal.Glance.Title  <- renderText({"\n Glance"})
+        output$SummaryCal.Glance <- renderTable({Table.SummaryCal()$Glance}, digits = 10)
         # Reactive FUN Table.SummaryCal
         Table.SummaryCal     <- reactive({
             
@@ -8220,14 +8218,9 @@ server <- function(input, output, session) {
                     cat(paste0("[Shiny]Table.SummaryCal, INFO, calibration model ", CalSet()$Cal, " exists\n"))
                     
                     # loading the calibration files
-                    name.Model.i <- file.path(CalSet()$WDoutputMod, CalSet()$Cal)       # if you use a for loop, replace CalSet()$Cal with input[[paste0("Cal",k)]]))
+                    name.Model.i <- file.path(CalSet()$WDoutputMod, CalSet()$Cal)
                     # Loading Model.i either as Rdata list or as a RDS file
-                    if (grepl(pattern = "rdata", x = name.Model.i)) {
-                        load(name.Model.i)
-                        # even though the lsit was save with name Model it is called x!!! Renaming
-                        Model.i <- x
-                        remove(x)
-                    } else if (grepl(pattern = "rds", x = name.Model.i)) {
+                    if (extension(name.Model.i) == ".rdata") Model.i <- load_obj(name.Model.i) else if (extension(name.Model.i) == ".rds") {
                         
                         # Read model object as a RDS object
                         Model.i <- readRDS(file = name.Model.i) 
@@ -8256,14 +8249,13 @@ server <- function(input, output, session) {
             cat("-----------------------------------------------------------------------------------\n")
             cat("\n")
             
+            Tidy.Model        <- list(Call = Model.i$Call, Tidy = Model.i$Tidy, Glance = Model.i$Glance )
+            if (!is.null(Model.i$Equation)) Tidy.Model[["Equation"]] <- Model.i$Equation
+            
             progress$set(message = "Summary table of calibration model", value = 1)
             on.exit(progress$close())
             
-            #print(return.SummaryCal)
-            Tidy.Model <- list(Call = Model.i$Call, Tidy = Model.i$Tidy, Glance = Model.i$Glance)
-            Tidy.Model$Tidy   <- Tidy.Model$Tidy   %>% kable(caption = "Coefficients", digits = 10)
-            Tidy.Model$Glance <- Tidy.Model$Glance %>% kable(caption = "Parameters",   digits = 10)
-            return(Tidy.Model)
+            if (exists("Tidy.Model")) return(Tidy.Model) else return()
             
         })
         # NavBar"Data Treatment", mainTabPanel Calibrated - Calibration ----
@@ -8489,6 +8481,9 @@ server <- function(input, output, session) {
             
             progress <- shiny::Progress$new()
             progress$set(message = "[shiny, ts_cal_dygraphs()] INFO, plotting time series of Calibrated data", value = 0.5)
+            # Make sure it closes when we exit this reactive, even if there's an error
+            on.exit(progress$close())
+            
             cat("\n")
             cat("-----------------------------------------------------------------------------------\n")
             cat("[shiny, ts_cal_dygraphs()] INFO, plotting time series of Calibrated data\n")
@@ -8555,9 +8550,6 @@ server <- function(input, output, session) {
                     updateCheckboxInput(session, inputId = "SavePlot", label = NULL, value = FALSE)
                 }
             }
-            
-            # Make sure it closes when we exit this reactive, even if there's an error
-            on.exit(progress$close())
             
             # Return
             plot_cal
@@ -10531,3 +10523,4 @@ server <- function(input, output, session) {
 
 # Run the application ====
 shinyApp(ui = ui, server = server)
+                                           
