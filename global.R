@@ -147,6 +147,7 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # parallel computing Linux or windows                                   --> doParallel 
 # Rolling mad and median                                                --> caTools, stats
 # computation of dew points (humidity.to.dewpoint)                      --> weathermetrics
+# Rmarkdown report                                                      --> formattable, flextable, pandoc, captioner, kableExtra 
 #
 list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "shinyBS"         , "shinycssloaders" , "shinyWidgets"    ,
                    "DT"              , "rhandsontable"   , "stringi"         , "plyr"            , "tidyverse"       , "broom"           , "dbplyr"          , 
@@ -162,7 +163,7 @@ list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "
                    "stringr"         , "rmarkdown"       , "xtable"          , "knitr"           ,
                    "leaflet"         , "dygraphs"        , "htmltools"       , "htmlwidgets"     , "webshot"         , "OSMscale"        , "berryFunctions"  ,  
                    "GGally"          , "plotly"          , "maptools"        , "raster"          , "rgeos"           , "RcppRoll"        , "foreach"         , "doParallel"      ,
-                   "caTools"         , "weathermetrics")
+                   "caTools"         , "weathermetrics"  , "formattable"     , "flextable"       , "pander"          , "captioner"       , "kableExtra")
 
 Load.Packages(list.Packages)
 # if error on plyr then type install.packages("plyr") at the console
