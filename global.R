@@ -21,32 +21,33 @@
 
 
 #----------------------------------------------------------------CR
-#   1.b Checking Functions4AES.R and SensorToolBox availability. Ckeckins availability of Config files of AirSensEUrs
+#   1.b Checking Functions4AES.R and SensorToolBox availability.
+#       Checking availability of Config files of AirSensEUrs
 #----------------------------------------------------------------CR
 
 # Checking if Functions4ASE.R is available
 cat("-----------------------------------------------------------------------------------\n")
-cat("[Shiny] INFO, checking presence of necessary files (ASEconfig_xx.R and Functions4ASE.R). Then setting the Working Directory.\n")
+cat("[Global] INFO, checking presence of necessary files (ASEconfig_xx.R and Functions4ASE.R). Then setting the Working Directory.\n")
 Functions4ASE  <- file.path(getwd(), "Functions4ASE.R")
 if (!file.exists(c(Functions4ASE))) {
 
-    cat(paste0("[Shiny] ERROR, file ", Functions4ASE, " not found, stopping the process\n"))
-    stop(cat(paste0("[Shiny] ERROR, file ", Functions4ASE), " not found, stopping the process\n"))
+    cat(paste0("[Global] ERROR, file ", Functions4ASE, " not found, stopping the process\n"))
+    stop(cat(paste0("[Global] ERROR, file ", Functions4ASE), " not found, stopping the process\n"))
 
-} else cat(paste0("[Shiny] INFO, file ", Functions4ASE , " found and ready to be sourced\n"))
+} else cat(paste0("[Global] INFO, file ", Functions4ASE , " found and ready to be sourced\n"))
 cat("-----------------------------------------------------------------------------------\n")
 
 # Checking if "151016 Sensor_Toolbox.R" is available
 cat("\n")
 cat("-----------------------------------------------------------------------------------\n")
 DisqueSensToolBox  <- file.path(getwd(),"151016 Sensor_Toolbox.R")
-cat("[Shiny] INFO, checking presence of necessary file 151016 Sensor_Toolbox.R.\n")
+cat("[Global] INFO, checking presence of necessary file 151016 Sensor_Toolbox.R.\n")
 if (!file.exists(c(DisqueSensToolBox))) {
 
-    cat(paste0("[Shiny] ERROR, file ", DisqueSensToolBox, " not found, stopping the process\n"))
-    stop(cat(paste0("[Shiny] ERROR, file ", DisqueSensToolBox), " not found, stopping the process\n"))
+    cat(paste0("[Global] ERROR, file ", DisqueSensToolBox, " not found, stopping the process\n"))
+    stop(cat(paste0("[Global] ERROR, file ", DisqueSensToolBox), " not found, stopping the process\n"))
 
-} else cat(paste0("[Shiny] INFO, file ", DisqueSensToolBox , " found and ready to be sourced\n"))
+} else cat(paste0("[Global] INFO, file ", DisqueSensToolBox , " found and ready to be sourced\n"))
 cat("-----------------------------------------------------------------------------------\n")
 
 # Checking if any config file is available
@@ -54,15 +55,15 @@ cat("\n")
 cat("-----------------------------------------------------------------------------------\n")
 if (all(!grepl(pattern = glob2rx("ASEconfig*.R"), list.files(path = getwd(), pattern = ".R")))) {
 
-    cat(paste0("[Shiny] ERROR, no AirSensEUR config file found (ASEconfig_*.R), stopping the process\n"))
-    stop(cat(paste0("[Shiny] ERROR, no AirSensEUR config file found (ASEconfig_*.R), stopping the process\n")))
-} else cat(paste0("[Shiny] AirSensEUR config file found: ", list.files(path = getwd(), pattern = glob2rx("ASEconfig*.R")), "\n"))
+    cat(paste0("[Global] ERROR, no AirSensEUR config file found (ASEconfig_*.R), stopping the process\n"))
+    stop(cat(paste0("[Global] ERROR, no AirSensEUR config file found (ASEconfig_*.R), stopping the process\n")))
+} else cat(paste0("[Global] AirSensEUR config file found: ", list.files(path = getwd(), pattern = glob2rx("ASEconfig*.R")), "\n"))
 cat("-----------------------------------------------------------------------------------\n")
 
 #----------------------------------------------------------------CR
 # 1.c Sourcing SensorToolBox and Functions4AES.R----
 #----------------------------------------------------------------CR
-cat(paste0("[Shiny] INFO, sourcing 151016 Sensor_Toolbox.R and Funtions4ASE.R"), sep = "\n")
+cat(paste0("[Global] INFO, sourcing 151016 Sensor_Toolbox.R and Funtions4ASE.R"), sep = "\n")
 
 # Loading SensorToolBox
 source(DisqueSensToolBox)
@@ -78,7 +79,7 @@ cat("\n")
 #  1.d Install packages (CRAN + Github) ----
 #----------------------------------------------------------CR
 cat("-----------------------------------------------------------------------------------\n")
-cat("[Shiny] INFO, Check or install packages needed to run the script\n")
+cat("[Global] INFO, Check or install packages needed to run the script\n")
 # Packages to be loaded
 # Packages to be loaded
 # Grahical User Interface                                               --> shiny
@@ -89,7 +90,6 @@ cat("[Shiny] INFO, Check or install packages needed to run the script\n")
 # modal message box                                                     --> shinyalert
 # Modal message box confirm Sweetalert                                  --> shinyWidgets
 # cross-platform dialog box to select file for uploading ref data       --> rChoiceDialogs uses rJava which does not install under linux rstudio-server.
-#                                                                           We could use tcltk instead for linux, but we cannot anymore upload tcltk on rstudio-server.
 #                                                                           Anyhow this not important because it is not possible to upload local file to the shiny server,
 #                                                                           only server side files. Finally the functionality
 
@@ -106,7 +106,7 @@ cat("[Shiny] INFO, Check or install packages needed to run the script\n")
 # Easier management of time interval                                    --> lubridate
 # To plot time series                                                   --> openair
 # Package needed for devtools::install_github("52North/sensorweb4R")    --> curl
-# Two packages needed for github sensorweb4R if you have a proxy        --> futile.options, lambda.r,
+# Two packages needed for github sensorweb4R if you have a proxy        --> futile.logger, futile.options, lambda.r, geosphere
 # To configure the proxy when using github to install sensoreb4r        --> httr
 # To install libraries for reading sensor urls:sensorweb4r              --> devtools, sp, curl
 # To solve linear robust linear regression (median)                     --> quantreg
@@ -138,12 +138,21 @@ cat("[Shiny] INFO, Check or install packages needed to run the script\n")
 # Saving the time series created with dygraphs                          --> htmlwidgets, webshot
 # Projection of coordinates for leaflet                                 --> OSMscale
 # inesrting rows with NAs in a dataframe                                --> berryFunctions
-# library(bitops)
+# matrix plot with ploty and ggplot                                     --> GGally
+# Interactive plot in shiny                                             --> GGally
+# path of AirSensEUR spatial analysis                                   --> maptools
+# path of AirSensEUR spatial analysis                                   --> raster
+# path of AirSensEUR spatial analysis                                   --> rgeos
+# library for fastin moving average calculations                        --> RcppRoll
+# parallel computing                                                    --> foreach
+# parallel computing Linux or windows                                   --> doParallel
+# Rolling mad and median                                                --> caTools, stats
+# computation of dew points (humidity.to.dewpoint)                      --> weathermetrics
 #
-list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "shinyBS"         , "shinyalert"      , "shinycssloaders" , "shinyWidgets"    ,
+list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "shinyBS"         , "shinycssloaders" , "shinyWidgets"    ,
                    "DT"              , "rhandsontable"   , "stringi"         , "plyr"            , "tidyverse"       , "broom"           , "dbplyr"          ,
                    "openair"         , "lubridate"       , "zoo"             , "xts"             , "futile.options"  ,
-                   "lambda.r"        ,
+                   "lambda.r"        , "futile.logger"   , "geosphere"       ,
                    "curl"            , "RCurl"           , "httr"            , "processx"        , "sp"              ,
                    "colorspace"      , "backports"       , "devtools"        ,
                    "limSolve"        , "minpack.lm"      ,
@@ -152,7 +161,9 @@ list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "
                    "data.table"      , "BMS"             , "rlist"           ,
                    "fields"          , "shape"           , "tools"           , "R.utils"         ,
                    "stringr"         , "rmarkdown"       , "xtable"          , "knitr"           ,
-                   "leaflet"         , "dygraphs"        , "htmltools"       , "htmlwidgets"     , "webshot"         , "OSMscale"        , "berryFunctions")
+                   "leaflet"         , "dygraphs"        , "htmltools"       , "htmlwidgets"     , "webshot"         , "OSMscale"        , "berryFunctions"  ,
+                   "GGally"          , "plotly"          , "maptools"        , "raster"          , "rgeos"           , "RcppRoll"        , "foreach"         , "doParallel"      ,
+                   "caTools"         , "weathermetrics")
 
 Load.Packages(list.Packages)
 # if error on plyr then type install.packages("plyr") at the console
@@ -163,8 +174,7 @@ Load.Packages(list.Packages)
 # for linux see https://github.com/rstudio/shinyapps-package-dependencies/pull/180
 
 # GitHub, this can crash the code if you have a PROXY, the lines can be commented
-#browser()
-list.packages.github <- c("52North/sensorweb4R", "skgrange/threadr")
+list.packages.github <- c("52North/sensorweb4R", "skgrange/threadr", "daattali/shinyalert")
 for (i in list.packages.github) {
 
     # removing author name and version number
@@ -172,15 +182,15 @@ for (i in list.packages.github) {
     lib.i <- head(unlist(strsplit(lib.i, split = "@")), n = 1)
 
     if (!(lib.i %in% rownames(installed.packages()))) {
+        cat(sprintf("[Global] INFO, installing package %s", lib.i), sep = "\n")
         devtools::install_github(i)
-        cat(sprintf("Package ", lib.i, " installed"), sep = "\n")
-    } else cat(paste0("[Shiny] INFO, Package ", i, " already installed"), sep = "\n")
+        cat(sprintf("Package %s installed", lib.i), sep = "\n")
+    } else cat(paste0("[Global] INFO, package ", i, " already installed"), sep = "\n")
 
     do.call("library", as.list(lib.i))
-    cat(sprintf("[Shiny] INFO, Package %s loaded",i), sep = "\n")
+    cat(sprintf("[Global] INFO, Package %s loaded",i), sep = "\n")
 }
 
-cat("[Shiny] INFO, List of installed packages\n")
+cat("[Global] INFO, List of installed packages\n")
 print(search(), quote = FALSE)
 cat("\n")
-
