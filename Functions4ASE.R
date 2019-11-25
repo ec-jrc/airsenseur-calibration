@@ -3423,17 +3423,24 @@ ping <- function(x, stderr = FALSE, stdout = FALSE, ...) {
 #=====================================================================================CR
 havingIP <- function() {
 
-    #browser()
-    if (.Platform$OS.type == "windows") {
-        ipmessage <- system("ipconfig", intern = TRUE)
+  binary <- "ipconfig"
+  if (.Platform$OS.type != "windows") {
+    # test for ifconfig
+    if (!system("which ifconfig > /dev/null", intern = FALSE)) {
+      binary = "ifconfig"
+    } else if (!system("which ip > /dev/null", intern = FALSE)) {
+      binary = "ip addr"
     } else {
-        ipmessage <- system("/sbin/ifconfig", intern = TRUE)
+      stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
     }
+  }
 
-    # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
-    validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
+  ipmessage <- system(binary, intern= TRUE)
 
-    return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
+  # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+  validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
+
+  return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
 }
 
 #=====================================================================================CR
@@ -4049,9 +4056,9 @@ ShowConf <- function(mat1) {
 #=====================================================================================CR
 # 170721 MG : Downloading INFLUXDB data
 #=====================================================================================CR
-INFLUXDB <- function(WDoutput,DownloadSensor,UserMins,
-                     PROXY,URL, PORT, LOGIN, PASSWORD,
-                     Down.Influx, Host, Port, User ,Pass, name.SQLite, name.SQLite.old, Db, Dataset, Influx.TZ = NULL,
+INFLUXDB <- function(WDoutput, DownloadSensor, UserMins,
+                     PROXY, URL, PORT, LOGIN, PASSWORD,
+                     Down.Influx, Host, Port, User, Pass, name.SQLite, name.SQLite.old, Db, Dataset, Influx.TZ = NULL,
                      sens2ref, asc.File=NULL) {
 
     # Parameters PROXY:  PROXY, URL, PORT, LOGIN, PASSWORD
