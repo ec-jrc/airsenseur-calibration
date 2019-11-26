@@ -66,13 +66,16 @@
 #              E23 - bug corection: Following a first data treatment with one ASE box When selecting a 2nd different ASE box in Navbar Menu SelectASE, there is generally a crash of the code.
 #                    The App has been rewritten, limiting the reactivity that was causing the crash of the App. uploading of of all data is now carried out when selecting an ASE box
 #                    with resetting of all data set. It should be now possible to switch between ASE box depending how deep you go with the data treatment.
+#              N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
+#              E15 - If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
+#                    This is now solved, config fiels are updated when the shield config file is changed. The App stop and when restarting all data are correctly updated
+#
 
 #  ----#TO BE DONE  : ----
 # BUG CORRECTIONS
 #              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user
 #              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA.
 #                   Change substraction to V or nA
-#             E15 - If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
 #             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers
 #                   and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
 #             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.

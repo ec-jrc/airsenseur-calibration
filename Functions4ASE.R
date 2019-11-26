@@ -24,7 +24,7 @@
 # 1603?? MGV: fromGeneral2DataIN        general data prepared to be fed into the Solve linear equations models. With na removed (NOT INCLUDED)
 # 141114 MGV: Cal_Line_mgv              calibration and plot of calibration line, modified version of Cal_Line with option Mod_type =='Linear.Robust',
 #                                       to model the median of y as a function of x, rather than modelling the mean of y as a function of x, in the case of least squares regression.
-#                                       This Funtion is no more used and has bee deleted on 20190212
+#                                       This Funtion is no more used and has been deleted on 20190212
 # 160418 MGV: Validation.tool           for validations (of what? )
 # 160503 MGV: citytechNO2O3ModelDelta   model to solve gas sensors components  (only NO2 and O3) (NOT INCLUDED)
 # 160505 MGV: SensorModel               model to solve gas sensors components  (for NO2, CO, O3 and NO?) (NOT INCLUDED)
@@ -1828,7 +1828,6 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
 
             Coord.lat.long   <- dbGetQuery(SQLite.con, paste0("SELECT time, longitude, latitude FROM ", Dataset, " WHERE rowid > ", Offset - 500, " AND rowid <= ", Offset, " ;"))
 
-
             if (all(is.na.data.frame(Coord.lat.long[,c("longitude","latitude")])) ||
                 all(Coord.lat.long[!is.na.data.frame(Coord.lat.long[,c("longitude")]),c("longitude","latitude")] == 0)) {
 
@@ -3280,34 +3279,30 @@ ping <- function(x, stderr = FALSE, stdout = FALSE, ...) {
 #=====================================================================================CR
 havingIP <- function() {
 
-  binary <- "ipconfig"
-  if (.Platform$OS.type != "windows") {
-    # test for ifconfig
-    if (!system("which ifconfig > /dev/null", intern = FALSE)) {
-      binary = "ifconfig"
-    } else if (!system("which ip > /dev/null", intern = FALSE)) {
-      binary = "ip addr"
+    if (.Platform$OS.type == "windows") {
+        ipmessage <- system("ipconfig", intern = TRUE)
     } else {
-      stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
+        ipmessage <- system("/sbin/ifconfig", intern = TRUE)
     }
-  }
 
-  ipmessage <- system(binary, intern= TRUE)
+    # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+    validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
 
-  # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
-  validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
-
-  return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
+    return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
 }
 
 #=====================================================================================CR
 # 160418 MGV: Validation.tool       function for validations
 #=====================================================================================CR
-Tidy_Model.i <- function(Model.i)
+Tidy_Model.i <- function(Model.i, WDoutputMod, nameModel)
 {
     # https://stackoverflow.com/questions/24559099/vectorize-environment-access-in-r
     ENV <- new.env()
-    ENV[["Model"]] <- list(Tidy = tidy(Model.i), Augment = augment(Model.i), Glance = glance(Model.i), Call = Model.i$call, Coef = coef(Model.i))
+    ENV[["Model"]] <- list(Tidy = tidy(Model.i), Augment = augment(Model.i), Glance = glance(Model.i), Call = Model.i$call,
+                           Coef = coef(Model.i), Equation = Model.i$Equation)
+    # https://stackoverflow.com/questions/42230920/saverds-inflating-size-of-object
+    list.save(unserialize(serialize(ENV[["Model"]],NULL),NULL), file = file.path(WDoutputMod, paste0(nameModel,".rdata")))
+
     return(ENV[["Model"]])
 }
 
@@ -3458,9 +3453,9 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
 
         # saving the model
         nameModel  <- paste(AirsensEur.name,name.sensor,Sens.raw.unit,mod.eta.model.type,format(DateIN,"%Y%m%d"),format(DateEND,"%Y%m%d"),namesCovariates, sep = "__")
-        Model.i <- Tidy_Model.i(Model.i)
+        Model.i <- Tidy_Model.i(Model.i, WDoutputMod, nameModel)
         # https://stackoverflow.com/questions/42230920/saverds-inflating-size-of-object
-        list.save(unserialize(serialize(Model.i,NULL),NULL), file = file.path(WDoutputMod, paste0(nameModel,".rdata")))
+        #list.save(unserialize(serialize(Model.i,NULL),NULL), file = file.path(WDoutputMod, paste0(nameModel,".rdata")))
 
         # save scatterplots in files
         NameFile <- file.path(WDoutput, paste0(nameModel,"__",process.step,".png"))
@@ -4525,7 +4520,7 @@ GENERAL  <- function(WDoutput, UserMins, RefData, InfluxData, SOSData, Delay, va
 # Function View Scatter Plot of calibration function (Vs 170420)
 #=====================================================================================CR
 Etalonnage <- function(x, s_x, y, s_y, AxisLabelX, AxisLabelY, Title, Marker , Couleur,
-                       ligne= NULL, XY_same, lim = NULL, steps = c(10,10), digitround = NULL, marges = NULL, PlotAxis = NULL) {
+                       ligne= NULL, XY_same, lim = NULL, steps = c(10,10), digitround = NULL, marges = NULL, PlotAxis = NULL, Verbose = TRUE) {
     # This function plot a typical XY calibration graph, estimate Xlim and ylim, add x and y labels and gridlines
     # Title  : Charater string, title of the plot
     # Marker : type marker, typical 19
@@ -4569,8 +4564,8 @@ Etalonnage <- function(x, s_x, y, s_y, AxisLabelX, AxisLabelY, Title, Marker , C
         if (is.null(digitround)) {
             Int <- c("x","y")
             Range <- sapply(DataXY[,Int], range, na.rm = TRUE, finite = TRUE)[2,] - sapply(DataXY[,Int], range, na.rm = TRUE, finite = TRUE)[1,]
-            cat("Range of values on x and y axis\n")
-            print(Range, quote = FALSE)
+            if (Verbose) cat("Range of values on x and y axis\n")
+            if (Verbose) print(Range, quote = FALSE)
             digitround <- round(log10(1/Range)) + 2 # +1 gives too many digits? no it is fine
         }
 
@@ -5176,7 +5171,16 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
                      "DateMeas.IN"    , "DateMeas.END",
                      "DatePlotMeas.IN", "DatePlotMeas.END" )
     Vector.type <- Vector.type[Vector.type %in% names(sens2ref)]
-    for (k in Vector.type) set(sens2ref, j = k, value = parse_date_time(sens2ref[[k]], tz = General.TZ, orders = c("YmdHMS","YmdHM")))
+    for (k in Vector.type) {
+        #set(sens2ref, j = k, value = ymd_hms(sens2ref[[k]], tz = General.TZ))
+        set(sens2ref, j = k, value = as.POSIXct(sens2ref[[k]], tz = General.TZ,
+                                                tryFormats = c("%y-%m-%d %H:%M:%S",
+                                                               "%y-%m-%d %H:%M",
+                                                               "%y-%m-%d",
+                                                               "%Y-%m-%d %H:%M:%S",
+                                                               "%Y-%m-%d %H:%M",
+                                                               "%Y-%m-%d"),
+                                                optional = TRUE))}
 
     # Checking validity of dates and correcting if needed
     if ((is.POSIXct(DownloadSensor$DateIN.General.prev) || is.POSIXct(DownloadSensor$DateIN.Influx.prev) || is.POSIXct(DownloadSensor$DateIN.SOS.prev) || is.POSIXct(DownloadSensor$DateIN.Ref.prev))
@@ -5201,26 +5205,22 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
             sens2ref$Valid.IN[which(is.na(sens2ref$Valid.IN))]      <- DateIN
 
             # set to save file
-            Save.sens2ref <- TRUE
-        }
+            Save.sens2ref <- TRUE}
         if (any(sens2ref$Valid.IN < DateIN)) {
             sens2ref$Valid.IN[which(sens2ref$Valid.IN < DateIN)]    <- DateIN
 
             # set to save file
-            Save.sens2ref <- TRUE
-        }
+            Save.sens2ref <- TRUE}
         if (any(is.na(sens2ref$Valid.END))) {
             sens2ref$Valid.END[which(is.na(sens2ref$Valid.END))]    <- DateEND
 
             # set to save file
-            Save.sens2ref <- TRUE
-        }
+            Save.sens2ref <- TRUE}
         if (any(sens2ref$Valid.END < DateEND)) {
             sens2ref$Valid.END[which(sens2ref$Valid.END < DateEND)] <- DateEND
 
             # set to save file
-            Save.sens2ref <- TRUE
-        }
+            Save.sens2ref <- TRUE}
 
         Check_Dates.IN <- c("Out.Ref.IN", "Out.Sens.IN", "Cov.Date.IN", "DateCal.IN", "DatePlotCal.IN", "DateMeas.IN", "DatePlotMeas.IN")
         for (i in Check_Dates.IN) {
@@ -5228,30 +5228,26 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
                 sens2ref[[i]][which(is.na(sens2ref[[i]]))]               <- sens2ref$Valid.IN[which(is.na(sens2ref[[i]]))]
 
                 # set to save file
-                Save.sens2ref <- TRUE
-            }
-            if (any(sens2ref[[i]] < sens2ref$Valid.IN)){
-                sens2ref[[i]][which(sens2ref[[i]] < sens2ref$Valid.IN)]  <- sens2ref$Valid.IN[which(sens2ref[[i]] < sens2ref$Valid.IN)]
+                Save.sens2ref <- TRUE}
+            Out.range <- which(sens2ref[[i]] < sens2ref$Valid.IN | sens2ref[[i]] > sens2ref$Valid.END)
+            if (length(Out.range) > 0){
+                sens2ref[[i]][Out.range]  <- sens2ref$Valid.IN[Out.range]
 
                 # set to save file
-                Save.sens2ref <- TRUE
-            }
-        }
+                Save.sens2ref <- TRUE}}
         Check_Dates.END <- c("Out.Ref.END", "Out.Sens.END", "Cov.Date.END", "DateCal.END", "DatePlotCal.END", "DateMeas.END", "DatePlotMeas.END")
         for (i in Check_Dates.END) {
             if (any(is.na(sens2ref[[i]]))) {
                 sens2ref[[i]][which(is.na(sens2ref[[i]]))]               <- sens2ref$Valid.END[which(is.na(sens2ref[[i]]))]
 
                 # set to save file
-                Save.sens2ref <- TRUE
-            }
-            if (any(sens2ref[[i]] > sens2ref$Valid.END)) {
-                sens2ref[[i]][which(sens2ref[[i]] < sens2ref$Valid.END)] <- sens2ref$Valid.END[which(sens2ref[[i]] < sens2ref$Valid.END)]
+                Save.sens2ref <- TRUE}
+            Out.range <- which(sens2ref[[i]] < sens2ref$Valid.IN | sens2ref[[i]] > sens2ref$Valid.END)
+            if (length(Out.range) > 0){
+                sens2ref[[i]][Out.range] <- sens2ref$Valid.END[Out.range]
 
                 # set to save file
-                Save.sens2ref <- TRUE
-            }
-        }
+                Save.sens2ref <- TRUE}}
     }
     if (Save.sens2ref) {
         # Saving config file
