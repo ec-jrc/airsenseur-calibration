@@ -12,7 +12,7 @@
 #
 # Authors
 # - Michel Gerboles        , michel.gerboles@ec.europa.eu  - European Commission - Joint Research Centre
-# - Laurent Spinelle       , laurent.spinelle@ec.europa.eu - European Commission - Joint Research Centre
+# # - Laurent Spinelle       , laurent.spinelle@ec.europa.eu - European Commission - Joint Research Centre
 # - Maria Gabriella Villani, mariagabriella.villani@enea.it - ENEA
 # - Marco Signorini        , marco.signorini@liberaintentio.com - Liberatintentio srl
 # - Alex Kotsev            , alexander.kotsev@ec.europa.eu - European Commission - Joint Research Centre
@@ -21,7 +21,7 @@
 
 
 #----------------------------------------------------------------CR
-#   1.b Checking Functions4AES.R and SensorToolBox availability.
+#   1.b Checking Functions4AES.R and SensorToolBox availability
 #       Checking availability of Config files of AirSensEUrs
 #----------------------------------------------------------------CR
 
@@ -34,7 +34,7 @@ if (!file.exists(c(Functions4ASE))) {
     cat(paste0("[Global] ERROR, file ", Functions4ASE, " not found, stopping the process\n"))
     stop(cat(paste0("[Global] ERROR, file ", Functions4ASE), " not found, stopping the process\n"))
 
-} else cat(paste0("[Global] INFO, file ", Functions4ASE , " found and ready to be sourced\n"))
+} else cat(paste0("[Global] INFO, file ", Functions4ASE, " found and ready to be sourced\n"))
 cat("-----------------------------------------------------------------------------------\n")
 
 # Checking if "151016 Sensor_Toolbox.R" is available
@@ -42,7 +42,7 @@ cat("\n")
 cat("-----------------------------------------------------------------------------------\n")
 DisqueSensToolBox  <- file.path(getwd(),"151016 Sensor_Toolbox.R")
 cat("[Global] INFO, checking presence of necessary file 151016 Sensor_Toolbox.R.\n")
-if (!file.exists(c(DisqueSensToolBox))) {
+if (!file.exists(c(DisqueSensToolBox))) { 
 
     cat(paste0("[Global] ERROR, file ", DisqueSensToolBox, " not found, stopping the process\n"))
     stop(cat(paste0("[Global] ERROR, file ", DisqueSensToolBox), " not found, stopping the process\n"))
@@ -89,9 +89,9 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # Add CSS Loading Animations to 'shiny' Outputs                         --> shinycssloaders
 # modal message box                                                     --> shinyalert
 # Modal message box confirm Sweetalert                                  --> shinyWidgets
-# cross-platform dialog box to select file for uploading ref data       --> rChoiceDialogs uses rJava which does not install under linux rstudio-server.
+# cross-platform dialog box to select file for uploading ref data       --> rChoiceDialogs uses rJava which does not install under linux rstudio-server,
 #                                                                           Anyhow this not important because it is not possible to upload local file to the shiny server,
-#                                                                           only server side files. Finally the functionality
+#                                                                           only server side files. Finally the functionality.
 
 # Clean and consistent tools to split-apply-combine pattern in R        --> plyr # use the function plyr::rbind.fill to add number of dataframes together
 # Packages of tidyVerse: tibbel, %>%                                    --> tidyVerse
@@ -101,7 +101,7 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # function to tidy Models 												--> broom
 # To locate current file and dir (jchoose.files)                        --> R.utils
 # To read sensor data, needed for senorweb4R, install before openair    --> stringi
-# Date format for Influxdbr                                             --> xts         # 17-07-15: influxdrb is not used anymore maybe we can get rid of xts?
+# Date format for Influxdbr                                             --> xts # 17-07-15: influxdrb is not used anymore maybe we can get rid of xts?
 # When removing ouliers, using rollapply()                              --> zoo
 # Easier management of time interval                                    --> lubridate
 # To plot time series                                                   --> openair
@@ -122,7 +122,7 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # downloading data from influxdb server                                 --> influxdbr #17-07-15 : not used anymore because of mistakes, now using hhtr + JSONLIte
 # downloading data from influxdb server, used instaed of influxdbr      --> httr, jsonlite
 # transpose dataFrame, and rbindlist (faster than rbindfill)            --> data.table
-# Correlation matrix                                                    --> corrplot
+# Correlation matrix                                                    --> corrplot 
 # crating polynomial for solving the cubic equation                     --> polynom
 # load packages for alphanumeric operations (shield config file)        --> BMS
 # package for saving loading list (index for warming , outliers...)     --> rlist
