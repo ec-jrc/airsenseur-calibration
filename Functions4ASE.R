@@ -3279,16 +3279,24 @@ ping <- function(x, stderr = FALSE, stdout = FALSE, ...) {
 #=====================================================================================CR
 havingIP <- function() {
 
-    if (.Platform$OS.type == "windows") {
-        ipmessage <- system("ipconfig", intern = TRUE)
+  binary <- "ipconfig"
+  if (.Platform$OS.type != "windows") {
+    # test for ifconfig
+    if (!system("which ifconfig > /dev/null", intern = FALSE)) {
+      binary = "ifconfig"
+    } else if (!system("which ip > /dev/null", intern = FALSE)) {
+      binary = "ip addr"
     } else {
-        ipmessage <- system("/sbin/ifconfig", intern = TRUE)
+      stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
     }
+
+    ipmessage <- system(binary, intern= TRUE)
 
     # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
     validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
 
     return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
+  }
 }
 
 #=====================================================================================CR
