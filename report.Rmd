@@ -122,18 +122,18 @@ During this evalutation, the sensor  `r CalSet()$name.sensor` was installed into
 The sensor was calibrated between `r CalSet()$Cal.DateIN` and `r CalSet()$Cal.DateEND`,
 at `r CalSet()$Reference.name`, longitude: `r format(input$coord.ref.Long, digits = 5)` `r if (!grepl(pattern = paste0(c("W","E"), collapse = "|"), x = input$coord.ref.Long)) "decimal degrees"` 
 and latitude: `r format(input$coord.ref.Lat, digits = 5)` `r if (!grepl(pattern = paste0(c("N","S"), collapse = "|"), x = input$coord.ref.Lat)) "decimal degrees"`.
-The calibration was performed using the sensor data *x() in  `r CalSet()$Sens.raw.unit` 
-against the reference measurements (x) in `r CalSet()$unit.ref`.
-Applying the calibration function, the sensor measurements are converted into 
-`r CalSet()$unit.sensor`. 
 
+
+The calibration was performed using the sensor data (y) in  `r CalSet()$Sens.raw.unit` 
+against the reference measurements (x) in `r CalSet()$unit.ref`.
+Applying the calibration function, the sensor measurements are converted into `r CalSet()$unit.sensor`. 
 The calibration function is established by fitting a `r CalSet()$mod.eta.model.type`
 model with the following co-variates: `r paste0(gsub("_"," ",CalSet()$CovMod), collapse = ", ")`.
-The file holding the calibration model is `r gsub("_","-",CalSet()$Cal)`.
 The calibration function was established using time averages of `r input$UserMins` min.
 
-### Validity of calibration of model
+The file holding the calibration model is `r gsub("_","-",CalSet()$Cal)`.
 
+### Validity of calibration of model
 ```{r r_cal_aov, echo=FALSE, message=FALSE, warning=FALSE, cache=FALSE, comment=FALSE, out.width="100%", results='asis'}
 
 if (CalSet()$Cal != "") {
@@ -159,7 +159,10 @@ if (CalSet()$Cal != "") {
 ```
 
 ```{r echo=FALSE}
-if (!is.null(Model.i$Equation)) Model.i$Equation
+if (!is.null(Model.i$Equation)) {
+    cat("The calibration function is:\n")
+    cat(Model.i$Equation)
+} 
 ```
 
 ```{r cal_aov, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "100%", results = 'asis', message = FALSE, comment=FALSE}
@@ -182,7 +185,7 @@ Standard Error of the Coefficient Estimate: measure of the variability in the es
 
 Statistics: score that measures whether or not the coefficient for this variable is meaningful for the model. You probably won't use this value itself, but know that it is used to calculate the p-value and the significance levels.
 
-p-value: probability the variable is NOT relevant. You want this number to be as small as possible (< 0.05 or 0.001). If the number is really small, R will display it in scientific notation. In or example 2e-16 means that the odds that parent is meaningless is about 1⁄5000000000000000
+p-value: probability that the variable is NOT relevant. You want this number to be as small as possible (< 0.05 or 0.001). If the number is really small, it is displayed in scientific notation. In or example 2e-16 means that the odds that parent is meaningless is about 1⁄5000000000000000
 
 ```{r cal_Glance, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "100%", results = 'asis', message = FALSE, comment=FALSE}
 
@@ -552,7 +555,7 @@ if (all(is.na(General.df[, .SD, .SDcols = c(CalSet()$nameGasRef,CalSet()$nameGas
 U.orth.List <- U.orth.List()
 ```
 
-```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', dpi = 300}
+```{r U, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', dpi = 300}
 Xlabel    = paste0(CalSet()$gas.sensor, " in ", CalSet()$unit.ref) 
 Ylabel    = paste0("Sensor measurement in ", CalSet()$unit.sensor)
 Title     = paste0("Measurement uncertainty of sensor ",input$Sensors," between ",
@@ -606,79 +609,80 @@ grid(nx = NULL, ny = NULL, lty = 2, col = "grey")
 ```
 
 ### Target Diagram
-```{r Target_Diagram, out.width="0.3\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Target Diagram"), echo=FALSE}
-#https://stackoverflow.com/questions/39173714/r-markdown-can-i-insert-a-pdf-to-the-r-markdown-file-as-an-image
-addResourcePath("TargetDiag", normalizePath(dirname(Plot.Target.File()), winslash = "/"))
-knitr::include_graphics(paste0("TargetDiag/", basename(Plot.Target.File())))
+, showing relative expanded uncertainty and data quality objectives 
+```{r plot.Target, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', dpi = 300}
+
+# Plotting Modified Target Diagram
+Target.Diagram(Sensor_name = CalSet()$name.sensor,
+               Mat         = U.orth.List()[["Mat"]],
+               ubsRM       = as.numeric(CalSet()$ubsRM),
+               ubss        = as.numeric(CalSet()$ubss),
+               Unit.Ref    = CalSet()$unit.ref,
+               b0          = U.orth.List()[["b0"]],
+               b1          = U.orth.List()[["b1"]],
+               xAxisLabel  = NULL,
+               yAxisLabel  = NULL,
+               DQO.1       = CalSet()$DQO.1 / CalSet()$LV,
+               DQO.2       = CalSet()$DQO.2 / CalSet()$LV,
+               DQO.3       = CalSet()$DQO.3 / CalSet()$LV,
+               LAT         = CalSet()$LAT,
+               UAT         = CalSet()$UAT,
+               LV          = CalSet()$LV,
+               AT          = CalSet()$AT,
+               sdm_sdo     = U.orth.List()[["sdm"]] > U.orth.List()[["sdo"]],
+               Model.used  = CalSet()$Cal,
+               BeginEnd    = c(format(CalSet()$Meas.DateIN, "%Y%m%d"), format(CalSet()$Meas.DateEND, "%Y%m%d")))
+
 ```
 
-```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis'}
-
-# load model used for the comparison of calibrated data with the reference
-DateIN  <- max(c(input[[paste0("DateMeas",CalSet()$k)]][1],input[[paste0("DatePlotMeas",CalSet()$k)]][1]), na.rm = TRUE)
-DateEND <- min(c(input[[paste0("DateMeas",CalSet()$k)]][2],input[[paste0("DatePlotMeas",CalSet()$k)]][2]), na.rm = TRUE)
-
-if(file.exists(file.path(CalSet()$WDModelled_gas, paste0(CalSet()$Cal,"__", CalSet()$eta.model.type,"__",
-                                                         format(DateIN, "%Y%m%d"),"__",
-                                                         format(DateEND,"%Y%m%d"),"__",
-                                                         ".rds")))){
+### Drift
+```{r plot_drift, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "100%", results = 'asis', dpi = 300, fig.width = 7, fig.height = 4}
+if (all(is.na(Drift.df()))) {
+    cat("[shiny, plot.drift()] ERROR, No data in calibrated time series, not plotting any drift times series\n")
+} else {
+    plot(x = Drift.df()$duration, y = Drift.df()$drift, 
+         #ylim = Ylim,
+         xlim = c(min(pretty(Drift.df()$duration, n = 10)), max(pretty(Drift.df()$duration, n = 10))),
+         xlab = "Number of days from 1st data transfer or selected date for plotting Prediction",
+         xaxt = "n",
+         xaxs = "i", # grid is putting nx grid lines in the user space, but plot is adding 4% extra space on each side. You can take control of this. Adding xaxs= "i", yaxs= "i"
+         ylab = CalSet()$unit.ref,
+         main = paste0("Daily residuals in ",CalSet()$unit.sensor," for ",input$Sensors," Sensors - Ref.)"), 
+         col  = "blue", 
+         type = "l", 
+         lty  = 1, 
+         lwd  = 1
+    )
+    points(x = Drift.df()$duration, y = Drift.df()$drift, col = "blue", xaxt = "n", yaxt = "n")
+    # x axis labels
+    axis(side = 1, at = pretty(Drift.df()$duration, n = 10), labels = pretty(Drift.df()$duration, n = 10))
+    # grid for y axis
+    grid(nx = NULL, ny = NULL, lty = 6, col = "grey")
+    # grid for x axis, grid does align correctly with Posix and date
+    #for (i in pretty(Drift.df()$duration, n = 10)[2:length(pretty(Drift.df()$duration, n = 10))]) abline(v= i, lty = 6, col = "grey")
+    abline(h = 0)
     
-    comparison.i <- readRDS(file = file.path(CalSet()$WDModelled_gas, paste0(CalSet()$Cal,"__", CalSet()$eta.model.type,"__",
-                                                                             format(DateIN, "%Y%m%d"),"__",
-                                                                             format(DateEND,"%Y%m%d"),"__",
-                                                                             ".rds")))
-    
-    coeff_validation <- comparison.i$coefficients
-    unc_validation <-  summary(comparison.i)$coefficients[,2]
-    t_validation <-  summary(comparison.i)$coefficients[,3]
-    R2_validation <- summary(comparison.i)$r.squared
-    
-    # coeff_validation <- summary(Plot.Extrapolation())$coefficients[,1]
-    # unc_validation <- summary(Plot.Extrapolation())$coefficients[,2]
-    # t_validation <- summary(Plot.Extrapolation())$coefficients[,3]
-    # R2_validation <- summary(Plot.Extrapolation())$r.squared
-    
-    List_validation <- list(name = CalSet()$name.sensor,
-                            type = "Linear",
-                            coefficients = coeff_validation,
-                            uncertainities = unc_validation,
-                            t_values = t_validation,
-                            R2 = R2_validation)
-    
-    df <- unlist(List_validation)
-    df <- as.data.frame(df)
-    names(df) <- CalSet()$name.sensor
-    
-    df <- knitr::kable(df, format = "markdown")
-    print(df)
-    
-    # plot validation 
-    
-    # if (length(covariates_names) > 1) {
-    # image = intersect(intersect(list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = c(CalSet()$name.sensor, "\\.png$")),
-    #                   list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = CalSet()$mod.eta.model.type)),
-    #                   list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = covariates_names))
-    # } else if (length(covariates_names) == 1) { image = intersect(intersect(list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = c(CalSet()$name.sensor, "\\.png$")),
-    #                   list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = CalSet()$mod.eta.model.type)),
-    #                    list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = paste0("__",covariates_names[1],"_")))
-    # }
-    
-} else print("Save the comparison file using the save plot check box", quote = FALSE)
-
-image = intersect(intersect(list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = c(CalSet()$name.sensor, "\\.png$")),
-                            list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = CalSet()$mod.eta.model.type)),
-                  list.files(paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/"), pattern = covariates_names))
-
-# exclude the time_series (validation)
-image_scatter <- image[!grepl("_ts_", image)]
-# WDoutput
-
-image_scatter <- paste0(DisqueFieldtestDir(),"/","Modelled_gas", "/", image_scatter)
-image_scatter <- sort(image_scatter, decreasing = TRUE)
-# get only the last one (the most recent)
-image_scatter <- image_scatter[1]
-
-
-if (file.exists(image_scatter)) { knitr::include_graphics(image_scatter) 
-    } else print ("Save validation plot", quote = FALSE)
+    # plotting a trend line if there is correlation
+    if (cor.test(Drift.df()$duration,Drift.df()$drift)$p.value < 0.05) {
+        
+        # add trend line and equation
+        Cal_Line(x             = Drift.df()$duration, 
+                 s_x           = NULL,
+                 y             = Drift.df()$drift, 
+                 s_y           = NULL,
+                 Mod_type      = "Linear", 
+                 Matrice       = NULL, 
+                 line_position = -1, 
+                 Couleur       = "red", 
+                 Sensor_name   = input$Sensors,
+                 f_coef1       = "%.1f", 
+                 f_coef2       = "%.2e", 
+                 f_R2          = "%.4f", 
+                 lim           = NULL, 
+                 marges        = c(5,4,4,1), 
+                 Covariates    = NULL, 
+                 Verbose = FALSE)
+    }
+}
 ```
+
