@@ -2723,6 +2723,7 @@ havingIP <- function() {
     } else {
       stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
     }
+  }
 
     ipmessage <- system(binary, intern= TRUE)
 
@@ -2730,7 +2731,6 @@ havingIP <- function() {
     validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
 
     return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
-  }
 }
 #=====================================================================================CR
 # 160418 MGV: Validation.tool       function for validations
