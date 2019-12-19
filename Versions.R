@@ -1,75 +1,19 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
-# New release V0.15 (V0.14 is not distributed, V0.15 includes both changes of v0.14 and v0.15)
-# 2019-11-20   E51 - bug corection: When downloading InfluxDB data in minutes values, not all data are downloaded, only the 1st 10000 within 30 day period.
-#                    Problem with downloading of a maximum of 10000 records (lines) from the InfluxDB. The maximum number (10000) of records
-#                    has been defined ad 10000/(24*60/Mean) where mean is the "Averaging" to be set when downloading the sensor data from the Influx DB
-#              E52 - bug corection: Impossible to calibrate with a linear model when a MultiLinear calibration model already exists. This is because the word "Linear" is included into the word "MultiLinear".
-#                    Corrected.
-#              E53 - bug corection: Mistake when plotting a "Drift" of calibrated sensor data: when computing the difference between calibrated sensor data minus reference data, this is called "residual",
-#                    if any calibrated sensor data or reference data is missing, the residual should not be computed. Corrected using only complete.cases for estimating residuals.
-#              E54 - bug corection: When calibrating a sensor using a multiLinear calibration model with another sensor (2) among the covariates. The app may crash if the the calibrated value of
-#                    sensor 2 are not yet computed. An alert message is now displayed and the app does not crash anymore.
-#              E55 - Bug Correction, When calibrating a sensor using a multiLinear calibration model with a list of "Covariates for calibration" of the sideBarLayout that is different from the
-#                    covariate list of the MultiLinear, the App crashes. Now corrected with a shinyalert message. The app does not cash anymore.
-#              N96 - Under NavBar Menu "Help", the user manual now directly shows the Google Doc document without need for downloading a pdf. It seems that the position of box and arrows
-#                    in figures is messed up.
-#              E56 - Bug correction impossible to save graphic file of matrix plot in calibration and prediction. Corrected by setting the dimension of the graphic file. The fixed
-#                    dimension may create distorsion of the plotted R2 and equation equation
-#              N97 - The process of reshaping the airsenseur.db is now much faster using function spread of tidyverse in function sqlite2df()
-#              E57 - bug corection: when loading reference data using an rdata file there was a bug for the names of the fields in dataframe reference.i. Added support for temperature,
-#                                   humidity and pressure in the reference data.
-#              N98 - bug corection: Added message to keep UTC time zone when downloading sensor data using InfluxDB uner NavbarMenu "Getdata", tab "Sensor Data".
-#              E58 - bug corection: When plotting a time series using Dygraphs, the last selected day was excluded from computation and plotting as selection returned a type Date
-#                                   without time values. Corrected adding one day to the last selected date. All dygraph time series plots used the local time zone. Now set to UTC.
-#              N99 - Checking if R runs in 32-bist system, advising to switch to a 64-bit system for efficiency
-#             N100 - In the map showing the locations for calibration and prediction, all AirSensEUR and reference station sites with at least 0.0001 decimal degree of difference different
-#                    are plotted with grey circles and blue markers. This can show the path in mobility when it will be needed or for calibration at multiple sites.
-#                    The extent of the map is automatically set to the bounds of the GPS coordinates during the calibration or prediction time interval.
-#             N101 - In order to avoid the confusion with separator of longitude and latitude of the reference station, the coordinates are entered in 2 different text input, see "GetData"
-#              E59 - bug corection: In NavBarMenu "DataTreatment", mainTaPanel "PlotFiltering", the plots of Warming, Temp & Hmidity, Invalid and Outliers always used the date/time selected
-#                                   for the first sensor, under "Range of dates for plotting outliers", whatever sensor being selected. Corrected: now the Range of dates for plotting outliers
-#                                   is selected for each sensor.
-#              N83 - When computing time averegae means, openAir::timeAverage is replaced with rcpp::roll_mean for save cpu time
-#                    Lately: The speed of the code for averaging dataframe from minute to hours is improved using data.table package
-#              E61 - Bug correction solved: crash when CovMod Config file is empty. Solved using read_csv instead of read.csv
-#              E62 - bug corection: When the last date of General.Rdata ends before the last date of Refdata without any Influx Data available for the new dates in RefData, the reactive GENERAL function is triggered
-#                    GENERAL is run and the resulting dataframe General.df does not include the outliers columns yet. Consequently the Outliers discarding module is run at each startup.
-#                    This is now solved by using all.equal instead of identical and comparing only common colums of saved Genera.Rdata files and the returned dataframe of function GENERAL.?
-#              E63 - bug corection: In function GENERAL, merge of data frames RefData and InfluxData is replaced with merge of data.tables to increase speed
-#              N92 - improvement of download of reference data with a_i_p server for minutes values, managing, valid data, flagged data and aggregation
-#             N102 - The "Cal" button was added in the "Range of dates for plotting covariates:", tab "SetTime" of the Sidebar Layout of the "Data Treatment" NavBar menu. Clicking this button will set the
-#                    dates of "Range of dates for plotting covariates:" to the ones of "Range of dates for calibration:".
-#              N82 - reduce the time for detection of outliers: go parallel computing with different version for linux and windows
-#                    Instead of using parallel computing the roll_apply function to compute Median Average Deviation is replaced with caTools::runmad in function my.Rm.Outliers. Time gain: from 77 sec
-#                    to less than 2 sec for big dataframes.
-#              E64 - bug corection: When loading and saving being ojects (General.Rdata or models.RDS), the files and object soemtimes becomes very big because some garbage in the environment is loaded and saved.
-#                    Typically it becomes impossible to work with quantile calibration model (called Linear.robust using rq()). This now solved by creating a new environment before loading
-#                    or saving these obects. Serailizing and unserializing also helps removing the garbage.
-#              N93 - Passwords are also hidden in the tabPanel GetData Panel
-#              N89 - Dew point deficit added among the variables to matrix plots and calibration of model provided that reference data include temperature and humidity
-#                    For reference data, Ref.Absolute_humidity and Ref.Td_deficit are added, and for AirSensEUR, Absolute_humidity and Td_deficit are added. This is consistent with previously created
-#                    General.Rdata file, for which these variables are added if missing.
-#              E60 - bug corection: The problems of plotting the uncertainty, scatter plot and orthogonal regression is solved using a TabSetPanel under menu "data treatment" - "Prediction" - "Uncertainty"
-#              E61 - bug corection: Wrong calculation of the DateIn and DateEND selection for all plots: DateIN <- min(.. replaced with DateIN <- max(.. and DateEND <- max(.. replaced with DateEND <- min(..
-#              E50 - bug corection: In "GetData" when changing sensor shield, the App start turning around exchanging shield file
-#                    The use the config file of chemical shield has been completely changed with obligation to delete General data and re doing all data tretment.
-#             N103 - General data is now saved in CSV rather than in Rdata. It is saved and opened with data.table fread and fwrite to speed up the process
-#              E49 - bug corection: Add the between sampler uncertainty is the calculation of sensor uncertainty. This is now d
-#                    A new parameter was added into the Side Layout , u(bs), between sensor uncertainty and U(xi) is renamed u(bsRM), between reference data uncertainty. This is for the calculation
-#                    of the emasurement uncertainty, see CEN TC 264 WG 42 protocl of evaluation of gas sensors
-#              E64 - bug corection: When SETTIME is read, a consistency check of available data dates and dates of outliers, validity, calibration and prediction is carried oout in order to avoid a crash of the App.
-#                    Dates are corrected if needed
-#             N104 - the TabPanel "Influx Sensor Data", "SOS Sensor Data", "Refernce Data" and "General Sensor Data" show now the begining and ending date of dataframes.
-#             N105 - general improvement of data download and data treatment by using package data.table. Only the download of SOS data is still to be improved
-#              E23 - bug corection: Following a first data treatment with one ASE box When selecting a 2nd different ASE box in Navbar Menu SelectASE, there is generally a crash of the code.
-#                    The App has been rewritten, limiting the reactivity that was causing the crash of the App. uploading of of all data is now carried out when selecting an ASE box
-#                    with resetting of all data set. It should be now possible to switch between ASE box depending how deep you go with the data treatment.
-#              N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
-#              E15 - If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
+# New release V0.16
+# 2019-12-17   N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
+#              E15 - bug corection: If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
 #                    This is now solved, config fiels are updated when the shield config file is changed. The App stop and when restarting all data are correctly updated
-#
+#             N108 - Changing calibration model is now only allowed in MainTabPanel DataTreatment - Calibration - Scatterplot or Calibrated
+#              E65 - A bug was corrected that was runnung the outlier detection every time a new ASE box was selected.
+#              E66 - bug corection: When changing the minimum Valid Date of SetTime, all other dates were no more updated (outliers, co-variates, calibration and predicted).
+#                    This is now solved
+#             N109 - in MainTabPanel Data Treatment - PlotFiltering - Invalid, thre is a new button "At reference Station". When pressed new time periods when the selected AirSensEUR box is not within 50 meters
+#                    of the coordinates of the reference station are computed. You may need to press twice the button to displayd the new IN and END date of these time periods. Remember to click on "Apply
+#                    validity periods" to update the whole filtering of invalid data and sensor outliers.
+#              E67 - bug corection: corrected the problem of size inflated model (>100 MB) when saving models of type Linear.Robust(rq())
+#              E38 - bug corrction: the reactivity of scatterplots, time series and matrix plots with parameters that are not relevant have been corrected
 
 #  ----#TO BE DONE  : ----
 # BUG CORRECTIONS
@@ -81,8 +25,9 @@
 #             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
 #             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instead of the data series ime zone ("UTC") when discarding values.
 #             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the startvalues
-
-# NEW FEATURES needed: ----
+#             E69 - there is a problem with the color scale of concetration levels of the Target Diagram
+#             E70 - In some cases when selecting a new minimum Valid date, the date for covariates, calibration, prediction and reference outlier is wrongly updated
+# NEW FEATURES needed:----
 #              N2 - Calibration with linear.robust: add RMSE on statterplot ...
 #              N3 - Add model calibration: neural network model in the list of possible calibration method.
 #              N5 - Add model resulting of laboratory experiments for calibration.
@@ -104,6 +49,115 @@
 #             N30 - add the log mainTabPanel in the GetData NavBar menu
 #             N31 - Upload concentration levels after calibration to Client SOS and Influx (Grafana) servers
 #             N51 - Every time a .png files for rawData, scatterPlots, time series, matrix, Uncertainty, drift and targetDiagram exists in Calibration, mModelled_gas,
+#                   General_Data should not create a new plot and rather uses the .png plot instead
+#             N52 - Add the possibility to invalidate humidity transient
+#             N53 - Create a button "Delete" of AirSensEUR in NavBar menu "SelectASE"
+#             N54 - Finish Shiny App Manual
+#             N88 - Add interactive selection of points in the matrix plots of covariates, calibration and prediction
+#             N89 - Add the possibility to set some of the coefficients of calibration models with plotty
+#            N106 - Add the possibility to use several calibration models at different date interval
+#            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
+
+# New release V0.15 (V0.14 is not distributed, V0.15 includes both changes of v0.14 and v0.15)
+# 2019-11-20   E51 - bug corection: When downloading InfluxDB data in minutes values, not all data are downloaded, only the 1st 10000 within 30 day period.
+#                    Problem with downloading of a maximum of 10000 records (lines) from the InfluxDB. The maximum number (10000) of records 
+#                    has been defined ad 10000/(24*60/Mean) where mean is the "Averaging" to be set when downloading the sensor data from the Influx DB
+#              E52 - bug corection: Impossible to calibrate with a linear model when a MultiLinear calibration model already exists. This is because the word "Linear" is included into the word "MultiLinear". 
+#                    Corrected. 
+#              E53 - bug corection: Mistake when plotting a "Drift" of calibrated sensor data: when computing the difference between calibrated sensor data minus reference data, this is called "residual",
+#                    if any calibrated sensor data or reference data is missing, the residual should not be computed. Corrected using only complete.cases for estimating residuals.
+#              E54 - bug corection: When calibrating a sensor using a multiLinear calibration model with another sensor (2) among the covariates. The app may crash if the the calibrated value of 
+#                    sensor 2 are not yet computed. An alert message is now displayed and the app does not crash anymore.
+#              E55 - Bug Correction, When calibrating a sensor using a multiLinear calibration model with a list of "Covariates for calibration" of the sideBarLayout that is different from the 
+#                    covariate list of the MultiLinear, the App crashes. Now corrected with a shinyalert message. The app does not cash anymore.
+#              N96 - Under NavBar Menu "Help", the user manual now directly shows the Google Doc document without need for downloading a pdf. It seems that the position of box and arrows
+#                    in figures is messed up.
+#              E56 - Bug correction impossible to save graphic file of matrix plot in calibration and prediction. Corrected by setting the dimension of the graphic file. The fixed 
+#                    dimension may create distorsion of the plotted R2 and equation equation
+#              N97 - The process of reshaping the airsenseur.db is now much faster using function spread of tidyverse in function sqlite2df()
+#              E57 - bug corection: when loading reference data using an rdata file there was a bug for the names of the fields in dataframe reference.i. Added support for temperature, 
+#                                   humidity and pressure in the reference data.
+#              N98 - bug corection: Added message to keep UTC time zone when downloading sensor data using InfluxDB uner NavbarMenu "Getdata", tab "Sensor Data".
+#              E58 - bug corection: When plotting a time series using Dygraphs, the last selected day was excluded from computation and plotting as selection returned a type Date 
+#                                   without time values. Corrected adding one day to the last selected date. All dygraph time series plots used the local time zone. Now set to UTC.
+#              N99 - Checking if R runs in 32-bist system, advising to switch to a 64-bit system for efficiency
+#             N100 - In the map showing the locations for calibration and prediction, all AirSensEUR and reference station sites with at least 0.0001 decimal degree of difference different 
+#                    are plotted with grey circles and blue markers. This can show the path in mobility when it will be needed or for calibration at multiple sites.
+#                    The extent of the map is automatically set to the bounds of the GPS coordinates during the calibration or prediction time interval.
+#             N101 - In order to avoid the confusion with separator of longitude and latitude of the reference station, the coordinates are entered in 2 different text input, see "GetData"
+#              E59 - bug corection: In NavBarMenu "DataTreatment", mainTaPanel "PlotFiltering", the plots of Warming, Temp & Hmidity, Invalid and Outliers always used the date/time selected 
+#                                   for the first sensor, under "Range of dates for plotting outliers", whatever sensor being selected. Corrected: now the Range of dates for plotting outliers
+#                                   is selected for each sensor.
+#              N83 - When computing time averegae means, openAir::timeAverage is replaced with rcpp::roll_mean for save cpu time
+#                    Lately: The speed of the code for averaging dataframe from minute to hours is improved using data.table package 
+#              E61 - Bug correction solved: crash when CovMod Config file is empty. Solved using read_csv instead of read.csv
+#              E62 - bug corection: When the last date of General.Rdata ends before the last date of Refdata without any Influx Data available for the new dates in RefData, the reactive GENERAL function is triggered
+#                    GENERAL is run and the resulting dataframe General.df does not include the outliers columns yet. Consequently the Outliers discarding module is run at each startup. 
+#                    This is now solved by using all.equal instead of identical and comparing only common colums of saved Genera.Rdata files and the returned dataframe of function GENERAL.?
+#              E63 - bug corection: In function GENERAL, merge of data frames RefData and InfluxData is replaced with merge of data.tables to increase speed
+#              N92 - improvement of download of reference data with a_i_p server for minutes values, managing, valid data, flagged data and aggregation
+#             N102 - The "Cal" button was added in the "Range of dates for plotting covariates:", tab "SetTime" of the Sidebar Layout of the "Data Treatment" NavBar menu. Clicking this button will set the
+#                    dates of "Range of dates for plotting covariates:" to the ones of "Range of dates for calibration:".
+#              N82 - reduce the time for detection of outliers: go parallel computing with different version for linux and windows
+#                    Instead of using parallel computing the roll_apply function to compute Median Average Deviation is replaced with caTools::runmad in function my.Rm.Outliers. Time gain: from 77 sec 
+#                    to less than 2 sec for big dataframes.
+#              E64 - bug corection: When loading and saving being ojects (General.Rdata or models.RDS), the files and object soemtimes becomes very big because some garbage in the environment is loaded and saved.
+#                    Typically it becomes impossible to work with quantile calibration model (called Linear.robust using rq()). This now solved by creating a new environment before loading 
+#                    or saving these obects. Serailizing and unserializing also helps removing the garbage.
+#              N93 - Passwords are also hidden in the tabPanel GetData Panel
+#              N89 - Dew point deficit added among the variables to matrix plots and calibration of model provided that reference data include temperature and humidity
+#                    For reference data, Ref.Absolute_humidity and Ref.Td_deficit are added, and for AirSensEUR, Absolute_humidity and Td_deficit are added. This is consistent with previously created 
+#                    General.Rdata file, for which these variables are added if missing.
+#              E60 - bug corection: The problems of plotting the uncertainty, scatter plot and orthogonal regression is solved using a TabSetPanel under menu "data treatment" - "Prediction" - "Uncertainty"
+#              E61 - bug corection: Wrong calculation of the DateIn and DateEND selection for all plots: DateIN <- min(.. replaced with DateIN <- max(.. and DateEND <- max(.. replaced with DateEND <- min(..
+#              E50 - bug corection: In "GetData" when changing sensor shield, the App start turning around exchanging shield file
+#                    The use the config file of chemical shield has been completely changed with obligation to delete General data and re doing all data tretment.
+#             N103 - General data is now saved in CSV rather than in Rdata. It is saved and opened with data.table fread and fwrite to speed up the process
+#              E49 - bug corection: Add the between sampler uncertainty is the calculation of sensor uncertainty. This is now d
+#                    A new parameter was added into the Side Layout , u(bs), between sensor uncertainty and U(xi) is renamed u(bsRM), between reference data uncertainty. This is for the calculation 
+#                    of the emasurement uncertainty, see CEN TC 264 WG 42 protocl of evaluation of gas sensors
+#              E64 - bug corection: When SETTIME is read, a consistency check of available data dates and dates of outliers, validity, calibration and prediction is carried oout in order to avoid a crash of the App.
+#                    Dates are corrected if needed
+#             N104 - the TabPanel "Influx Sensor Data", "SOS Sensor Data", "Refernce Data" and "General Sensor Data" show now the begining and ending date of dataframes.
+#             N105 - general improvement of data download and data treatment by using package data.table. Only the download of SOS data is still to be improved
+#              E23 - bug corection: Following a first data treatment with one ASE box When selecting a 2nd different ASE box in Navbar Menu SelectASE, there is generally a crash of the code.
+#                    The App has been rewritten, limiting the reactivity that was causing the crash of the App. uploading of of all data is now carried out when selecting an ASE box
+#                    with resetting of all data set. It should be now possible to switch between ASE box depending how deep you go with the data treatment.
+
+#  ----#TO BE DONE  : ----
+# BUG CORRECTIONS
+#              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user
+#              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA. 
+#                   Change substraction to V or nA
+#             E15 - If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
+#             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers 
+#                   and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
+#             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
+#             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instead of the data series ime zone ("UTC") when discarding values.
+#             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the startvalues
+
+# NEW FEATURES needed: ----
+#              N2 - Calibration with linear.robust: add RMSE on statterplot ...
+#              N3 - Add model calibration: neural network model in the list of possible calibration method.
+#              N5 - Add model resulting of laboratory experiments for calibration.
+#              N6 - In NavBar menu "Help": add videos on how to use the shiny interface.
+#              N7 - Do Filtering and conversion only for the selected sensor, not for all sensors.
+#              N8 - add "Sensor" and "Reference" in front of covariates in the comboBox of SideBar "Calib"
+#             N11 - Add evaluation tools: Sensor Evaluation Toolbox (SET) (Barak Fishbain).
+#             N12 - For invalid data: allow to resume data to initial value if CheckBoxes "Enable Outlier discarding" set to FALSE. 
+#             N13 - Detect nearest AQMS using GPS coodinates and and download with SOS
+#             N15 - Add support for OPC-N3-2 and MOx sensor
+#             N17 - In getData Time-shield add a 2nd time average to be applied after download, in order to avoid to modify the raw downloaded data if averaging time is changed
+#             N19 - When downloading the SOS data make a query average to download less data as for InfluxQL
+#             N20 - TabSet Calib, add unit for slope and intercept, 
+#             N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
+#             N22 - Enter the width of rolling window for oulier detection in hours instead of numbers of data, e. g. 19 for a rolling window of 3 hours with 10 minutes average time
+#             N27 - automatic order of rows of files "ASE_name"_valid_"sensor.name".cfg" based on the "in" dates
+#             N28 - Add an observer to open the correct sideBar tabPanel according to the selected tabPanel in the mainPanel
+#             N29 - There may be an error when adding dataFrame with subsequent download if a delay has been implemented before or if the Delay is modified between two downloads
+#             N30 - add the log mainTabPanel in the GetData NavBar menu
+#             N31 - Upload concentration levels after calibration to Client SOS and Influx (Grafana) servers
+#             N51 - Every time a .png files for rawData, scatterPlots, time series, matrix, Uncertainty, drift and targetDiagram exists in Calibration, mModelled_gas, 
 #                   General_Data should not create a new plot and rather uses the .png plot instead
 #             N52 - Add the possibility to invalidate humidity transient
 #             N53 - Create a button "Delete" of AirSensEUR in NavBar menu "SelectASE"
@@ -187,7 +241,6 @@
 #              N89 - Absolute humidity added among the variables to matrix plots and calibration of model.
 #              N90 - Added detection of dates for each new Reference data to add to the previously downloaded Reference data. Only if the time-interval of the new Reference
 #                    data is not equal to the UserMins, then TimeAverage is carried out as from the previous Reference data.
-
 # New release v0.11
 # 2018-11-11 : N66 - For all plots of MainTabPanel "PlotFiltering" (warming, Temperature and Humidity, NegValues, Invalid and Outliers) when the time span is lower or equal than the number of tick
 #                    mark of X axis #                    the time of day is added to the dates on the x axis labels.
@@ -253,7 +306,6 @@
 #                                    is.not.NA.y <- which(complete.cases(DF$General[,c(nameGasVolt,CovMod)]))
 #                                    is.NA.y     <- setdiff(1:nrow(DF$General), is.not.NA.y)
 #                                    You can also use the NavBarMenu "Memory" to check if the size of DF$General increases. It should remain constant once calibration is carried out.
-
 # New release v0.10
 # 2018-09-06 : N63 - in the SideBarLayout, TabPanel "Calib.", every time a calbration model is selected the Raw units, Model for Calibration, list of covariates, Range of dates for calibration: and
 #                    Range of dates for plotting calibration are updated to the selected calibration model in order to be able to see the Calibration Scatterplot without changing these parameters.
@@ -274,7 +326,6 @@
 #                              time zone is not only possible if "Influx.TZ" is null or "local time". The call to function INFLUXDB is modified in order to include Influx.TZ   = input$Influx.TZ.
 #                              Mistake in Sql2df: string were converted to POSIXct with time zone UTC. It was added lubridate::ymd_hms(Values_db$time, tz = Influx.TZ).
 #                              Removed from SQL2df: if (any(base::format(Values_db$time, format= "%Z") != "UTC")) attr(Values_db$time, "tzone") <- "UTC" that was imposing timeZone "UTC"
-
 # 2018-08-17 : New release v0.9
 # 2018-08-17 : N14 - upload of reference data using a local csv, dat or text file. No need to have all reference pollutants. reference pollutants names are recognized (e.g. CO, "co", Ref.CO_ppm")
 #                    see naveBarMenu "Getdata", sidebar layout tabPanel "Reference" - "csv". Downloaded data are only printed when clicking on buttons "Download Influx Data" or "Download Reference Data"
@@ -456,13 +507,11 @@
 #              Automatic saving of plots is now carried only out when check box "save  Plot" in NavBar "Data Treatment" menu is selected. The script is thus more reactive
 #              added: general additive model for calibration ("gam") in SideBarLayout TabPanel "Calib"
 #              added: one sliderInput ("DatePlotMeas") for plotting extrapolated data in SideBarLayout TabPanel "SetTime"
-
 # 2018-12-14 : New release v 0.3
 # 2017-12    : Sqlite2df setting sensor names from the shield config file, no need to remember or add them nanually
 #              Accepting Influx data without sensor names in Down_Influx and Sqlite2df
 #
 # 2018-11-28 : New release v 0.2
-
 # 2018-11-21 : Release v 0.1
 # 2017-05-05 : shiny App adapted from the ASE-OPER_SCRIPT
 # 2017-06-01 : Select directories/file using choose.dir choose.files window
