@@ -900,7 +900,7 @@ Check_Download <- function(Influx.name = NULL, WDinput, UserMins, General.df = N
     # Installing necessary packages
     #------------------------------------------------------------------------------CR
     # Both RSQLite and sqldf (and others too) are loaded by library(sqldf), so it is enough to instal sqldf
-    list.Packages <- c("dplyr")
+    list.Packages <- c("dplyr", "DBI", "RSQLite")
     Load.Packages(list.Packages)
     # Set the Rdata file of input data
     airsenseur.db.file  = file.path(WDinput, "airsenseur.db")
@@ -4095,7 +4095,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
     }
     # reading the files with Covariates to plot and covariates to calibrate
     for (i in 1:length(sens2ref$name.sensor[!is.na(sens2ref$name.sensor)])) {
-        
+
         nameSens <- sens2ref$name.sensor[which(!is.na(sens2ref$name.sensor))][i]
         nameGas  <- sens2ref$name.gas[which(sens2ref$name.sensor == nameSens)]
         nameFile <- file.path(DisqueFieldtestDir,"General_data",paste0(ASE_name,"_Covariates_",nameSens,".cfg"))
