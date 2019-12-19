@@ -1308,7 +1308,7 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     # Installing necessary packages
     #------------------------------------------------------------------------------CR
     # Both RSQLite and sqldf (and others too) are loaded by library(sqldf), so it is enough to instal sqldf
-    list.Packages <- c("curl", "devtools", "sqldf", "zoo", "xts", "XML", "httr", "RJSONIO", "jsonlite", "lubridate")
+    list.Packages <- c("curl", "devtools", "sqldf", "zoo", "xts", "XML", "httr", "RJSONIO", "jsonlite", "lubridate", "data.table")
     Load.Packages(list.Packages)
     #------------------------------------------------------------------------------CR
     # Downloading timezone from Github
