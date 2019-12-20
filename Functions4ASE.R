@@ -1058,7 +1058,6 @@ Check_Download <- function(Influx.name = NULL, WDinput, UserMins, General.df = N
             # Influx.file exists if data exist
             ExistFil.data.Influx  = TRUE
             # InfluxData exists and is not NULL
-            browser()
             DateIN.Influx.prev  <- min(InfluxData$date, na.rm = TRUE)
             DateEND.Influx.prev <- max(InfluxData$date, na.rm = TRUE)
             # Checking if Download of InfluxData is necessary
@@ -1615,31 +1614,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     }
     #dbGetQuery(SQLite.con, paste0("CREATE INDEX IDtime ON ",Dataset, "(time);"))
     # # getting the default Page of data to download
-    if (is.null(Page)) Page <- 200000
-    # browser()
-    # while (Download.N < (SQL.Total.N - Dataset.N)) {
-    #
-    #     # For the last Page to read used modulo instead of Page in order not to download twice the same records
-    #     if ((Download.N + Page) > (SQL.Total.N - Dataset.N)) {Old_Page <- Page ; Page <- (SQL.Total.N - Dataset.N) %% Page }
-    #
-    #     # Downloading a slice Page
-    #     Adding  <- dbGetQuery(SQLite.con, paste0("SELECT time, boardTimeStamp, gpsTimestamp,
-    #                                              channel, name,
-    #                                              cast(altitude AS DECIMAL) AS altitude,
-    #                                              cast(latitude AS DECIMAL) AS latitude,
-    #                                              cast(longitude AS DECIMAL) AS longitude,
-    #                                              sampleEvaluatedVal
-    #                                              FROM ", Dataset, " LIMIT ", format(Page, scientific = FALSE),
-    #                                              " OFFSET ", format(Dataset.N + Download.N, scientific = FALSE)))
-    #
-    #     # adding data to Values_db
-    #     cat(paste0("[SQLite2df] INFO, ", format(Download.N + nrow(Adding), scientific = FALSE), "/",(SQL.Total.N - Dataset.N)," records were read "), sep = "\n")
-    #     Adding <- data.table(Adding, key = "time")
-    #     if (exists("Values_db")) Values_db <- rbindlist(list(Values_db,Adding), use.names = TRUE, fill = TRUE) else Values_db <- Adding
-    #     # updating counter
-    #     Download.N  <- Download.N + Page
-    #
-    # }
+    if (is.null(Page)) Page <- 500000
     cat(paste0("[SQLite2df] INFO, reading ",(SQL.Total.N - Dataset.N)," records"), sep = "\n")
     Values_db <- data.table(dbReadTable(SQLite.con, Dataset))
     data.table::set(Values_db, j = "time", value =  ymd_hms(Values_db[["time"]], tz = Influx.TZ))
@@ -1713,31 +1688,31 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
             # updating the model of sensor in df Channel.names corresponding to sensor in asc.File based on channel number
             set(Channel.names, i = which(Channel.names$channel==i-1), j = "name", value = asc.File$name.sensor[i])}}
     # Defining names and variables for gas sensors - Used the same names of variables as in SOS for compatibility reasons
-    Sensor.names <- list(Nitrogen_dioxide      = c("NO2_B43F_P1","NO2_A43F_P1","no2_b43f", "NO2-B43F", "NO2B43F", "NO2_B43","NO2_M20", "NO2_C1", "NO2_C25", "NO2/C-20", "NO2_3E50", "NO23E50", "NO2", "S1"),
-                         Carbon_monoxide       = c("CO_A4_P1"  , "CO_B4_P1","CO-B4", "CO-A4", "CO_MF200","CO/MF-200", "CO/MF-20", "CO-MF200", "CO_C200", "CO_CF200", "CO_3E300","CO3E300", "CO","COMF200","CO-A4 O","COA4", "S2"),
-                         Ozone                 = c("OX_A431_P1", "OX_B431_P1","O3/M-5", "O3-B4", "AX-A431", "OX-A431", "OX_A431", "O3-A431", "O3_M5", "O3_C5", "O3_C100", "O3-M5", "o3_m_5", "O3_3E1F", "O33EF1", "O3", "O3E100", "S3"),
-                         Nitric_oxide          = c("NO_B4_P1"  , "NO_A4_P1","NO-B4", "NOB4_P1","NOB4", "NO_M25", "NO_C1", "NO_C25","NO/C-25", "NO3E100", "NO_3E100", "NO", "No Sensor", "S4"),
-                         Sulfur_dioxide        = c("SO2_B4_P1" , "SO2_A4_P1", "SO2_M20", "SO2_M20", "SO2_MF20", "SO2_C1", "SO2_C20", "SO2_CF20"),
-                         Ammonia               = c("NH3_MR100" , "NH3_CR50"),
-                         Particulate_Matter_1  = c("OPCN2PM1"  , "OPCN3PM1"),
-                         Particulate_Matter_25 = c("OPCN2PM25" , "OPCN3PM25"),
-                         Particulate_Matter_10 = c("OPCN2PM10" , "OPCN3PM10"),
-                         Bin0                  = c("OPCN2Bin0" , "OPCN3Bin0"),
-                         Bin1                  = c("OPCN2Bin1" , "OPCN3Bin1"),
-                         Bin2                  = c("OPCN2Bin2" , "OPCN3Bin2"),
-                         Bin3                  = c("OPCN2Bin3" , "OPCN3Bin3"),
-                         Bin4                  = c("OPCN2Bin4" , "OPCN3Bin4"),
-                         Bin5                  = c("OPCN2Bin5" , "OPCN3Bin5"),
-                         Bin6                  = c("OPCN2Bin6" , "OPCN3Bin6"),
-                         Bin7                  = c("OPCN2Bin7" , "OPCN3Bin7"),
-                         Bin8                  = c("OPCN2Bin8" , "OPCN3Bin8"),
-                         Bin9                  = c("OPCN2Bin9" , "OPCN3Bin9"),
-                         Bin10                 = c("OPCN2Bin10", "OPCN3Bin10"),
-                         Bin11                 = c("OPCN2Bin11", "OPCN3Bin11"),
-                         Bin12                 = c("OPCN2Bin12", "OPCN3Bin12"),
-                         Bin13                 = c("OPCN2Bin13", "OPCN3Bin13"),
-                         Bin14                 = c("OPCN2Bin14", "OPCN3Bin14"),
-                         Bin15                 = c("OPCN2Bin15", "OPCN3Bin15"),
+    Sensor.names <- list(Nitrogen_dioxide      = c("NO2_B43F_P1", "NO2_A43F_P1","no2_b43f", "NO2-B43F", "NO2B43F", "NO2_B43","NO2_M20", "NO2_C1", "NO2_C25", "NO2/C-20", "NO2_3E50", "NO23E50", "NO2", "S1"),
+                         Carbon_monoxide       = c("CO_A4_P1"   , "CO_B4_P1","CO-B4", "CO-A4", "CO_MF200","CO/MF-200", "CO/MF-20", "CO-MF200", "CO_C200", "CO_CF200", "CO_3E300","CO3E300", "CO","COMF200","CO-A4 O","COA4", "S2"),
+                         Ozone                 = c("OX_A431_P1" , "OX_B431_P1","O3/M-5", "O3-B4", "AX-A431", "OX-A431", "OX_A431", "O3-A431", "O3_M5", "O3_C5", "O3_C100", "O3-M5", "o3_m_5", "O3_3E1F", "O33EF1", "O3", "O3E100", "S3"),
+                         Nitric_oxide          = c("NO_B4_P1"   , "NO_A4_P1"  , "NO-B4", "NOB4_P1","NOB4", "NO_M25", "NO_C1", "NO_C25","NO/C-25", "NO3E100", "NO_3E100", "NO", "No Sensor", "S4"),
+                         Sulfur_dioxide        = c("SO2_B4_P1"  , "SO2_A4_P1" , "SO2_M20", "SO2_M20", "SO2_MF20", "SO2_C1", "SO2_C20", "SO2_CF20"),
+                         Ammonia               = c("NH3_MR100"  , "NH3_CR50") ,
+                         Particulate_Matter_1  = c("OPCN2PM1"   , "OPCN3PM1") ,
+                         Particulate_Matter_25 = c("OPCN2PM25"  , "OPCN3PM25"),
+                         Particulate_Matter_10 = c("OPCN2PM10"  , "OPCN3PM10"),
+                         Bin0                  = c("OPCN2Bin0"  , "OPCN3Bin0"),
+                         Bin1                  = c("OPCN2Bin1"  , "OPCN3Bin1"),
+                         Bin2                  = c("OPCN2Bin2"  , "OPCN3Bin2"),
+                         Bin3                  = c("OPCN2Bin3"  , "OPCN3Bin3"),
+                         Bin4                  = c("OPCN2Bin4"  , "OPCN3Bin4"),
+                         Bin5                  = c("OPCN2Bin5"  , "OPCN3Bin5"),
+                         Bin6                  = c("OPCN2Bin6"  , "OPCN3Bin6"),
+                         Bin7                  = c("OPCN2Bin7"  , "OPCN3Bin7"),
+                         Bin8                  = c("OPCN2Bin8"  , "OPCN3Bin8"),
+                         Bin9                  = c("OPCN2Bin9"  , "OPCN3Bin9"),
+                         Bin10                 = c("OPCN2Bin10" , "OPCN3Bin10"),
+                         Bin11                 = c("OPCN2Bin11" , "OPCN3Bin11"),
+                         Bin12                 = c("OPCN2Bin12" , "OPCN3Bin12"),
+                         Bin13                 = c("OPCN2Bin13" , "OPCN3Bin13"),
+                         Bin14                 = c("OPCN2Bin14" , "OPCN3Bin14"),
+                         Bin15                 = c("OPCN2Bin15" , "OPCN3Bin15"),
                          Bin16                 = "OPCN3Bin16",
                          Bin17                 = "OPCN3Bin17",
                          Bin18                 = "OPCN3Bin18",
@@ -1773,19 +1748,18 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     #------------------------------------------------------------------------------CR
     for (i in 1:length(Sensor.names)) {
         for (j in which(Sensor.names[[i]] %in% Channel.names$name)) {
-            set(Channel.names, i = which(Channel.names$name == Sensor.names[[i]][j]), j = "Variables", value = names(Sensor.names)[i])
-            break}}
+            irows <- which(Channel.names$name == Sensor.names[[i]][j])
+            if (length(irows) > 0) set(Channel.names, i = irows, j = "Variables", value = names(Sensor.names)[i])}}
     cat("[SQLite2df] INFO, sensors found in the airsenseur.db\n")
     print(cbind(Channel.names, lubridate::ymd_hms(Values_db$time[as.numeric(row.names(Channel.names))]) ))
     # Setting Values_db$Pollutants that gives the correct Polluants names even if the sensors are changed of position during use, not for chemical sensors, already done
     for (i in unique(Channel.names$name)) {
         # setting correct colnames in values_db for Meteo.names.change if chang are requested
-        cat(paste0("[SLite2df] INFO setting Values_db$Pollutants to ", unique(Channel.names[Channel.names$name == i,"Variables"])," using the shield config file for sensor ", i), sep = "\n")
+        cat(paste0("[SLite2df] INFO setting Values_db$Pollutants to ", unique(Channel.names$Variables[which(Channel.names$name == i)])," using the shield config file for sensor ", i), sep = "\n")
         Sensor.rows <- which(Values_db$name == i)
         if (length(Sensor.rows) > 0) {
-            set(Values_db, i = Sensor.rows, j = "Pollutants", value = unique(Channel.names[Channel.names$name == i,"Variables"]))}}
+            set(Values_db, i = Sensor.rows, j = "Pollutants", value = unique(Channel.names$Variables[which(Channel.names$name == i)]))}}
     # Checking if some sensors were not recognized before aggregating, these data are discarded
-    browser()
     if (any(is.na(Values_db$Pollutants))) {
         cat("[SQLite2df] ERROR, At least one sensor name was not recognized. Check variable Sensor.names in function SQLite2df.\n")
         is.NA <- which(is.na(Values_db$Pollutants))
@@ -1803,9 +1777,9 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     #------------------------------------------------------------------------------CR
     cat("[SQLite2df] INFO, Putting data in tabulated form and aggregatting on the time column values, this can be long with large datasets\n")
     # removing sampleEvaluatedVal, name and channel. Aggregating in tabulated form. Discarding 0s in coordinates and altitude to avoid error when averaging
-    Values_db[which(Values_db$altitude  == 0), "altitude"]  <- rep(NA, length(which(Values_db$altitude  == 0)))
-    Values_db[which(Values_db$longitude == 0), "longitude"] <- rep(NA, length(which(Values_db$longitude == 0)))
-    Values_db[which(Values_db$latitude  == 0), "latitude"]  <- rep(NA, length(which(Values_db$latitude  == 0)))
+    set(Values_db, i = which(Values_db$altitude  == 0), j = "altitude" , value = rep(NA, length(which(Values_db$altitude  == 0))))
+    set(Values_db, i = which(Values_db$longitude == 0), j = "longitude", value = rep(NA, length(which(Values_db$longitude == 0))))
+    set(Values_db, i = which(Values_db$latitude  == 0), j = "latitude" , value = rep(NA, length(which(Values_db$latitude  == 0))))
     if (!"POSIXct" %in% class(Values_db$time)) data.table::set(Values_db, j = "time", value =  ymd_hms(Values_db[["time"]], tz = Influx.TZ))
     if (!haskey(Values_db)) setkey(Values_db, "time")
     # Aggregating in tabulated form.
@@ -1820,14 +1794,15 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         #                value = "sampleEvaluatedVal", fun.aggregate = 'mean' , fill = NA, na.rm = TRUE)
         # Buffer <- spread(data = Values_db[(i + 1):(i + Page), c("time", "boardTimeStamp","gpsTimestamp", "altitude", "latitude", "longitude", "Pollutants", "sampleEvaluatedVal")],
         #                  key = Pollutants, value = sampleEvaluatedVal) %>% arrange(time)
-        Buffer <- dcast.data.table(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal", fun.aggregate = mean, na.rm = TRUE)
+        #Buffer <- dcast.data.table(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal", fun.aggregate = mean, na.rm = TRUE)
+        Buffer <- dcast(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal")
         # aggregating in Values_db_cast
         if (exists("Values_db_cast")) {
             Values_db_cast <- rbindlist(list(Values_db_cast, Buffer), use.names = TRUE, fill = TRUE)
         } else Values_db_cast <- Buffer
         i <- i + Page
     }
-    Values_db <- Values_db_cast
+    Values_db <- DF_avg(Values_db_cast, key = "time", width = UserMins)
     remove(Values_db_cast, Buffer, Sensor.names, Channel.names, Meteo.names.change)
     # Transforming column time in POSIX with the correct time zone (UTC), changing name to date
     if (is.null(Influx.TZ)) {
@@ -1862,7 +1837,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     }
     if (!Complete) {
         if (exists("Values_db_Mins") && !is.na(Values_db_Mins) && nrow(Values_db_Mins) > 0) {
-            cat("[SQLite2df] INFO, returning newly downlaoded sensor data.\n")
+            cat("[SQLite2df] INFO, returning newly downloaded sensor data.\n")
             print(str(Values_db_Mins))
             return(Values_db_Mins)
         } else {
@@ -1878,8 +1853,8 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
                 cat("[SQLite2df] INFO, returning previously and newly downloaded sensor data.\n")
                 if (InfluxData[nrow(InfluxData),"date"] == Values_db[1,"date"])
                     Values_db_Mins <- rbindlist(list(InfluxData, Values_db_Mins), fill = TRUE)
-                    print(str(Values_db_Mins))
-                    return(Values_db_Mins)
+                print(str(Values_db_Mins))
+                return(Values_db_Mins)
             } else {
                 cat("[SQLite2df] INFO, returning newly downloaded sensor data.\n")
                 print(str(Values_db_Mins))
@@ -2735,7 +2710,7 @@ Tidy_Model.i <- function(Model.i, WDoutputMod, nameModel, Mod_type = NULL)
         ENV[["Model"]] <- list(Tidy = tidy(Model.i), Augment = augment(Model.i, data = data.frame(x = Model.i$x[,2], y = Model.i$y)), Glance = glance(Model.i), Call = Model.i$call,
                                Coef = coef(Model.i), Equation = format(Model.i$Equation))
     } else ENV[["Model"]] <- list(Tidy = tidy(Model.i), Augment = augment(Model.i), Glance = glance(Model.i), Call = Model.i$call,
-                           Coef = coef(Model.i), Equation = format(Model.i$Equation))
+                                  Coef = coef(Model.i), Equation = format(Model.i$Equation))
     list.save(ENV[["Model"]], file = file.path(WDoutputMod, paste0(nameModel,".rdata")))
     return(ENV[["Model"]])
 }
@@ -3413,7 +3388,7 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
                      Ref__a_i_p__name = NULL, User__a_i_p__ = NULL, Pass__a_i_p__ = NULL, Ref__a_i_p__Organisation = NULL,
                      Ref__a_i_p__Station = NULL, Ref__a_i_p__Pollutants = NULL, Ref__a_i_p__DateIN = NULL, Ref__a_i_p__DateEND = NULL,
                      csvFile = NULL, csvFile.sep = NULL, csvFile.quote = NULL, coord.ref = NULL,
-                     Ref.Type = "Ref", RefData = NULL) {
+                     Ref.Type = "Ref", RefData = NULL, shiny = TRUE) {
     # DownloadSensor        = Output of function DownloadSensor()
     # Down.ref              = logical, if true reference data are downloaded
     # FTPMode               = string, default = "ftp", type of download of reference data: "ftp" using a csv file on a ftp server, "csv" the same with a local file and SOS: SOS download
@@ -3467,7 +3442,7 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
                                     Ref__a_i_p__name = Ref__a_i_p__name, User__a_i_p__ = User__a_i_p__, Pass__a_i_p__ = Pass__a_i_p__,
                                     Ref__a_i_p__Organisation = Ref__a_i_p__Organisation, Ref__a_i_p__Station = Ref__a_i_p__Station,
                                     Ref__a_i_p__Pollutants = Ref__a_i_p__Pollutants, Ref__a_i_p__DateIN = Ref__a_i_p__DateIN, Ref__a_i_p__DateEND = Ref__a_i_p__DateEND,
-                                    csvFile = csvFile, csvFile.sep = csvFile.sep, csvFile.quote = csvFile.quote, coord.ref = trimws(x = coord.ref), Ref.Type = Ref.Type) # this return only new Data
+                                    csvFile = csvFile, csvFile.sep = csvFile.sep, csvFile.quote = csvFile.quote, coord.ref = trimws(x = coord.ref), Ref.Type = Ref.Type, shiny = shiny) # this return only new Data
         } else cat(paste0("[REF] INFO: Data download not requested."), sep = "\n")
     } else cat(paste0("[REF] INFO: Data download already up to date."), sep = "\n")
     # Trying to use the existing data or Influx.Rdata.file
