@@ -1058,6 +1058,7 @@ Check_Download <- function(Influx.name = NULL, WDinput, UserMins, General.df = N
             # Influx.file exists if data exist
             ExistFil.data.Influx  = TRUE
             # InfluxData exists and is not NULL
+            browser()
             DateIN.Influx.prev  <- min(InfluxData$date, na.rm = TRUE)
             DateEND.Influx.prev <- max(InfluxData$date, na.rm = TRUE)
             # Checking if Download of InfluxData is necessary
@@ -1892,7 +1893,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                      Ref.SOS.name = NULL, RefSOSname = NULL, RefSOSDateIN = NULL, RefSOSDateEND = NULL,
                      Ref__a_i_p__name = NULL, User__a_i_p__ = NULL, Pass__a_i_p__ = NULL, Ref__a_i_p__Organisation = NULL,
                      Ref__a_i_p__Station = NULL, Ref__a_i_p__Pollutants = NULL, Ref__a_i_p__DateIN = NULL, Ref__a_i_p__DateEND = NULL,
-                     csvFile = NULL, csvFile.sep = NULL, csvFile.quote = NULL, Old.Ref.Data = NULL, coord.ref = NULL, Ref.Type = "Ref") {
+                     csvFile = NULL, csvFile.sep = NULL, csvFile.quote = NULL, Old.Ref.Data = NULL, coord.ref = NULL, Ref.Type = "Ref", shiny = TRUE) {
     # Reference.name        = Name of for Reference station
     # urlref                = Vector of URIs linking to csv files with the reference data. Frst row: header with variable names as in ASEConfig.R
     #                         and one column of date (DateTime), errors and NAs as -999.99, only one column may include one of the string c("date","time","Date", "Time", "DATE", "TIME")
@@ -2027,7 +2028,8 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     # Selecting data within date interval
                     if (nrow(Reference.i) == 0) {
                         my_message <- paste0("[Down_Ref] ERROR no data found in the file of reference data for ", Reference.name, " .\n")
-                        shinyalert(
+                        cat(my_message)
+                        if (shiny) shinyalert(
                             title = "ERROR no data in the csv file",
                             text = "my_message",
                             closeOnEsc = TRUE,
@@ -2042,7 +2044,6 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                             imageUrl = "",
                             animation = FALSE
                         )
-                        cat(my_message)
                     } else {
                         # use openair function to aggregate to the selected time average, in openair time must be replaced in date
                         # Adding coordinates of the reference stations
@@ -2082,7 +2083,8 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                 }
                             } else {
                                 my_message <- "[Down_Ref] ERROR, There is no or more than one column called  with names date, time, Date , Time, DATE, TIME or DateTime. The script is stopped"
-                                shinyalert(
+                                cat(my_message)
+                                if (shiny) shinyalert(
                                     title = "ERROR with date column",
                                     text = "my_message",
                                     closeOnEsc = TRUE,
@@ -2095,13 +2097,12 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                     confirmButtonCol = "#AEDEF4",
                                     timer = 0,
                                     imageUrl = "",
-                                    animation = FALSE
-                                )
-                                cat(my_message)
+                                    animation = FALSE)
                             }
                         } else {
                             my_message <- "[Down_Ref] ERROR, There is no column called date, time, Date , Time, DATE, TIME or DateTime or separator and quote are not set correctly. The script is stopped"
-                            shinyalert(
+                            cat(my_message)
+                            if (shiny) shinyalert(
                                 title = "ERROR with date column",
                                 text = my_message,
                                 closeOnEsc = TRUE,
@@ -2114,14 +2115,13 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                 confirmButtonCol = "#AEDEF4",
                                 timer = 0,
                                 imageUrl = "",
-                                animation = FALSE
-                            )
-                            cat(my_message)
+                                animation = FALSE)
                         }
                     }
                 } else {
                     my_message <- paste0("[Down_Ref] ERROR the csv file ",File.csv," does not exist at ", url," .\n")
-                    shinyalert(
+                    cat(my_message)
+                    if (shiny) shinyalert(
                         title = "ERROR with the csv file",
                         text = my_message,
                         closeOnEsc = TRUE,
@@ -2134,9 +2134,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                         confirmButtonCol = "#AEDEF4",
                         timer = 0,
                         imageUrl = "",
-                        animation = FALSE
-                    )
-                    cat(my_message)
+                        animation = FALSE)
                 }
             }
         } else {
@@ -2170,7 +2168,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                         my_message <- paste0("[Down_Ref()] ERROR, unrecognized file type for \n
                                                reference data .\n")
                         cat(my_message)
-                        shinyalert(
+                        if (shiny) shinyalert(
                             title = "ERROR unrecognised file type",
                             text = my_message,
                             closeOnEsc = TRUE,
@@ -2229,7 +2227,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     if (nrow(Reference.i) == 0) {
                         my_message <- paste0("[Down_Ref] ERROR no data found for reference, lack of new data for ", Reference.name, "\n")
                         cat(my_message)
-                        shinyalert(
+                        if (shiny) shinyalert(
                             title = "ERROR no reference data",
                             text = my_message,
                             closeOnEsc = TRUE,
@@ -2242,8 +2240,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                             confirmButtonCol = "#AEDEF4",
                             timer = 0,
                             imageUrl = "",
-                            animation = FALSE
-                        )
+                            animation = FALSE)
                     } else {
                         # Discarding columns without name
                         if (any(colnames(Reference.i) == "")) {
@@ -2359,7 +2356,8 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                 }
                             } else {
                                 my_message <- "[Down_Ref] ERROR, There is no or more than one column called  with names date, time, Date , Time, DATE, TIME or DateTime. The script is stopped"
-                                shinyalert(
+                                cat(my_message)
+                                if (shiny) shinyalert(
                                     title = "ERROR with date column",
                                     text = my_message,
                                     closeOnEsc = TRUE,
@@ -2372,13 +2370,12 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                     confirmButtonCol = "#AEDEF4",
                                     timer = 0,
                                     imageUrl = "",
-                                    animation = FALSE
-                                )
-                                cat(my_message)
+                                    animation = FALSE)
                             }
                         } else {
                             my_message <- "[Down_Ref] ERROR, There is no column called date, time, Date , Time, DATE, TIME or DateTime. The script is stopped"
-                            shinyalert(
+                            cat(my_message)
+                            if (shiny) shinyalert(
                                 title = "ERROR with date column",
                                 text = my_message,
                                 closeOnEsc = TRUE,
@@ -2391,14 +2388,13 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                 confirmButtonCol = "#AEDEF4",
                                 timer = 0,
                                 imageUrl = "",
-                                animation = FALSE
-                            )
-                            cat(my_message)
+                                animation = FALSE)
                         }
                     }
                 } else {
                     my_message <- "[Down_Ref] ERROR, please select file of reference data"
-                    shinyalert(
+                    cat(my_message)
+                    if (shiny) shinyalert(
                         title = "ERROR no file selected",
                         text = my_message,
                         closeOnEsc = TRUE,
@@ -2411,9 +2407,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                         confirmButtonCol = "#AEDEF4",
                         timer = 0,
                         imageUrl = "",
-                        animation = FALSE
-                    )
-                    cat(my_message)
+                        animation = FALSE)
                 }
             }
         }
@@ -2585,7 +2579,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
             if (nrow(Reference.i) == 0) {
                 my_message <- paste0("[Down_Ref] ERROR no data found for reference, lack of new data for ", Reference.name, "\n")
                 cat(my_message)
-                shinyalert(
+                if (shiny) shinyalert(
                     title = "ERROR no reference data",
                     text = my_message,
                     closeOnEsc = TRUE,
@@ -2598,8 +2592,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     confirmButtonCol = "#AEDEF4",
                     timer = 0,
                     imageUrl = "",
-                    animation = FALSE
-                )
+                    animation = FALSE)
             } else {
                 # Adding coordinates of the reference stations
                 if (!is.null(coord.ref)) {
@@ -3880,7 +3873,7 @@ Etalonnage <- function(x, s_x, y, s_y, AxisLabelX, AxisLabelY, Title, Marker , C
 # 11. Valid Periods                                                                 (NOT USED)
 # 12. SET TIME PARAMETERS -> see in ASE_OPER_SCRIPT.R                               (NOT USED)
 #=====================================================================================CR
-CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
+CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = TRUE) {
     # Return a list with the config of servers, sensors and effects
     # DisqueFieldtest   : directory where is the file ASEconfig*.R file
     # ASEConfig         : AirSensEUR name e.g LANUV_01 in ASEConfigLANUV_01.R or the AirSensEUR config file as in ASEConfigLANUV_01.R
@@ -3914,7 +3907,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
             my_message <- paste0("[CONFIG] ERROR, no server config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
-            shinyalert(
+            if (shiny) shinyalert(
                 title = "ERROR Config file",
                 text = my_message,
                 closeOnEsc = TRUE,
@@ -3933,7 +3926,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
         my_message <- paste0("[CONFIG] ERROR, no server config file for the AirSensEUR box. \n",
                              "The App is going to crash. This AirSensEUR cannot be selected.\n")
         cat(my_message)
-        shinyalert(
+        if (shiny) shinyalert(
             title = "ERROR Config file",
             text = my_message,
             closeOnEsc = TRUE,
@@ -4005,7 +3998,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
             my_message <- paste0("[CONFIG] ERROR, no config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
-            shinyalert(
+            if (shiny) shinyalert(
                 title = "ERROR Config file",
                 text = my_message,
                 closeOnEsc = TRUE,
@@ -4030,7 +4023,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
                 # if ASE_name,".cfg", Message of error
                 my_message <- paste0("[CONFIG] ERROR, no chemical shield config file for the AirSensEUR box. \n",
                                      "The App is going to crash. This AirSensEUR cannot be selected.\n")
-                shinyalert(
+                if (shiny) shinyalert(
                     title = "ERROR Config file",
                     text = my_message,
                     closeOnEsc = TRUE,
@@ -4074,7 +4067,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
         my_message <- paste0("[CONFIG] ERROR, no server config file for the AirSensEUR box. \n",
                              "The App is going to crash. This AirSensEUR cannot be selected.\n")
         cat(my_message)
-        shinyalert(
+        if (shiny) shinyalert(
             title = "ERROR Config file",
             text = my_message,
             closeOnEsc = TRUE,
@@ -4157,7 +4150,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
 # Valid Periods
 #=====================================================================================CR
 SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC" , SOS.TZ = "UTC", Ref.TZ = "UTC", DownloadSensor, Config = NULL,
-                    sens2ref.shield = NULL) {
+                    sens2ref.shield = NULL, shiny = TRUE) {
     # Return             : list with sens2ref (only time parameters)
     # DisqueFieldtestDir : file.path where the config files of the AIrSensEUR are located. The directory ""Shield_Files" shall be located at the pareent directory
     # General.t.Valid    : dataframe with date , sensor and reference data, default is NULL, it is only use if the the File_SETTIME_cfg file does not exist
@@ -4197,7 +4190,7 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
             my_message <- paste0("[SETTIME] ERROR, no SetTime server config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
-            shinyalert(
+            if (shiny) shinyalert(
                 title = "ERROR Config file",
                 text = my_message,
                 closeOnEsc = TRUE,
@@ -4216,7 +4209,7 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
         my_message <- paste0("[SETTIME] ERROR, no SetTime server config file for the AirSensEUR box. \n",
                              "The App is going to crash. This AirSensEUR cannot be selected.\n")
         cat(my_message)
-        shinyalert(
+        if (shiny) shinyalert(
             title = "ERROR Config file",
             text = my_message,
             closeOnEsc = TRUE,
@@ -5383,7 +5376,7 @@ lm.Model.Compare <- function(General.df, DateIN, DateEND, x, y, Title = NULL) {
 ### function to query data using a_i_p server
 #================================================================CR
 a_i_p_param <- function(URL, username, password, organisation, station, start, end = NULL,
-                        allparams = "true", avgtime=600) {
+                        allparams = "true", avgtime=600, shiny = TRUE) {
     # Mail "Erich Kitzmüller" <erich.kitzmueller@a-i-p.com>
     # please append the parameter "&allparams=true" to your URL. Without that, the request only returns the values of monitoring-site-parameters marked as default (see image).
     # Hint: For each unique combination of "Monitoring Site" and "Global Parameter", there can be only one monitoring-site-parameter marked as default.
@@ -5421,7 +5414,8 @@ a_i_p_param <- function(URL, username, password, organisation, station, start, e
         return(sapply(seq_along(Reference), function(i) Reference[[i]]$Components[[1]]$Component  ))
     } else if (JSON$status_code == 204) {
         my_message <- paste0("[a_i_p_param] INFO the server was contacted with succes but there no data to return. Change dates.\n")
-        shinyalert(
+        cat(my_message)
+        if (shiny) shinyalert(
             title = "INFO Connected to a_i_p server",
             text = "my_message",
             closeOnEsc = TRUE,
@@ -5438,7 +5432,8 @@ a_i_p_param <- function(URL, username, password, organisation, station, start, e
         return()
     } else {
         my_message <- paste0("[a_i_p_param] ERROR the parameter to contact the a_i_p server are wrong, please check\n")
-        shinyalert(
+        cat(my_message)
+        if (shiny) shinyalert(
             title = "ERROR no connection to a_i_p server",
             text = "my_message",
             closeOnEsc = TRUE,
