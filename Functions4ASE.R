@@ -1712,7 +1712,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
             # updating the model of sensor in df Channel.names corresponding to sensor in asc.File based on channel number
             set(Channel.names, i = which(Channel.names$channel==i-1), j = "name", value = asc.File$name.sensor[i])}}
     # Defining names and variables for gas sensors - Used the same names of variables as in SOS for compatibility reasons
-    Sensor.names <- list(Nitrogen_dioxide      = c("NO2_B43F_P1","NO2_A43F_P1","no2_b43f", "NO2-B43F", "NO2B43F", "NO2_M20", "NO2_C1", "NO2_C25", "NO2/C-20", "NO2_3E50", "NO23E50", "NO2", "S1"),
+    Sensor.names <- list(Nitrogen_dioxide      = c("NO2_B43F_P1","NO2_A43F_P1","no2_b43f", "NO2-B43F", "NO2B43F", "NO2_B43","NO2_M20", "NO2_C1", "NO2_C25", "NO2/C-20", "NO2_3E50", "NO23E50", "NO2", "S1"),
                          Carbon_monoxide       = c("CO_A4_P1"  , "CO_B4_P1","CO-B4", "CO-A4", "CO_MF200","CO/MF-200", "CO/MF-20", "CO-MF200", "CO_C200", "CO_CF200", "CO_3E300","CO3E300", "CO","COMF200","CO-A4 O","COA4", "S2"),
                          Ozone                 = c("OX_A431_P1", "OX_B431_P1","O3/M-5", "O3-B4", "AX-A431", "OX-A431", "OX_A431", "O3-A431", "O3_M5", "O3_C5", "O3_C100", "O3-M5", "o3_m_5", "O3_3E1F", "O33EF1", "O3", "O3E100", "S3"),
                          Nitric_oxide          = c("NO_B4_P1"  , "NO_A4_P1","NO-B4", "NOB4_P1","NOB4", "NO_M25", "NO_C1", "NO_C25","NO/C-25", "NO3E100", "NO_3E100", "NO", "No Sensor", "S4"),
@@ -1784,14 +1784,15 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         if (length(Sensor.rows) > 0) {
             set(Values_db, i = Sensor.rows, j = "Pollutants", value = unique(Channel.names[Channel.names$name == i,"Variables"]))}}
     # Checking if some sensors were not recognized before aggregating, these data are discarded
+    browser()
     if (any(is.na(Values_db$Pollutants))) {
         cat("[SQLite2df] ERROR, At least one sensor name was not recognized. Check variable Sensor.names in function SQLite2df.\n")
         is.NA <- which(is.na(Values_db$Pollutants))
-        Name.is.NA <- unique(Values_db[is.NA,"name"])
+        Name.is.NA <- unique(Values_db$name[is.NA])
         for (i in Name.is.NA) {
-            Channel.is.NA   <- unique(Values_db[Values_db$name == i, "channel"])
-            min.time.is.NA <- min(lubridate::ymd_hms(Values_db[Values_db$channel == Channel.is.NA,"time"]), na.rm = T)
-            max.time.is.NA <- max(lubridate::ymd_hms(Values_db[Values_db$channel == Channel.is.NA,"time"]), na.rm = T)
+            Channel.is.NA  <- unique(Values_db$channel[which(Values_db$name == i)])
+            min.time.is.NA <- min(lubridate::ymd_hms(Values_db$time[which(Values_db$channel == Channel.is.NA)]), na.rm = T)
+            max.time.is.NA <- max(lubridate::ymd_hms(Values_db$time[which(Values_db$channel == Channel.is.NA)]), na.rm = T)
             cat(paste0("[SQLite2df] ERROR, sensor name ",i," channel number ", Channel.is.NA, " is not recognized between ", min.time.is.NA, " and ", max.time.is.NA, " these data are deleted\n"))
         }
         Values_db <- Values_db[-is.NA,]
@@ -2321,7 +2322,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                                               check.names = FALSE)
                                 }
                                 # Setting Reference names (change names of pollutants adding Ref.)
-                                if (Ref.Type == "Ref") {
+                                if (is.null(Ref.Type) || Ref.Type == "Ref") {
                                     for (i in seq(Reference.names)) {
                                         for (j in seq(Reference.names[[i]])) {
                                             if (any(names(Reference.i) == Reference.names[[i]][j])) {
@@ -2632,7 +2633,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     Reference.i <- DF_avg(Reference.i, width = UserMins)
                 }
                 # Setting Reference names (change names of pollutants adding Ref.)
-                if (Ref.Type == "Ref") {
+                if (is.null(Ref.Type) || Ref.Type == "Ref") {
                     for (i in seq(Reference.names)) {
                         for (j in seq(Reference.names[[i]])) {
                             if (any(names(Reference.i) == Reference.names[[i]][j])) {
@@ -2712,24 +2713,20 @@ ping <- function(x, stderr = FALSE, stdout = FALSE, ...) {
 # 170609 MG : Pinging WEB site
 #=====================================================================================CR
 havingIP <- function() {
-
-  binary <- "ipconfig"
-  if (.Platform$OS.type != "windows") {
-    # test for ifconfig
-    if (!system("which ifconfig > /dev/null", intern = FALSE)) {
-      binary = "ifconfig"
-    } else if (!system("which ip > /dev/null", intern = FALSE)) {
-      binary = "ip addr"
-    } else {
-      stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
+    binary <- "ipconfig"
+    if (.Platform$OS.type != "windows") {
+        # test for ifconfig
+        if (!system("which ifconfig > /dev/null", intern = FALSE)) {
+            binary = "ifconfig"
+        } else if (!system("which ip > /dev/null", intern = FALSE)) {
+            binary = "ip addr"
+        } else {
+            stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
+        }
     }
-  }
-
     ipmessage <- system(binary, intern= TRUE)
-
     # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
     validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
-
     return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
 }
 #=====================================================================================CR
@@ -5458,95 +5455,7 @@ a_i_p_param <- function(URL, username, password, organisation, station, start, e
         return()
     }
 }
-# a_i_p_data  <- function(URL, username, password, organisation, station, start, end, param = NULL, Time_zone = "UTC") {
-#     # URL          character string indicating the a-i-p URL for data transmission
-#     # username     character string indicating the login at the a-i-p URL
-#     # password     character string indicating the password at the a-i-p URL
-#     # organisation character string indicating the organisation quering the a-i-p URL
-#     # station      character string indicating the station being interogatedat the a-i-p URL
-#     # start        POSIXCt indicating the starting date for data downlaod, format: "2019-03-01-00-00-00"
-#     # end          POSIXCt indicating the ending   date for data downlaod, format: "2019-03-05-00-00-00"
-#     # param        vector of charater string listing the parameters measured at the station to be considered
-#     #              default is NULL. If NULL all parameters are downloaded
-#     # Time_zone    Character vector, default is "UTC", a character string that specifies which time zone to parse
-#     #              the date with. The string must be a time zone that is recognized by the user's OS.
-#
-#     # End date
-#     f_start <- format(lubridate::ymd(start), "%Y-%m-%d-%H-%M-%S")
-#     f_end   <- format(lubridate::ymd(end),   "%Y-%m-%d-%H-%M-%S")
-#
-#     #================================================================CR
-#     # 1) Grab the data
-#     #================================================================CR
-#     # CUrl needed see http://appliedmathbytes.com/2015/08/using-json-in-r/
-#     # Otherwise we will get error Error in file(con, “r”) : cannot open the connection
-#     Reference.JSON.httr <- httr::GET(URLencode(paste0(URL,"username=", username,"&",
-#                                                       "password=", password,"&",
-#                                                       "organisation=", organisation,"&",
-#                                                       "station=", station,"&",
-#                                                       "start=", f_start,"&",
-#                                                       "end=", f_end)))
-#
-#     #================================================================CR
-#     # 2) Extract the data from the JSON file ====
-#     #================================================================CR
-#     # extract the data node
-#     Reference <- content(Reference.JSON.httr, type = "application/json", as = 'parsed')
-#     Reference <- Reference$Stations[[1]]$Devices
-#
-#     # determining Component
-#     Components <- sapply(seq_along(Reference), function(i) Reference[[i]]$Components[[1]]$Component)
-#     # determining Units
-#     Units      <- sapply(seq_along(Reference), function(i) Reference[[i]]$Components[[1]]$Unit)
-#     # counts of data per parameter
-#     Counts     <- sapply(seq_along(Reference), function(i) length(Reference[[i]]$Components[[1]]$MeasuredValues))
-#
-#     # Reference data
-#     MeasuredValues <- lapply(seq_along(Reference), function(i) {
-#
-#         if (!is.null(param)) {
-#
-#             if (Components[i] %in% param) {
-#                 cat(paste0("Component: ",Components[i]," is being downloaded\n"))
-#
-#                 # Downloading data, taking only valid measurements, dropping Valid, Convert Time to Posix format
-#                 Param.i <- data.table::rbindlist(lapply(Reference[[i]]$Components[[1]]$MeasuredValues, as.data.frame.list), fill = T) %>%
-#                     dplyr::filter(Valid == TRUE) %>%
-#                     dplyr::select(Time,Value) %>%
-#                     dplyr::mutate(Time = ymd_hms(Time, tz = Time_zone))
-#
-#                 colnames(Param.i) <- c("date", Components[i])
-#
-#                 return(Param.i)
-#             }
-#         } else {
-#
-#             cat(paste0("Component: ",Components[i]," is being downloaded\n"))
-#
-#             # Downloading data, taking only valid measurements, dropping Valid, Convert Time to Posix format
-#             Param.i <- data.table::rbindlist(lapply(Reference[[i]]$Components[[1]]$MeasuredValues, as.data.frame.list), fill = T) %>%
-#                 dplyr::filter(Valid == TRUE) %>%
-#                 dplyr::select(Time,Value) %>%
-#                 dplyr::mutate(Time = ymd_hms(Time, tz = Time_zone))
-#
-#             colnames(Param.i) <- c("date", Components[i])
-#
-#             # convert to xts
-#             #Param.i <- xts::xts(x = Param.i[,2], order.by = Param.i$date) #, tzone = threadr::time_zone(Param.i$date)
-#
-#             return(Param.i)
-#         }
-#     })
-#     # Creating RefData
-#     for (i in seq_along(MeasuredValues)) {
-#         if (!is.null(MeasuredValues[[i]])) {
-#
-#             if (exists("RefData")) RefData <- merge(x = RefData, y = MeasuredValues[[i]], by = "date") else RefData <- MeasuredValues[[i]]
-#         }
-#     }
-#
-#     return(RefData)
-# }
+
 a_i_p_data <- function(URL, username, password, organisation, station,
                        start, end = format(Sys.time(), "%Y-%m-%d-%H-%M-%S"),
                        param = NULL, Time_zone = "UTC", allparams = "true", avgtime = 1, Valid = TRUE, unflagged = TRUE, flushtime=120) {
@@ -5651,7 +5560,7 @@ a_i_p_data <- function(URL, username, password, organisation, station,
         # Param.i <- data.table::rbindlist(lapply(Refi$Components[[1]]$MeasuredValues, as.data.frame.list, stringsAsFactors = F),
         #                                  fill = T, use.names = T)
         Param.i <- data.table::rbindlist(Refi$Components[[1]]$MeasuredValues)
-        if ("Value" %in% names(Param.i) && Refi$Components[[1]]$Component %in% param) {
+        if ("Value" %in% names(Param.i) && Refi$Components[[1]]$Component %in% strsplit(param, "!")[[1]]) {
             cat(paste0("Component ",stringr::str_pad(which(Components %in% Refi$Components[[1]]$Component), 2, side = "left", pad = " "),"/",length(seq_along(Ref)),": ",
                        stringr::str_pad(Refi$Components[[1]]$Component, max(nchar(Components)), side = "right", pad = " ")," was correctly downloaded\n"))
             Param.i <- Param.i %>%
