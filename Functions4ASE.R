@@ -1614,31 +1614,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     }
     #dbGetQuery(SQLite.con, paste0("CREATE INDEX IDtime ON ",Dataset, "(time);"))
     # # getting the default Page of data to download
-    if (is.null(Page)) Page <- 200000
-    # browser()
-    # while (Download.N < (SQL.Total.N - Dataset.N)) {
-    #
-    #     # For the last Page to read used modulo instead of Page in order not to download twice the same records
-    #     if ((Download.N + Page) > (SQL.Total.N - Dataset.N)) {Old_Page <- Page ; Page <- (SQL.Total.N - Dataset.N) %% Page }
-    #
-    #     # Downloading a slice Page
-    #     Adding  <- dbGetQuery(SQLite.con, paste0("SELECT time, boardTimeStamp, gpsTimestamp,
-    #                                              channel, name,
-    #                                              cast(altitude AS DECIMAL) AS altitude,
-    #                                              cast(latitude AS DECIMAL) AS latitude,
-    #                                              cast(longitude AS DECIMAL) AS longitude,
-    #                                              sampleEvaluatedVal
-    #                                              FROM ", Dataset, " LIMIT ", format(Page, scientific = FALSE),
-    #                                              " OFFSET ", format(Dataset.N + Download.N, scientific = FALSE)))
-    #
-    #     # adding data to Values_db
-    #     cat(paste0("[SQLite2df] INFO, ", format(Download.N + nrow(Adding), scientific = FALSE), "/",(SQL.Total.N - Dataset.N)," records were read "), sep = "\n")
-    #     Adding <- data.table(Adding, key = "time")
-    #     if (exists("Values_db")) Values_db <- rbindlist(list(Values_db,Adding), use.names = TRUE, fill = TRUE) else Values_db <- Adding
-    #     # updating counter
-    #     Download.N  <- Download.N + Page
-    #
-    # }
+    if (is.null(Page)) Page <- 500000
     cat(paste0("[SQLite2df] INFO, reading ",(SQL.Total.N - Dataset.N)," records"), sep = "\n")
     Values_db <- data.table(dbReadTable(SQLite.con, Dataset))
     data.table::set(Values_db, j = "time", value =  ymd_hms(Values_db[["time"]], tz = Influx.TZ))
@@ -1712,31 +1688,31 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
             # updating the model of sensor in df Channel.names corresponding to sensor in asc.File based on channel number
             set(Channel.names, i = which(Channel.names$channel==i-1), j = "name", value = asc.File$name.sensor[i])}}
     # Defining names and variables for gas sensors - Used the same names of variables as in SOS for compatibility reasons
-    Sensor.names <- list(Nitrogen_dioxide      = c("NO2_B43F_P1","NO2_A43F_P1","no2_b43f", "NO2-B43F", "NO2B43F", "NO2_M20", "NO2_C1", "NO2_C25", "NO2/C-20", "NO2_3E50", "NO23E50", "NO2", "S1"),
-                         Carbon_monoxide       = c("CO_A4_P1"  , "CO_B4_P1","CO-B4", "CO-A4", "CO_MF200","CO/MF-200", "CO/MF-20", "CO-MF200", "CO_C200", "CO_CF200", "CO_3E300","CO3E300", "CO","COMF200","CO-A4 O","COA4", "S2"),
-                         Ozone                 = c("OX_A431_P1", "OX_B431_P1","O3/M-5", "O3-B4", "AX-A431", "OX-A431", "OX_A431", "O3-A431", "O3_M5", "O3_C5", "O3_C100", "O3-M5", "o3_m_5", "O3_3E1F", "O33EF1", "O3", "O3E100", "S3"),
-                         Nitric_oxide          = c("NO_B4_P1"  , "NO_A4_P1","NO-B4", "NOB4_P1","NOB4", "NO_M25", "NO_C1", "NO_C25","NO/C-25", "NO3E100", "NO_3E100", "NO", "No Sensor", "S4"),
-                         Sulfur_dioxide        = c("SO2_B4_P1" , "SO2_A4_P1", "SO2_M20", "SO2_M20", "SO2_MF20", "SO2_C1", "SO2_C20", "SO2_CF20"),
-                         Ammonia               = c("NH3_MR100" , "NH3_CR50"),
-                         Particulate_Matter_1  = c("OPCN2PM1"  , "OPCN3PM1"),
-                         Particulate_Matter_25 = c("OPCN2PM25" , "OPCN3PM25"),
-                         Particulate_Matter_10 = c("OPCN2PM10" , "OPCN3PM10"),
-                         Bin0                  = c("OPCN2Bin0" , "OPCN3Bin0"),
-                         Bin1                  = c("OPCN2Bin1" , "OPCN3Bin1"),
-                         Bin2                  = c("OPCN2Bin2" , "OPCN3Bin2"),
-                         Bin3                  = c("OPCN2Bin3" , "OPCN3Bin3"),
-                         Bin4                  = c("OPCN2Bin4" , "OPCN3Bin4"),
-                         Bin5                  = c("OPCN2Bin5" , "OPCN3Bin5"),
-                         Bin6                  = c("OPCN2Bin6" , "OPCN3Bin6"),
-                         Bin7                  = c("OPCN2Bin7" , "OPCN3Bin7"),
-                         Bin8                  = c("OPCN2Bin8" , "OPCN3Bin8"),
-                         Bin9                  = c("OPCN2Bin9" , "OPCN3Bin9"),
-                         Bin10                 = c("OPCN2Bin10", "OPCN3Bin10"),
-                         Bin11                 = c("OPCN2Bin11", "OPCN3Bin11"),
-                         Bin12                 = c("OPCN2Bin12", "OPCN3Bin12"),
-                         Bin13                 = c("OPCN2Bin13", "OPCN3Bin13"),
-                         Bin14                 = c("OPCN2Bin14", "OPCN3Bin14"),
-                         Bin15                 = c("OPCN2Bin15", "OPCN3Bin15"),
+    Sensor.names <- list(Nitrogen_dioxide      = c("NO2_B43F_P1", "NO2_A43F_P1","no2_b43f", "NO2-B43F", "NO2B43F", "NO2_B43","NO2_M20", "NO2_C1", "NO2_C25", "NO2/C-20", "NO2_3E50", "NO23E50", "NO2", "S1"),
+                         Carbon_monoxide       = c("CO_A4_P1"   , "CO_B4_P1","CO-B4", "CO-A4", "CO_MF200","CO/MF-200", "CO/MF-20", "CO-MF200", "CO_C200", "CO_CF200", "CO_3E300","CO3E300", "CO","COMF200","CO-A4 O","COA4", "S2"),
+                         Ozone                 = c("OX_A431_P1" , "OX_B431_P1","O3/M-5", "O3-B4", "AX-A431", "OX-A431", "OX_A431", "O3-A431", "O3_M5", "O3_C5", "O3_C100", "O3-M5", "o3_m_5", "O3_3E1F", "O33EF1", "O3", "O3E100", "S3"),
+                         Nitric_oxide          = c("NO_B4_P1"   , "NO_A4_P1"  , "NO-B4", "NOB4_P1","NOB4", "NO_M25", "NO_C1", "NO_C25","NO/C-25", "NO3E100", "NO_3E100", "NO", "No Sensor", "S4"),
+                         Sulfur_dioxide        = c("SO2_B4_P1"  , "SO2_A4_P1" , "SO2_M20", "SO2_M20", "SO2_MF20", "SO2_C1", "SO2_C20", "SO2_CF20"),
+                         Ammonia               = c("NH3_MR100"  , "NH3_CR50") ,
+                         Particulate_Matter_1  = c("OPCN2PM1"   , "OPCN3PM1") ,
+                         Particulate_Matter_25 = c("OPCN2PM25"  , "OPCN3PM25"),
+                         Particulate_Matter_10 = c("OPCN2PM10"  , "OPCN3PM10"),
+                         Bin0                  = c("OPCN2Bin0"  , "OPCN3Bin0"),
+                         Bin1                  = c("OPCN2Bin1"  , "OPCN3Bin1"),
+                         Bin2                  = c("OPCN2Bin2"  , "OPCN3Bin2"),
+                         Bin3                  = c("OPCN2Bin3"  , "OPCN3Bin3"),
+                         Bin4                  = c("OPCN2Bin4"  , "OPCN3Bin4"),
+                         Bin5                  = c("OPCN2Bin5"  , "OPCN3Bin5"),
+                         Bin6                  = c("OPCN2Bin6"  , "OPCN3Bin6"),
+                         Bin7                  = c("OPCN2Bin7"  , "OPCN3Bin7"),
+                         Bin8                  = c("OPCN2Bin8"  , "OPCN3Bin8"),
+                         Bin9                  = c("OPCN2Bin9"  , "OPCN3Bin9"),
+                         Bin10                 = c("OPCN2Bin10" , "OPCN3Bin10"),
+                         Bin11                 = c("OPCN2Bin11" , "OPCN3Bin11"),
+                         Bin12                 = c("OPCN2Bin12" , "OPCN3Bin12"),
+                         Bin13                 = c("OPCN2Bin13" , "OPCN3Bin13"),
+                         Bin14                 = c("OPCN2Bin14" , "OPCN3Bin14"),
+                         Bin15                 = c("OPCN2Bin15" , "OPCN3Bin15"),
                          Bin16                 = "OPCN3Bin16",
                          Bin17                 = "OPCN3Bin17",
                          Bin18                 = "OPCN3Bin18",
@@ -1772,26 +1748,26 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     #------------------------------------------------------------------------------CR
     for (i in 1:length(Sensor.names)) {
         for (j in which(Sensor.names[[i]] %in% Channel.names$name)) {
-            set(Channel.names, i = which(Channel.names$name == Sensor.names[[i]][j]), j = "Variables", value = names(Sensor.names)[i])
-            break}}
+            irows <- which(Channel.names$name == Sensor.names[[i]][j])
+            if (length(irows) > 0) set(Channel.names, i = irows, j = "Variables", value = names(Sensor.names)[i])}}
     cat("[SQLite2df] INFO, sensors found in the airsenseur.db\n")
     print(cbind(Channel.names, lubridate::ymd_hms(Values_db$time[as.numeric(row.names(Channel.names))]) ))
     # Setting Values_db$Pollutants that gives the correct Polluants names even if the sensors are changed of position during use, not for chemical sensors, already done
     for (i in unique(Channel.names$name)) {
         # setting correct colnames in values_db for Meteo.names.change if chang are requested
-        cat(paste0("[SLite2df] INFO setting Values_db$Pollutants to ", unique(Channel.names[Channel.names$name == i,"Variables"])," using the shield config file for sensor ", i), sep = "\n")
+        cat(paste0("[SLite2df] INFO setting Values_db$Pollutants to ", unique(Channel.names$Variables[which(Channel.names$name == i)])," using the shield config file for sensor ", i), sep = "\n")
         Sensor.rows <- which(Values_db$name == i)
         if (length(Sensor.rows) > 0) {
-            set(Values_db, i = Sensor.rows, j = "Pollutants", value = unique(Channel.names[Channel.names$name == i,"Variables"]))}}
+            set(Values_db, i = Sensor.rows, j = "Pollutants", value = unique(Channel.names$Variables[which(Channel.names$name == i)]))}}
     # Checking if some sensors were not recognized before aggregating, these data are discarded
     if (any(is.na(Values_db$Pollutants))) {
         cat("[SQLite2df] ERROR, At least one sensor name was not recognized. Check variable Sensor.names in function SQLite2df.\n")
         is.NA <- which(is.na(Values_db$Pollutants))
-        Name.is.NA <- unique(Values_db[is.NA,"name"])
+        Name.is.NA <- unique(Values_db$name[is.NA])
         for (i in Name.is.NA) {
-            Channel.is.NA   <- unique(Values_db[Values_db$name == i, "channel"])
-            min.time.is.NA <- min(lubridate::ymd_hms(Values_db[Values_db$channel == Channel.is.NA,"time"]), na.rm = T)
-            max.time.is.NA <- max(lubridate::ymd_hms(Values_db[Values_db$channel == Channel.is.NA,"time"]), na.rm = T)
+            Channel.is.NA  <- unique(Values_db$channel[which(Values_db$name == i)])
+            min.time.is.NA <- min(lubridate::ymd_hms(Values_db$time[which(Values_db$channel == Channel.is.NA)]), na.rm = T)
+            max.time.is.NA <- max(lubridate::ymd_hms(Values_db$time[which(Values_db$channel == Channel.is.NA)]), na.rm = T)
             cat(paste0("[SQLite2df] ERROR, sensor name ",i," channel number ", Channel.is.NA, " is not recognized between ", min.time.is.NA, " and ", max.time.is.NA, " these data are deleted\n"))
         }
         Values_db <- Values_db[-is.NA,]
@@ -1801,9 +1777,9 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     #------------------------------------------------------------------------------CR
     cat("[SQLite2df] INFO, Putting data in tabulated form and aggregatting on the time column values, this can be long with large datasets\n")
     # removing sampleEvaluatedVal, name and channel. Aggregating in tabulated form. Discarding 0s in coordinates and altitude to avoid error when averaging
-    Values_db[which(Values_db$altitude  == 0), "altitude"]  <- rep(NA, length(which(Values_db$altitude  == 0)))
-    Values_db[which(Values_db$longitude == 0), "longitude"] <- rep(NA, length(which(Values_db$longitude == 0)))
-    Values_db[which(Values_db$latitude  == 0), "latitude"]  <- rep(NA, length(which(Values_db$latitude  == 0)))
+    set(Values_db, i = which(Values_db$altitude  == 0), j = "altitude" , value = rep(NA, length(which(Values_db$altitude  == 0))))
+    set(Values_db, i = which(Values_db$longitude == 0), j = "longitude", value = rep(NA, length(which(Values_db$longitude == 0))))
+    set(Values_db, i = which(Values_db$latitude  == 0), j = "latitude" , value = rep(NA, length(which(Values_db$latitude  == 0))))
     if (!"POSIXct" %in% class(Values_db$time)) data.table::set(Values_db, j = "time", value =  ymd_hms(Values_db[["time"]], tz = Influx.TZ))
     if (!haskey(Values_db)) setkey(Values_db, "time")
     # Aggregating in tabulated form.
@@ -1818,14 +1794,15 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         #                value = "sampleEvaluatedVal", fun.aggregate = 'mean' , fill = NA, na.rm = TRUE)
         # Buffer <- spread(data = Values_db[(i + 1):(i + Page), c("time", "boardTimeStamp","gpsTimestamp", "altitude", "latitude", "longitude", "Pollutants", "sampleEvaluatedVal")],
         #                  key = Pollutants, value = sampleEvaluatedVal) %>% arrange(time)
-        Buffer <- dcast.data.table(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal", fun.aggregate = mean, na.rm = TRUE)
+        #Buffer <- dcast.data.table(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal", fun.aggregate = mean, na.rm = TRUE)
+        Buffer <- dcast(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal")
         # aggregating in Values_db_cast
         if (exists("Values_db_cast")) {
             Values_db_cast <- rbindlist(list(Values_db_cast, Buffer), use.names = TRUE, fill = TRUE)
         } else Values_db_cast <- Buffer
         i <- i + Page
     }
-    Values_db <- Values_db_cast
+    Values_db <- DF_avg(Values_db_cast, key = "time", width = UserMins)
     remove(Values_db_cast, Buffer, Sensor.names, Channel.names, Meteo.names.change)
     # Transforming column time in POSIX with the correct time zone (UTC), changing name to date
     if (is.null(Influx.TZ)) {
@@ -1860,7 +1837,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     }
     if (!Complete) {
         if (exists("Values_db_Mins") && !is.na(Values_db_Mins) && nrow(Values_db_Mins) > 0) {
-            cat("[SQLite2df] INFO, returning newly downlaoded sensor data.\n")
+            cat("[SQLite2df] INFO, returning newly downloaded sensor data.\n")
             print(str(Values_db_Mins))
             return(Values_db_Mins)
         } else {
@@ -1876,8 +1853,8 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
                 cat("[SQLite2df] INFO, returning previously and newly downloaded sensor data.\n")
                 if (InfluxData[nrow(InfluxData),"date"] == Values_db[1,"date"])
                     Values_db_Mins <- rbindlist(list(InfluxData, Values_db_Mins), fill = TRUE)
-                    print(str(Values_db_Mins))
-                    return(Values_db_Mins)
+                print(str(Values_db_Mins))
+                return(Values_db_Mins)
             } else {
                 cat("[SQLite2df] INFO, returning newly downloaded sensor data.\n")
                 print(str(Values_db_Mins))
@@ -1891,7 +1868,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                      Ref.SOS.name = NULL, RefSOSname = NULL, RefSOSDateIN = NULL, RefSOSDateEND = NULL,
                      Ref__a_i_p__name = NULL, User__a_i_p__ = NULL, Pass__a_i_p__ = NULL, Ref__a_i_p__Organisation = NULL,
                      Ref__a_i_p__Station = NULL, Ref__a_i_p__Pollutants = NULL, Ref__a_i_p__DateIN = NULL, Ref__a_i_p__DateEND = NULL,
-                     csvFile = NULL, csvFile.sep = NULL, csvFile.quote = NULL, Old.Ref.Data = NULL, coord.ref = NULL, Ref.Type = "Ref") {
+                     csvFile = NULL, csvFile.sep = NULL, csvFile.quote = NULL, Old.Ref.Data = NULL, coord.ref = NULL, Ref.Type = "Ref", shiny = TRUE) {
     # Reference.name        = Name of for Reference station
     # urlref                = Vector of URIs linking to csv files with the reference data. Frst row: header with variable names as in ASEConfig.R
     #                         and one column of date (DateTime), errors and NAs as -999.99, only one column may include one of the string c("date","time","Date", "Time", "DATE", "TIME")
@@ -2026,7 +2003,8 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     # Selecting data within date interval
                     if (nrow(Reference.i) == 0) {
                         my_message <- paste0("[Down_Ref] ERROR no data found in the file of reference data for ", Reference.name, " .\n")
-                        shinyalert(
+                        cat(my_message)
+                        if (shiny) shinyalert(
                             title = "ERROR no data in the csv file",
                             text = "my_message",
                             closeOnEsc = TRUE,
@@ -2041,7 +2019,6 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                             imageUrl = "",
                             animation = FALSE
                         )
-                        cat(my_message)
                     } else {
                         # use openair function to aggregate to the selected time average, in openair time must be replaced in date
                         # Adding coordinates of the reference stations
@@ -2081,7 +2058,8 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                 }
                             } else {
                                 my_message <- "[Down_Ref] ERROR, There is no or more than one column called  with names date, time, Date , Time, DATE, TIME or DateTime. The script is stopped"
-                                shinyalert(
+                                cat(my_message)
+                                if (shiny) shinyalert(
                                     title = "ERROR with date column",
                                     text = "my_message",
                                     closeOnEsc = TRUE,
@@ -2094,13 +2072,12 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                     confirmButtonCol = "#AEDEF4",
                                     timer = 0,
                                     imageUrl = "",
-                                    animation = FALSE
-                                )
-                                cat(my_message)
+                                    animation = FALSE)
                             }
                         } else {
                             my_message <- "[Down_Ref] ERROR, There is no column called date, time, Date , Time, DATE, TIME or DateTime or separator and quote are not set correctly. The script is stopped"
-                            shinyalert(
+                            cat(my_message)
+                            if (shiny) shinyalert(
                                 title = "ERROR with date column",
                                 text = my_message,
                                 closeOnEsc = TRUE,
@@ -2113,14 +2090,13 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                 confirmButtonCol = "#AEDEF4",
                                 timer = 0,
                                 imageUrl = "",
-                                animation = FALSE
-                            )
-                            cat(my_message)
+                                animation = FALSE)
                         }
                     }
                 } else {
                     my_message <- paste0("[Down_Ref] ERROR the csv file ",File.csv," does not exist at ", url," .\n")
-                    shinyalert(
+                    cat(my_message)
+                    if (shiny) shinyalert(
                         title = "ERROR with the csv file",
                         text = my_message,
                         closeOnEsc = TRUE,
@@ -2133,9 +2109,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                         confirmButtonCol = "#AEDEF4",
                         timer = 0,
                         imageUrl = "",
-                        animation = FALSE
-                    )
-                    cat(my_message)
+                        animation = FALSE)
                 }
             }
         } else {
@@ -2169,7 +2143,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                         my_message <- paste0("[Down_Ref()] ERROR, unrecognized file type for \n
                                                reference data .\n")
                         cat(my_message)
-                        shinyalert(
+                        if (shiny) shinyalert(
                             title = "ERROR unrecognised file type",
                             text = my_message,
                             closeOnEsc = TRUE,
@@ -2228,7 +2202,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     if (nrow(Reference.i) == 0) {
                         my_message <- paste0("[Down_Ref] ERROR no data found for reference, lack of new data for ", Reference.name, "\n")
                         cat(my_message)
-                        shinyalert(
+                        if (shiny) shinyalert(
                             title = "ERROR no reference data",
                             text = my_message,
                             closeOnEsc = TRUE,
@@ -2241,8 +2215,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                             confirmButtonCol = "#AEDEF4",
                             timer = 0,
                             imageUrl = "",
-                            animation = FALSE
-                        )
+                            animation = FALSE)
                     } else {
                         # Discarding columns without name
                         if (any(colnames(Reference.i) == "")) {
@@ -2321,7 +2294,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                                               check.names = FALSE)
                                 }
                                 # Setting Reference names (change names of pollutants adding Ref.)
-                                if (Ref.Type == "Ref") {
+                                if (is.null(Ref.Type) || Ref.Type == "Ref") {
                                     for (i in seq(Reference.names)) {
                                         for (j in seq(Reference.names[[i]])) {
                                             if (any(names(Reference.i) == Reference.names[[i]][j])) {
@@ -2358,7 +2331,8 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                 }
                             } else {
                                 my_message <- "[Down_Ref] ERROR, There is no or more than one column called  with names date, time, Date , Time, DATE, TIME or DateTime. The script is stopped"
-                                shinyalert(
+                                cat(my_message)
+                                if (shiny) shinyalert(
                                     title = "ERROR with date column",
                                     text = my_message,
                                     closeOnEsc = TRUE,
@@ -2371,13 +2345,12 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                     confirmButtonCol = "#AEDEF4",
                                     timer = 0,
                                     imageUrl = "",
-                                    animation = FALSE
-                                )
-                                cat(my_message)
+                                    animation = FALSE)
                             }
                         } else {
                             my_message <- "[Down_Ref] ERROR, There is no column called date, time, Date , Time, DATE, TIME or DateTime. The script is stopped"
-                            shinyalert(
+                            cat(my_message)
+                            if (shiny) shinyalert(
                                 title = "ERROR with date column",
                                 text = my_message,
                                 closeOnEsc = TRUE,
@@ -2390,14 +2363,13 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                                 confirmButtonCol = "#AEDEF4",
                                 timer = 0,
                                 imageUrl = "",
-                                animation = FALSE
-                            )
-                            cat(my_message)
+                                animation = FALSE)
                         }
                     }
                 } else {
                     my_message <- "[Down_Ref] ERROR, please select file of reference data"
-                    shinyalert(
+                    cat(my_message)
+                    if (shiny) shinyalert(
                         title = "ERROR no file selected",
                         text = my_message,
                         closeOnEsc = TRUE,
@@ -2410,9 +2382,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                         confirmButtonCol = "#AEDEF4",
                         timer = 0,
                         imageUrl = "",
-                        animation = FALSE
-                    )
-                    cat(my_message)
+                        animation = FALSE)
                 }
             }
         }
@@ -2584,7 +2554,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
             if (nrow(Reference.i) == 0) {
                 my_message <- paste0("[Down_Ref] ERROR no data found for reference, lack of new data for ", Reference.name, "\n")
                 cat(my_message)
-                shinyalert(
+                if (shiny) shinyalert(
                     title = "ERROR no reference data",
                     text = my_message,
                     closeOnEsc = TRUE,
@@ -2597,8 +2567,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     confirmButtonCol = "#AEDEF4",
                     timer = 0,
                     imageUrl = "",
-                    animation = FALSE
-                )
+                    animation = FALSE)
             } else {
                 # Adding coordinates of the reference stations
                 if (!is.null(coord.ref)) {
@@ -2632,7 +2601,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     Reference.i <- DF_avg(Reference.i, width = UserMins)
                 }
                 # Setting Reference names (change names of pollutants adding Ref.)
-                if (Ref.Type == "Ref") {
+                if (is.null(Ref.Type) || Ref.Type == "Ref") {
                     for (i in seq(Reference.names)) {
                         for (j in seq(Reference.names[[i]])) {
                             if (any(names(Reference.i) == Reference.names[[i]][j])) {
@@ -2712,24 +2681,20 @@ ping <- function(x, stderr = FALSE, stdout = FALSE, ...) {
 # 170609 MG : Pinging WEB site
 #=====================================================================================CR
 havingIP <- function() {
-
-  binary <- "ipconfig"
-  if (.Platform$OS.type != "windows") {
-    # test for ifconfig
-    if (!system("which ifconfig > /dev/null", intern = FALSE)) {
-      binary = "ifconfig"
-    } else if (!system("which ip > /dev/null", intern = FALSE)) {
-      binary = "ip addr"
-    } else {
-      stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
+    binary <- "ipconfig"
+    if (.Platform$OS.type != "windows") {
+        # test for ifconfig
+        if (!system("which ifconfig > /dev/null", intern = FALSE)) {
+            binary = "ifconfig"
+        } else if (!system("which ip > /dev/null", intern = FALSE)) {
+            binary = "ip addr"
+        } else {
+            stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
+        }
     }
-  }
-
     ipmessage <- system(binary, intern= TRUE)
-
     # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
     validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
-
     return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
 }
 #=====================================================================================CR
@@ -2745,7 +2710,7 @@ Tidy_Model.i <- function(Model.i, WDoutputMod, nameModel, Mod_type = NULL)
         ENV[["Model"]] <- list(Tidy = tidy(Model.i), Augment = augment(Model.i, data = data.frame(x = Model.i$x[,2], y = Model.i$y)), Glance = glance(Model.i), Call = Model.i$call,
                                Coef = coef(Model.i), Equation = format(Model.i$Equation))
     } else ENV[["Model"]] <- list(Tidy = tidy(Model.i), Augment = augment(Model.i), Glance = glance(Model.i), Call = Model.i$call,
-                           Coef = coef(Model.i), Equation = format(Model.i$Equation))
+                                  Coef = coef(Model.i), Equation = format(Model.i$Equation))
     list.save(ENV[["Model"]], file = file.path(WDoutputMod, paste0(nameModel,".rdata")))
     return(ENV[["Model"]])
 }
@@ -3423,7 +3388,7 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
                      Ref__a_i_p__name = NULL, User__a_i_p__ = NULL, Pass__a_i_p__ = NULL, Ref__a_i_p__Organisation = NULL,
                      Ref__a_i_p__Station = NULL, Ref__a_i_p__Pollutants = NULL, Ref__a_i_p__DateIN = NULL, Ref__a_i_p__DateEND = NULL,
                      csvFile = NULL, csvFile.sep = NULL, csvFile.quote = NULL, coord.ref = NULL,
-                     Ref.Type = "Ref", RefData = NULL) {
+                     Ref.Type = "Ref", RefData = NULL, shiny = TRUE) {
     # DownloadSensor        = Output of function DownloadSensor()
     # Down.ref              = logical, if true reference data are downloaded
     # FTPMode               = string, default = "ftp", type of download of reference data: "ftp" using a csv file on a ftp server, "csv" the same with a local file and SOS: SOS download
@@ -3477,7 +3442,7 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
                                     Ref__a_i_p__name = Ref__a_i_p__name, User__a_i_p__ = User__a_i_p__, Pass__a_i_p__ = Pass__a_i_p__,
                                     Ref__a_i_p__Organisation = Ref__a_i_p__Organisation, Ref__a_i_p__Station = Ref__a_i_p__Station,
                                     Ref__a_i_p__Pollutants = Ref__a_i_p__Pollutants, Ref__a_i_p__DateIN = Ref__a_i_p__DateIN, Ref__a_i_p__DateEND = Ref__a_i_p__DateEND,
-                                    csvFile = csvFile, csvFile.sep = csvFile.sep, csvFile.quote = csvFile.quote, coord.ref = trimws(x = coord.ref), Ref.Type = Ref.Type) # this return only new Data
+                                    csvFile = csvFile, csvFile.sep = csvFile.sep, csvFile.quote = csvFile.quote, coord.ref = trimws(x = coord.ref), Ref.Type = Ref.Type, shiny = shiny) # this return only new Data
         } else cat(paste0("[REF] INFO: Data download not requested."), sep = "\n")
     } else cat(paste0("[REF] INFO: Data download already up to date."), sep = "\n")
     # Trying to use the existing data or Influx.Rdata.file
@@ -3883,7 +3848,7 @@ Etalonnage <- function(x, s_x, y, s_y, AxisLabelX, AxisLabelY, Title, Marker , C
 # 11. Valid Periods                                                                 (NOT USED)
 # 12. SET TIME PARAMETERS -> see in ASE_OPER_SCRIPT.R                               (NOT USED)
 #=====================================================================================CR
-CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
+CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = TRUE) {
     # Return a list with the config of servers, sensors and effects
     # DisqueFieldtest   : directory where is the file ASEconfig*.R file
     # ASEConfig         : AirSensEUR name e.g LANUV_01 in ASEConfigLANUV_01.R or the AirSensEUR config file as in ASEConfigLANUV_01.R
@@ -3917,7 +3882,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
             my_message <- paste0("[CONFIG] ERROR, no server config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
-            shinyalert(
+            if (shiny) shinyalert(
                 title = "ERROR Config file",
                 text = my_message,
                 closeOnEsc = TRUE,
@@ -3936,7 +3901,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
         my_message <- paste0("[CONFIG] ERROR, no server config file for the AirSensEUR box. \n",
                              "The App is going to crash. This AirSensEUR cannot be selected.\n")
         cat(my_message)
-        shinyalert(
+        if (shiny) shinyalert(
             title = "ERROR Config file",
             text = my_message,
             closeOnEsc = TRUE,
@@ -4008,7 +3973,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
             my_message <- paste0("[CONFIG] ERROR, no config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
-            shinyalert(
+            if (shiny) shinyalert(
                 title = "ERROR Config file",
                 text = my_message,
                 closeOnEsc = TRUE,
@@ -4033,7 +3998,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
                 # if ASE_name,".cfg", Message of error
                 my_message <- paste0("[CONFIG] ERROR, no chemical shield config file for the AirSensEUR box. \n",
                                      "The App is going to crash. This AirSensEUR cannot be selected.\n")
-                shinyalert(
+                if (shiny) shinyalert(
                     title = "ERROR Config file",
                     text = my_message,
                     closeOnEsc = TRUE,
@@ -4077,7 +4042,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
         my_message <- paste0("[CONFIG] ERROR, no server config file for the AirSensEUR box. \n",
                              "The App is going to crash. This AirSensEUR cannot be selected.\n")
         cat(my_message)
-        shinyalert(
+        if (shiny) shinyalert(
             title = "ERROR Config file",
             text = my_message,
             closeOnEsc = TRUE,
@@ -4160,7 +4125,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL) {
 # Valid Periods
 #=====================================================================================CR
 SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC" , SOS.TZ = "UTC", Ref.TZ = "UTC", DownloadSensor, Config = NULL,
-                    sens2ref.shield = NULL) {
+                    sens2ref.shield = NULL, shiny = TRUE) {
     # Return             : list with sens2ref (only time parameters)
     # DisqueFieldtestDir : file.path where the config files of the AIrSensEUR are located. The directory ""Shield_Files" shall be located at the pareent directory
     # General.t.Valid    : dataframe with date , sensor and reference data, default is NULL, it is only use if the the File_SETTIME_cfg file does not exist
@@ -4200,7 +4165,7 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
             my_message <- paste0("[SETTIME] ERROR, no SetTime server config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
-            shinyalert(
+            if (shiny) shinyalert(
                 title = "ERROR Config file",
                 text = my_message,
                 closeOnEsc = TRUE,
@@ -4219,7 +4184,7 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
         my_message <- paste0("[SETTIME] ERROR, no SetTime server config file for the AirSensEUR box. \n",
                              "The App is going to crash. This AirSensEUR cannot be selected.\n")
         cat(my_message)
-        shinyalert(
+        if (shiny) shinyalert(
             title = "ERROR Config file",
             text = my_message,
             closeOnEsc = TRUE,
@@ -5386,7 +5351,7 @@ lm.Model.Compare <- function(General.df, DateIN, DateEND, x, y, Title = NULL) {
 ### function to query data using a_i_p server
 #================================================================CR
 a_i_p_param <- function(URL, username, password, organisation, station, start, end = NULL,
-                        allparams = "true", avgtime=600) {
+                        allparams = "true", avgtime=600, shiny = TRUE) {
     # Mail "Erich Kitzmüller" <erich.kitzmueller@a-i-p.com>
     # please append the parameter "&allparams=true" to your URL. Without that, the request only returns the values of monitoring-site-parameters marked as default (see image).
     # Hint: For each unique combination of "Monitoring Site" and "Global Parameter", there can be only one monitoring-site-parameter marked as default.
@@ -5424,7 +5389,8 @@ a_i_p_param <- function(URL, username, password, organisation, station, start, e
         return(sapply(seq_along(Reference), function(i) Reference[[i]]$Components[[1]]$Component  ))
     } else if (JSON$status_code == 204) {
         my_message <- paste0("[a_i_p_param] INFO the server was contacted with succes but there no data to return. Change dates.\n")
-        shinyalert(
+        cat(my_message)
+        if (shiny) shinyalert(
             title = "INFO Connected to a_i_p server",
             text = "my_message",
             closeOnEsc = TRUE,
@@ -5441,7 +5407,8 @@ a_i_p_param <- function(URL, username, password, organisation, station, start, e
         return()
     } else {
         my_message <- paste0("[a_i_p_param] ERROR the parameter to contact the a_i_p server are wrong, please check\n")
-        shinyalert(
+        cat(my_message)
+        if (shiny) shinyalert(
             title = "ERROR no connection to a_i_p server",
             text = "my_message",
             closeOnEsc = TRUE,
@@ -5458,95 +5425,7 @@ a_i_p_param <- function(URL, username, password, organisation, station, start, e
         return()
     }
 }
-# a_i_p_data  <- function(URL, username, password, organisation, station, start, end, param = NULL, Time_zone = "UTC") {
-#     # URL          character string indicating the a-i-p URL for data transmission
-#     # username     character string indicating the login at the a-i-p URL
-#     # password     character string indicating the password at the a-i-p URL
-#     # organisation character string indicating the organisation quering the a-i-p URL
-#     # station      character string indicating the station being interogatedat the a-i-p URL
-#     # start        POSIXCt indicating the starting date for data downlaod, format: "2019-03-01-00-00-00"
-#     # end          POSIXCt indicating the ending   date for data downlaod, format: "2019-03-05-00-00-00"
-#     # param        vector of charater string listing the parameters measured at the station to be considered
-#     #              default is NULL. If NULL all parameters are downloaded
-#     # Time_zone    Character vector, default is "UTC", a character string that specifies which time zone to parse
-#     #              the date with. The string must be a time zone that is recognized by the user's OS.
-#
-#     # End date
-#     f_start <- format(lubridate::ymd(start), "%Y-%m-%d-%H-%M-%S")
-#     f_end   <- format(lubridate::ymd(end),   "%Y-%m-%d-%H-%M-%S")
-#
-#     #================================================================CR
-#     # 1) Grab the data
-#     #================================================================CR
-#     # CUrl needed see http://appliedmathbytes.com/2015/08/using-json-in-r/
-#     # Otherwise we will get error Error in file(con, “r”) : cannot open the connection
-#     Reference.JSON.httr <- httr::GET(URLencode(paste0(URL,"username=", username,"&",
-#                                                       "password=", password,"&",
-#                                                       "organisation=", organisation,"&",
-#                                                       "station=", station,"&",
-#                                                       "start=", f_start,"&",
-#                                                       "end=", f_end)))
-#
-#     #================================================================CR
-#     # 2) Extract the data from the JSON file ====
-#     #================================================================CR
-#     # extract the data node
-#     Reference <- content(Reference.JSON.httr, type = "application/json", as = 'parsed')
-#     Reference <- Reference$Stations[[1]]$Devices
-#
-#     # determining Component
-#     Components <- sapply(seq_along(Reference), function(i) Reference[[i]]$Components[[1]]$Component)
-#     # determining Units
-#     Units      <- sapply(seq_along(Reference), function(i) Reference[[i]]$Components[[1]]$Unit)
-#     # counts of data per parameter
-#     Counts     <- sapply(seq_along(Reference), function(i) length(Reference[[i]]$Components[[1]]$MeasuredValues))
-#
-#     # Reference data
-#     MeasuredValues <- lapply(seq_along(Reference), function(i) {
-#
-#         if (!is.null(param)) {
-#
-#             if (Components[i] %in% param) {
-#                 cat(paste0("Component: ",Components[i]," is being downloaded\n"))
-#
-#                 # Downloading data, taking only valid measurements, dropping Valid, Convert Time to Posix format
-#                 Param.i <- data.table::rbindlist(lapply(Reference[[i]]$Components[[1]]$MeasuredValues, as.data.frame.list), fill = T) %>%
-#                     dplyr::filter(Valid == TRUE) %>%
-#                     dplyr::select(Time,Value) %>%
-#                     dplyr::mutate(Time = ymd_hms(Time, tz = Time_zone))
-#
-#                 colnames(Param.i) <- c("date", Components[i])
-#
-#                 return(Param.i)
-#             }
-#         } else {
-#
-#             cat(paste0("Component: ",Components[i]," is being downloaded\n"))
-#
-#             # Downloading data, taking only valid measurements, dropping Valid, Convert Time to Posix format
-#             Param.i <- data.table::rbindlist(lapply(Reference[[i]]$Components[[1]]$MeasuredValues, as.data.frame.list), fill = T) %>%
-#                 dplyr::filter(Valid == TRUE) %>%
-#                 dplyr::select(Time,Value) %>%
-#                 dplyr::mutate(Time = ymd_hms(Time, tz = Time_zone))
-#
-#             colnames(Param.i) <- c("date", Components[i])
-#
-#             # convert to xts
-#             #Param.i <- xts::xts(x = Param.i[,2], order.by = Param.i$date) #, tzone = threadr::time_zone(Param.i$date)
-#
-#             return(Param.i)
-#         }
-#     })
-#     # Creating RefData
-#     for (i in seq_along(MeasuredValues)) {
-#         if (!is.null(MeasuredValues[[i]])) {
-#
-#             if (exists("RefData")) RefData <- merge(x = RefData, y = MeasuredValues[[i]], by = "date") else RefData <- MeasuredValues[[i]]
-#         }
-#     }
-#
-#     return(RefData)
-# }
+
 a_i_p_data <- function(URL, username, password, organisation, station,
                        start, end = format(Sys.time(), "%Y-%m-%d-%H-%M-%S"),
                        param = NULL, Time_zone = "UTC", allparams = "true", avgtime = 1, Valid = TRUE, unflagged = TRUE, flushtime=120) {
@@ -5651,7 +5530,7 @@ a_i_p_data <- function(URL, username, password, organisation, station,
         # Param.i <- data.table::rbindlist(lapply(Refi$Components[[1]]$MeasuredValues, as.data.frame.list, stringsAsFactors = F),
         #                                  fill = T, use.names = T)
         Param.i <- data.table::rbindlist(Refi$Components[[1]]$MeasuredValues)
-        if ("Value" %in% names(Param.i) && Refi$Components[[1]]$Component %in% param) {
+        if ("Value" %in% names(Param.i) && Refi$Components[[1]]$Component %in% strsplit(param, "!")[[1]]) {
             cat(paste0("Component ",stringr::str_pad(which(Components %in% Refi$Components[[1]]$Component), 2, side = "left", pad = " "),"/",length(seq_along(Ref)),": ",
                        stringr::str_pad(Refi$Components[[1]]$Component, max(nchar(Components)), side = "right", pad = " ")," was correctly downloaded\n"))
             Param.i <- Param.i %>%
