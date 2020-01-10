@@ -7685,7 +7685,7 @@ server <- function(input, output, session) {
             buffer_sp_traffic_real <- rgeos::gBuffer(sp_traffic_real, width = 0.0002)  #0.00005, units in grade
             class(buffer_sp_traffic_real)
             (p.df <- data.frame( ID = 1:length(buffer_sp_traffic_real)))
-            # # trasform SpatialPolygons to SpatialPolygonsDataFrame
+            # # transform SpatialPolygons to SpatialPolygonsDataFrame
             buffer_sp_traffic_real <- SpatialPolygonsDataFrame(buffer_sp_traffic_real, p.df, match.ID = F)
             buffer_sp_traffic_real <- ggplot2::fortify(buffer_sp_traffic_real)
             MEAS_LON_LAT <- buffer_sp_traffic_real %>%
