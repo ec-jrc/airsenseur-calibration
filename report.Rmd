@@ -684,5 +684,4 @@ if (all(is.na(Drift.df()))) {
                  Verbose = FALSE)
     }
 }
-```
-
+            ```
