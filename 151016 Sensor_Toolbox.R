@@ -1010,6 +1010,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         index.mdT <- which(DataXY$Temperature == max(DataXY$Temperature, na.rm = TRUE))[1]
         A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (DataXY[index.mdT, "Temperature"])^1.75
         # Fitting model
+        # browser()
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
             Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY,
                            start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75),
@@ -2293,23 +2294,6 @@ DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60, keyDate = "date", SameCl
         # replace nan with
         DF.Agg.DT <- DF.Agg.DT[, lapply(.SD, nan.to.na)]
         return(DF.Agg.DT)
-        # # For RcppRoll::roll_mean: makes complete row of times series
-        # DF <- DF %>%
-        #     tidyr::complete(date = seq(round(min(date, na.rm = TRUE), units = "hours"),
-        #                                round(max(date, na.rm = TRUE), units = "hours"), width)) %>%
-        #     filter(date >= round(min(date, na.rm = TRUE), units = "hours"))
-        #
-        # # Aggregating using the mean with window size
-        # DF.avg   <- DF
-        # DF.avg[, -which(names(DF) == "date")] <- lapply(DF[, -which(names(DF) == "date")], function(x) RcppRoll::roll_mean(x , n = width, na.rm = TRUE, by = width, fill = NA, align = "left"))
-        # #DF.avg$date <- DF$date
-        # DF.avg   <- DF.avg[seq(1, nrow(DF.avg), width),]
-        # DF.avg[] <- lapply(DF.avg, nan.to.na)
-        # rm(DF)
-        # # discarding rows with all NAs added to complete the minute time series
-        # Index.DF.avg   <- which(sapply(seq_along(DF.avg$date), function(i) all(is.na(DF.avg[i, -which(names(DF.avg) == "date")]))))
-        # if (length(Index.DF.avg) > 0 ) DF.avg <- DF.avg[-Index.DF.avg,]
-        # return(data.frame(DF.avg))
     } else return(cat("[DF_avg] ERROR, the selected dataframe does not exist or is too short for averaging"))
 }
 #================================================================CR
