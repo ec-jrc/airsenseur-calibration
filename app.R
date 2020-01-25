@@ -2626,7 +2626,7 @@ server <- function(input, output, session) {
             # Reading the _Servers.cfg file or using the one existing in Config$all
             if (!"Server" %in% names(Config$all)) {
                 if (file.exists(Servers_file())) {
-                    Config$all[["Server"]] <<- transpose(fread(file = Servers_file(), header = FALSE), fill = NA, make.names = 1)
+                    Config$all[["Server"]] <<- data.table::transpose(fread(file = Servers_file(), header = FALSE), fill = NA, make.names = 1)
                     cat(paste0("[shiny, asc.File] Info, the config file ", Servers_file(), " for the configuration of servers  is loaded"), sep = "\n")
                 } else stop(cat(paste0("[shiny, asc.File] The file of server configuration for AirSensEUR: ", Servers_file,
                                        " does not exist. Please select another AirSensEUR of manually create the file"), sep = "\n"))
@@ -2637,7 +2637,7 @@ server <- function(input, output, session) {
                     if (value == TRUE) {
                         set(Config$all[["Server"]], j = "asc.File", value = input$asc.File)
                         # save modified file
-                        fwrite(transpose(Config$all[["Server"]], fill = NA, make.names = 1, keep.names = "PROXY"), file = Servers_file(), row.names = FALSE)
+                        fwrite(data.table::transpose(Config$all[["Server"]], fill = NA, make.names = 1, keep.names = "PROXY"), file = Servers_file(), row.names = FALSE)
                         cat(paste0("[shiny, asc.File] INFO, ", paste0(ASE_name(),"_Servers.cfg")," config file  saved in directory General_data.\n"))
                         # now delete the existing General.Rdata and redo all data treatment
                         if (file.exists(General.file())) unlink(General.file(), recursive = FALSE, force = TRUE)
@@ -9125,7 +9125,7 @@ server <- function(input, output, session) {
             #-----------------------------------------------------------------------------------CR
             # Saving file *.cfg
             # Updating with new names of chemical sensors
-            sens2ref_new <- transpose(fread(file = cfg_file(), header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
+            sens2ref_new <- data.table::transpose(fread(file = cfg_file(), header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
             # Saving file *.cfg (df sens2ref)
             Outliers_Ref.added   <- c(which(colnames(Outliers_Ref()) == "name.gas"),which(!(names(Outliers_Ref()) %in% intersect(names(Outliers_Sensor()), names(Outliers_Ref())))))
             sens2ref             <- merge(x = Outliers_Sensor(), y = Outliers_Ref()[,Outliers_Ref.added], by = "name.gas", all.x = TRUE, sort = FALSE)
