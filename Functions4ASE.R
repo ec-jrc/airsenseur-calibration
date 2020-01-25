@@ -1471,10 +1471,10 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
             cat(paste0("[Down_Influx] INFO, ", format(nrow(All.Sensors.Adding), scientific = FALSE), " records downloaded between ",
                        format(ymd_hms(All.Sensors.Adding[1,time]),"%Y-%m-%d %H:%M")," and ",format(ymd_hms(All.Sensors.Adding[.N,time]),"%Y-%m-%d %H:%M")
                        ," added to table ", Dataset, " of airsenseur.db"), sep = "\n")
+            remove(All.Sensors.Adding)
         } else cat(paste0("[Down_Influx] INFO, No influx data between ", format(ymd_hms(SQL.time.Last),"%Y-%m-%d %H:%M")," and ",format(ymd_hms(SQL.time.Last) + Step,"%Y-%m-%d %H:%M"),".\n"))
         # updating SQL.time.Last for while loop
         SQL.time.Last  <- ymd_hms(SQL.time.Last) + Step
-        remove(All.Sensors.Adding)
     }
     cat(paste0("[Down_Influx] INFO, the downloading of sensor data from the Influx server is finished.\n"))
     # I need to add index ?!?
@@ -3888,7 +3888,7 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # reading the Server configuration files
         File_Server_cfg <- file.path(DisqueFieldtestDir, Dir.Config, paste0(ASE_name,"_Servers.cfg"))
         if (file.exists(File_Server_cfg)) {
-            cfg <- transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
+            cfg <- data.table::transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
             cat(paste0("[CONFIG] Info, the config file ", File_Server_cfg, " for the configuration of servers exists"), sep = "\n")
             # Changing names
             if ("AirsensEur.name" %in% names(cfg)) names(cfg)[which(names(cfg) == "AirsensEur.name")] <- "AirSensEur.name"
@@ -4242,7 +4242,7 @@ SETTIME <- function(DisqueFieldtestDir, DisqueFieldtest, General.t.Valid = NULL,
         if (is.null(Config) || !"sens2ref" %in% names(Config) || is.null(Config[["sens2ref"]])) {
             File_Server_cfg    <- file.path(DisqueFieldtestDir, Dir.Config, paste0(ASE_name,"_Servers.cfg"))
             if (file.exists(File_Server_cfg)) {
-                cfg <- transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
+                cfg <- data.table::transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
                 # Changes names for change Shiny App version 0.9 to 0.10
                 Change.names <- rbind(c("TZ"           , "Influx.TZ"),     # Time zone of Influx data
                                       c("sens.tzone"   , "SOS.TZ"))         # Time zone of SOS data
@@ -4264,7 +4264,7 @@ SETTIME <- function(DisqueFieldtestDir, DisqueFieldtest, General.t.Valid = NULL,
         # set to save file
         Save.sens2ref <- TRUE}
     # transpose the data.table
-    sens2ref <- cbind(names(sens2ref)[-1],transpose(sens2ref, fill = NA, make.names =  "name.gas"))
+    sens2ref <- cbind(names(sens2ref)[-1],data.table::transpose(sens2ref, fill = NA, make.names =  "name.gas"))
     setnames(sens2ref, c("name.gas",names(sens2ref)[-1]) )
     # Changes names for change Shiny App version 0.6 to 0.7
     Change.names <- rbind(c("RefDateINPlot"   ,"Out.Ref.IN"),       # for plotting outlier of reference data
