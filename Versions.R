@@ -1,19 +1,30 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
-# New release V0.16
-# 2019-12-17   N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
-#              E15 - bug corection: If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
-#                    This is now solved, config fiels are updated when the shield config file is changed. The App stop and when restarting all data are correctly updated
-#             N108 - Changing calibration model is now only allowed in MainTabPanel DataTreatment - Calibration - Scatterplot or Calibrated
-#              E65 - A bug was corrected that was runnung the outlier detection every time a new ASE box was selected.
-#              E66 - bug corection: When changing the minimum Valid Date of SetTime, all other dates were no more updated (outliers, co-variates, calibration and predicted).
-#                    This is now solved
-#             N109 - in MainTabPanel Data Treatment - PlotFiltering - Invalid, thre is a new button "At reference Station". When pressed new time periods when the selected AirSensEUR box is not within 50 meters
-#                    of the coordinates of the reference station are computed. You may need to press twice the button to displayd the new IN and END date of these time periods. Remember to click on "Apply
-#                    validity periods" to update the whole filtering of invalid data and sensor outliers.
-#              E67 - bug corection: corrected the problem of size inflated model (>100 MB) when saving models of type Linear.Robust(rq())
-#              E38 - bug corrction: the reactivity of scatterplots, time series and matrix plots with parameters that are not relevant have been corrected
+# New release V0.17, 2020-01-24
+#             E71 - bug correction: In function Down_Influx, Httr::GET is corrected adding \" in front and behind datasets. 
+#             E72 - bug correction: In function Down_Ref, for a_i_p download, an error in case of lack of separator ("!") between parameters to download was making the app to crash. Corrected. 
+#             E73 - bug correction: when discarding outliers in reference data, a crash was occuring if reference data were not available. Corrected
+#             E74 - bug correction: in menu SelectASE - MaintabPanel "Push data", passwords for proxy, InfluxDB and Aip reference data were displayed. They are now hidden.
+#            N110 - A new directory have been created into ../Shiny named "ASE_Boxes" containing one directory for each AirSensEUR box where all data are stored.
+#                   The files ASEConfig***.R are no more used for the identification of AirSensEUR boxes and can be deleted.
+#                   ALL USERS SHALL CREATE THE DIRECTORY "ASE_Boxes" IN ../Shiny AND MOVE ALL DIRECTORIES IDENTIFYING AIRSENSEUR BOXES IN THERE TO CONTINUE USING THE ASE_APP.
+#            N111 - The app is now called ASE_App to avoid confusing the shiny language with an app.
+#            N112 - Within the directory three of each AirSensEUR box, all the configuration files (*.cfg) are now saved into a new sub-directory which is called "Configuration".
+#                   An automatic process has been created into ASE_App to automatically move the config files so that it is transparent for user and back compatibility is ensured.
+#            N113 - In menu"SelectASE", it is now possible to create several AirSensEUR one after the other or at anytime using the button create new.
+#             E74 - bug correction: It is not not possible to download parameters about battery charge ("L2942CUR","L2942VOL","L4156STA") from InfluxDB that have a 10 min periodity, because these parameters 
+#                   make the BoardTime erreneous and consequently the invalidation of warming time necessary after any rebooting of AirSensEUR boxes.
+#            N114 - Changes in function INFLUXDB: the SQLite2df process is now launched only if data are added to airsenseur.db
+#             E76 - bug correction: When calibrating with function Validation.Tool, data of the last day of the Calibration time period was not taking into account. Corrected: DateEND (Date class) + 1 
+#            N115 - In menu "Data Treatment", map in the MainTabPanel "Calibration " and "Prediction", The map are now drawn even if there are no AirSensEUR coordinates but the Coordinates of the
+#                   reference station are available.
+#             E77 - bug correction: in function a_i_p_data. The function purr::reduce was used to prepare the final data.table of reference data. This function  resulted in a lack of timestamp (lack of rows
+#                   of data) when some reference data were NA. Corretecd using functions rbindlist and DF_avg
+#             E78 - bug correction: in function Down_influx, when dowloading new Influx data, updating of an existing ASE, the last timepstamps present in airsenseur.db were repeated making duplicated data.
+#                   Consequently in SQLite2df, there were duplicated data of the same timestamps. When casting pollutants name with dcast, the number of the duplicates (count) was returned instead of the
+#                   actual data values. Corrected in Down_Influx (> instead of >=) and the options fun.aggregate is added to dcast() to solve the cases when data are duplicated.
+#            N116 - The file Global.R is now splitted into GLobal.R and Global4Shiny.R. The 1st load packages related to computation and the 2nd one packages related to shiny and plotting.
 
 #  ----#TO BE DONE  : ----
 # BUG CORRECTIONS
@@ -27,6 +38,8 @@
 #             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the startvalues
 #             E69 - there is a problem with the color scale of concetration levels of the Target Diagram
 #             E70 - In some cases when selecting a new minimum Valid date, the date for covariates, calibration, prediction and reference outlier is wrongly updated
+#             E75 - When selecting a 2nd AirSensEUR box, it seems that it is not possible to merge the new ASE data, please check
+#             E79 - The button to export the Rmardown report does not work
 # NEW FEATURES needed:----
 #              N2 - Calibration with linear.robust: add RMSE on statterplot ...
 #              N3 - Add model calibration: neural network model in the list of possible calibration method.
@@ -57,6 +70,21 @@
 #             N89 - Add the possibility to set some of the coefficients of calibration models with plotty
 #            N106 - Add the possibility to use several calibration models at different date interval
 #            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
+
+# New release V0.16
+# 2019-12-17   N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
+#              E15 - bug corection: If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
+#                    This is now solved, config fiels are updated when the shield config file is changed. The App stop and when restarting all data are correctly updated
+#             N108 - Changing calibration model is now only allowed in MainTabPanel DataTreatment - Calibration - Scatterplot or Calibrated
+#              E65 - A bug was corrected that was runnung the outlier detection every time a new ASE box was selected.
+#              E66 - bug corection: When changing the minimum Valid Date of SetTime, all other dates were no more updated (outliers, co-variates, calibration and predicted).
+#                    This is now solved
+#             N109 - in MainTabPanel Data Treatment - PlotFiltering - Invalid, thre is a new button "At reference Station". When pressed new time periods when the selected AirSensEUR box is not within 50 meters
+#                    of the coordinates of the reference station are computed. You may need to press twice the button to displayd the new IN and END date of these time periods. Remember to click on "Apply
+#                    validity periods" to update the whole filtering of invalid data and sensor outliers.
+#              E67 - bug corection: corrected the problem of size inflated model (>100 MB) when saving models of type Linear.Robust(rq())
+#              E38 - bug correction: the reactivity of scatterplots, time series and matrix plots with parameters that are not relevant have been corrected
+
 
 # New release V0.15 (V0.14 is not distributed, V0.15 includes both changes of v0.14 and v0.15)
 # 2019-11-20   E51 - bug corection: When downloading InfluxDB data in minutes values, not all data are downloaded, only the 1st 10000 within 30 day period.

@@ -30,28 +30,32 @@
 cat("-----------------------------------------------------------------------------------\n")
 # Clear memory and restart R-session
 remove(list = ls()) # [-which(ls() %in% c("DisqueFieldtest"))])
-# checking if internet is available to access CRAN
-havingIP <- function() {
-    if (.Platform$OS.type == "windows") {
-        ipmessage <- system("ipconfig",
-                            intern = TRUE)
-    } else {
-        ipmessage <- system("/sbin/ifconfig",
-                            intern = TRUE)
-    }
-    # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
-    # any(grep(validIP, ipmessage))
-    validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
-    return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
-}
-isInternet <- TRUE # isInternet <- havingIP() # no use to test. If there is no Internet then it is not necessary to run the script
-if (isInternet) cat("[shiny] INFO, internet is  available\n") else cat("[shiny] INFO, internet is not available\n")
 # detectiong the OS
 isOS <- .Platform$OS.type
 cat(paste0("[shiny] INFO, the OS platform is : ", isOS), sep = "\n")
 # Checking if RStudio is used
 isRStudio  <- Sys.getenv("RSTUDIO") == "1"
 if (isRStudio)  cat("[shiny, isTcltk] INFO, ASE_Script is run under Rstudio\n") else cat("[shiny, isTcltk] INFO, ASE_Script is not run under Rstudio\n")
+# checking if internet is available to access CRAN
+havingIP <- function() {
+    binary <- "ipconfig"
+    if (.Platform$OS.type != "windows") {
+        # test for ifconfig
+        if (!system("which ifconfig > /dev/null", intern = FALSE)) {
+            binary = "ifconfig"
+        } else if (!system("which ip > /dev/null", intern = FALSE)) {
+            binary = "ip addr"
+        } else {
+            stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
+        }
+    }
+    ipmessage <- system(binary, intern= TRUE)
+    # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+    validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
+    return(any(unlist(gregexpr( validIP, ipmessage, perl = TRUE) ) != -1))
+}
+isInternet <- havingIP() # isInternet <- havingIP() # no use to test. If there is no Internet then it is not necessary to run the script
+if (isInternet) cat("[shiny] INFO, internet is available\n") else stop("[shiny] INFO, internet is not available\n")
 #================================================================CR
 #  1 - Get configuration parameters in ASEconfig_MG.R - Create file system structure check for General.Rdata availbility, create log file
 #================================================================CR
@@ -153,11 +157,10 @@ setwd(DisqueFieldtest)
 cat("-----------------------------------------------------------------------------------\n")
 cat("\n")
 #----------------------------------------------------------------CR
-#   1.b Checking Functions4AES.R and SensorToolBox availability.
-#   1.c Sourcing Functions4AES.R and SensorToolBox, geting path of ASEconfig_xx.R
-#   1.d Loading packages (global.R)
+#   1.d Sourcing Functions4AES.R and SensorToolBox, Loading packages (global.R and global4Shiny.R)
 #----------------------------------------------------------------CR
 source("global.R")
+source("global4Shiny.R")
 #----------------------------------------------------------------CR
 #  1.e Getting the file path for ASEconfig_xx.R ----
 #----------------------------------------------------------------CR
@@ -165,8 +168,10 @@ source("global.R")
 #----------------------------------------------------------------CR
 # 1.f Init Shiny ----
 #----------------------------------------------------------------CR
-choices.ASEconfig <- list.files(path = getwd(), pattern = glob2rx("ASEconfig*.R"))
-Dir.Logs          <- grep(pattern = glob2rx("*scriptsLog*"), x = list.dirs(DirShiny), value = TRUE)
+#choices.ASEconfig <- list.files(path = getwd(), pattern = glob2rx("ASEconfig*.R"))
+choices.ASEconfig <- list.dirs(path = file.path(getwd(),"ASE_Boxes"), recursive = FALSE)
+#Dir.Logs          <- grep(pattern = glob2rx("*scriptsLog*"), x = list.dirs(DirShiny), value = TRUE)
+Dir.Logs          <- grep(pattern = glob2rx("*scriptsLog*"), x = list.dirs(choices.ASEconfig), value = TRUE)
 choices.Logs      <- list.files(Dir.Logs, full.names = TRUE)
 Selected.Logs     <- choices.Logs[which.max(file.info(choices.Logs)$mtime)]
 jscode            <- "shinyjs.closeWindow = function() { window.close(); }"
@@ -178,7 +183,7 @@ choices.shield    <- list.files(path = file.path(getwd(), "Shield_Files"), patte
 choices.Ref.unit  <- c("ppb","ppm", "ug/m3","mg/m3","counts")
 Models            <- c("Linear", "Linear.Robust","MultiLinear", "exp_kT", "exp_kK", "T_power", "K_power", "RH_Hysteresis","gam", "Quadratic", "Cubic", "Michelis", "Sigmoid")
 # ui =============================================================
-ui <- navbarPage(title = "AirSensEUR v0.16", id = "ASE", theme = shinytheme("cerulean"), selected = "SelectASE",
+ui <- navbarPage(title = "ASE_App v0.17", id = "ASE", theme = shinytheme("cerulean"), selected = "SelectASE",
                  # shinyjs must be initialized with a call to useShinyjs() in the app's ui.
                  useShinyjs(),
                  extendShinyjs(text = jscode, functions = c("closeWindow")),
@@ -198,7 +203,8 @@ ui <- navbarPage(title = "AirSensEUR v0.16", id = "ASE", theme = shinytheme("cer
                                   actionButton(inputId = "Select", label = "Select AirSensEUR", icon = icon("check-square")),
                                   # actionButton("Apply", label = "Apply"),
                                   hr(),
-                                  textInput(inputId = "NewFile", label = "New config file (ASEconfig*, * = SOS id)", value = "ASEconfig"),
+                                  #textInput(inputId = "NewFile", label = "New config file (ASEconfig*, * = SOS id)", value = "ASEconfig"),
+                                  textInput(inputId = "NewFile", label = "New AirSensEUR (SOS id)"),
                                   actionButton(inputId = "Create.New", label = "Create new AirSensEUR", icon = icon("plus-circle")),
                                   hr(),
                                   actionButton(inputId = "Quit"   , label = "Quit", icon = icon("power-off"))
@@ -212,7 +218,9 @@ ui <- navbarPage(title = "AirSensEUR v0.16", id = "ASE", theme = shinytheme("cer
                                                                 h4("Filtering Sensors data")  , tableOutput("FilteringSensor"),
                                                                 h4("Filtering Reference data"), tableOutput("FilteringRef")),
                                                        tabPanel(title = "Calibration", tableOutput("Calib.cfg"), icon = icon("tachometer")),
-                                                       tabPanel(title = "SetTime"    , tableOutput("SetTime.cfg"), icon = icon("time", lib = "glyphicon"))
+                                                       tabPanel(title = "SetTime"    , tableOutput("SetTime.cfg"), icon = icon("time", lib = "glyphicon")),
+                                                       tabPanel(title = "Sensors"    , tableOutput("Sensors.cfg"), icon = icon("tachometer")),
+                                                       tabPanel(title = "Boards"     , tableOutput("Boards.cfg") , icon = icon("tachometer"))
                                            )
                                   )
                                   , width = 9)
@@ -295,8 +303,8 @@ ui <- navbarPage(title = "AirSensEUR v0.16", id = "ASE", theme = shinytheme("cer
                                                                    tabPanel("SOS",
                                                                             uiOutput("uiRefSOSname"),
                                                                             uiOutput("uiRef.SOS.name"),
-                                                                            uiOutput("uiRefPollutants"),
-                                                                            uiOutput("uiRefDate")),
+                                                                            uiOutput("uiRefDate"),
+                                                                            uiOutput("uiRefPollutants")),
                                                                    tabPanel("a_i_p",
                                                                             uiOutput("uiRef__a_i_p__name"),
                                                                             uiOutput("uiRef.a_i_p.name"),
@@ -304,8 +312,8 @@ ui <- navbarPage(title = "AirSensEUR v0.16", id = "ASE", theme = shinytheme("cer
                                                                             div(style = "display: inline-block;vertical-align:top; width: 48%;", uiOutput("ui__a_i_p__Pass")),
                                                                             div(style = "display: inline-block;vertical-align:top; width: 48%;", uiOutput("uiRef__a_i_p__Organisation")),
                                                                             div(style = "display: inline-block;vertical-align:top; width: 48%;", uiOutput("uiRef__a_i_p__Station")),
-                                                                            uiOutput("uiRef__a_i_p__Pollutants"),
-                                                                            uiOutput("uiRef__a_i_p__Date"))),
+                                                                            uiOutput("uiRef__a_i_p__Date"),
+                                                                            uiOutput("uiRef__a_i_p__Pollutants"))),
                                                        tags$hr(),
                                                        uiOutput("uiReference.name"),
                                                        div(style = "display: inline-block;vertical-align:top; width: 48%;", uiOutput("uicoord.ref.Long")),
@@ -413,7 +421,9 @@ ui <- navbarPage(title = "AirSensEUR v0.16", id = "ASE", theme = shinytheme("cer
                                                                             h4("Filtering Sensor data")   , tableOutput("Outliers_Sensor"),
                                                                             h4("Filtering Reference data"), tableOutput("Outliers_Ref")),
                                                                    tabPanel("CalibMain"    , tableOutput("Calib_data"), icon = icon("tachometer")),
-                                                                   tabPanel("SetTimeMain"  , tableOutput("CalTime"), icon = icon("time", lib = "glyphicon") )
+                                                                   tabPanel("SetTimeMain"  , tableOutput("CalTime"), icon = icon("time", lib = "glyphicon") ),
+                                                                   tabPanel(title = "Sensors", tableOutput("Select.Sensors.cfg"), icon = icon("tachometer")),
+                                                                   tabPanel(title = "Boards" , tableOutput("Select.Boards.cfg") , icon = icon("tachometer"))
                                                        )
                                               ),
                                               tabPanel("PlotFiltering", icon = icon("filter"),
@@ -527,8 +537,8 @@ ui <- navbarPage(title = "AirSensEUR v0.16", id = "ASE", theme = shinytheme("cer
                                                                    )
                                                        )
                                               ),
-                                              tabPanel("Report MarkDown", icon = icon("bars")   , h3("work in progress..."), withSpinner(htmlOutput("renderedReport"), type = 8),
-                                                       downloadButton("report", "Generate report")),
+                                              tabPanel("Report MarkDown", icon = icon("bars")   , h3("work in progress..."),
+                                                       withSpinner(htmlOutput("renderedReport"), type = 8), downloadButton(outputId = "report", label = "Generate report")),
                                               tabPanel("DataTable"      , icon = icon("bars")   , withSpinner(DT::dataTableOutput(outputId = "DataTable"), type = 8) ),
                                               #tabPanel("Retrieved"     , icon = icon("signal") , withSpinner(plotOutput(outputId = "Retrieved"), type = 8) ),
                                               tabPanel("RawData"        , icon = icon("signal") , withSpinner(htmlOutput("ts_RawData_dygraphs"), type = 8) , width = "96%"),
@@ -638,38 +648,54 @@ server <- function(input, output, session) {
     # AirSensEUR name: The one selected in the list of configured AirSensEURs
     ASE_name           <- reactive({
         cc <- basename(input$Selected)
-        for (i in c("\\.[[:alnum:]]+$","ASEconfig")) cc <- sub(pattern = i,replacement = '', basename(as.character(cc)))
+        #for (i in c("\\.[[:alnum:]]+$","ASEconfig")) cc <- sub(pattern = i,replacement = '', basename(as.character(cc)))
         return(cc)
     })
     # AirSensEUR name: The one selected in the combo box of existing AirSensEURs
     ASE_name.List      <- reactive({
         cc <- basename(input$Config_Files)
-        for (i in c("\\.[[:alnum:]]+$","ASEconfig")) cc <- sub(pattern = i,replacement = '', basename(as.character(cc)))
+        #for (i in c("\\.[[:alnum:]]+$","ASEconfig")) cc <- sub(pattern = i,replacement = '', basename(as.character(cc)))
         return(cc)
     })
     # Reactive DisqueFieldtestDir() ----
     # DisqueFieldtestDir     : The one of the Selected AirSensEUR
+    # DisqueFieldtestDir      <- reactive({return(file.path(DirShiny, "ASE_Boxes", ASE_name())) })
     # DisqueFieldtestDir.List: The one given by the Selected config file in the list of Configured AirSensEUR
-    DisqueFieldtestDir      <- reactive({return(file.path(DirShiny, ASE_name())) })
-    DisqueFieldtestDir.List <- reactive({return(file.path(DirShiny, ASE_name.List())) })
-    General.file            <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "General.csv")})
-    InfluxData.file         <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "InfluxData.csv")})
-    SOSData.file            <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "SOSData.csv")})
-    RefData.file            <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "RefData.csv")})
-    ind.warm.file           <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "ind_warm.RDS")})
-    ind.TRh.file            <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "ind_TRh.RDS"  )})
-    ind.Invalid.file        <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "ind_Invalid.RDS")})
-    ind.sens.out.file       <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "ind_sens_out.RDS")})
-    ind.ref.out.file        <- reactive({file.path(DisqueFieldtestDir(), "General_data" , "ind_ref_out.RDS")})
+    DisqueFieldtestDir.List <- reactive({return(file.path(DirShiny, "ASE_Boxes", ASE_name.List())) })
+    General.file            <- reactive({file.path(input$Selected, "General_data" , "General.csv")})
+    InfluxData.file         <- reactive({file.path(input$Selected, "General_data" , "InfluxData.csv")})
+    SOSData.file            <- reactive({file.path(input$Selected, "General_data" , "SOSData.csv")})
+    RefData.file            <- reactive({file.path(input$Selected, "General_data" , "RefData.csv")})
+    ind.warm.file           <- reactive({file.path(input$Selected, "General_data" , "ind_warm.RDS")})
+    ind.TRh.file            <- reactive({file.path(input$Selected, "General_data" , "ind_TRh.RDS"  )})
+    ind.Invalid.file        <- reactive({file.path(input$Selected, "General_data" , "ind_Invalid.RDS")})
+    ind.sens.out.file       <- reactive({file.path(input$Selected, "General_data" , "ind_sens_out.RDS")})
+    ind.ref.out.file        <- reactive({file.path(input$Selected, "General_data" , "ind_ref_out.RDS")})
     # Reactive cfg_file() ----
     # cfg_file     : The cfg file  of the Selected AirSensEUR when clicking button "Selected AirSensEUR"
-    cfg_file           <- reactive({file.path(DisqueFieldtestDir()     ,"General_data",paste0(ASE_name()     ,".cfg"))})
-    SETTIME_file       <- reactive({file.path(DisqueFieldtestDir()     ,"General_data",paste0(ASE_name()     ,"_SETTIME.cfg"))})
-    Servers_file       <- reactive({file.path(DisqueFieldtestDir()     ,"General_data",paste0(ASE_name()     ,"_Servers.cfg"))})
+    Configuration.TRUE <- reactive({
+        # make it reactive to function CONFIG that will change cfg_file, SETTIME_file ...
+        if (exists("Config") && !is.null(Config$All)) Config$All
+        ifelse(length(list.files(pattern = ".cfg", file.path(input$Config_Files, "Configuration"))) > 0, TRUE, FALSE)})
+    cfg_file           <- reactive({if (Configuration.TRUE()) {
+        file.path(input$Selected     ,"Configuration",paste0(ASE_name()     ,".cfg"))
+    } else file.path(input$Selected     ,"General_data",paste0(ASE_name()     ,".cfg"))})
+    SETTIME_file       <- reactive({if (Configuration.TRUE()) {
+        file.path(input$Selected     ,"Configuration",paste0(ASE_name()     ,"_SETTIME.cfg"))
+    } else file.path(input$Selected     ,"General_data",paste0(ASE_name()     ,"_SETTIME.cfg"))})
+    Servers_file       <- reactive({if (Configuration.TRUE()) {
+        file.path(input$Selected     ,"Configuration",paste0(ASE_name()     ,"_Servers.cfg"))
+    } else file.path(input$Selected     ,"General_data",paste0(ASE_name()     ,"_Servers.cfg"))})
     # cfg_file.List: The cfg file  Selected config file in the combo box of Configured/existing AirSensEUR
-    cfg_file.List      <- reactive({file.path(DisqueFieldtestDir.List(),"General_data",paste0(ASE_name.List(),".cfg"))})
-    SETTIME_file.List  <- reactive({file.path(DisqueFieldtestDir.List(),"General_data",paste0(ASE_name.List(),"_SETTIME.cfg"))})
-    Servers_file.List  <- reactive({file.path(DisqueFieldtestDir.List(),"General_data",paste0(ASE_name.List(),"_Servers.cfg"))})
+    cfg_file.List      <- reactive({if (Configuration.TRUE()) {
+        file.path(DisqueFieldtestDir.List(),"Configuration",paste0(ASE_name.List(),".cfg"))
+    }  else file.path(DisqueFieldtestDir.List(),"General_data",paste0(ASE_name.List(),".cfg"))})
+    SETTIME_file.List  <- reactive({if (Configuration.TRUE()) {
+        file.path(DisqueFieldtestDir.List(),"Configuration",paste0(ASE_name.List(),"_SETTIME.cfg"))
+    } else file.path(DisqueFieldtestDir.List(),"General_data",paste0(ASE_name.List(),"_SETTIME.cfg"))})
+    Servers_file.List  <- reactive({if (Configuration.TRUE()) {
+        file.path(DisqueFieldtestDir.List(),"Configuration",paste0(ASE_name.List(),"_Servers.cfg"))
+    } else file.path(DisqueFieldtestDir.List(),"General_data",paste0(ASE_name.List(),"_Servers.cfg"))})
     # Reactive i.sensors Once AirSensEUR is Selected
     i.sensors          <- reactive({
         # Returning the indexes of valid sensors in ASE_name.cfg taking into account NAs
@@ -718,7 +744,7 @@ server <- function(input, output, session) {
             input$Selected
         },{
             Check_Download(Influx.name = input$Dataset,
-                           WDinput     = file.path(DisqueFieldtestDir(), "General_data"),
+                           WDinput     = file.path(input$Selected, "General_data"),
                            UserMins    = if (!is.null(input$UserMins)) as.numeric(input$UserMins) else Config$all$Server$UserMins,
                            General.df  = if (!is.null(DF$General))  DF$General else NA,
                            RefData     = if (!is.null(Ref$DATA))    Ref$DATA else NA,
@@ -745,32 +771,31 @@ server <- function(input, output, session) {
     # After a click on button "Create New AirSensEUR"
     observeEvent(input$Create.New, {
         # https://deanattali.com/blog/advanced-shiny-tips/#plot-spinner
-        # Stop the App when the broser tab is closed
+        # Stop the App when the browser tab is closed
         session$onSessionEnded(stopApp)
         # Create a Progress object
         progress <- shiny::Progress$new()
         # Make sure it closes when we exit this reactive, even if there's an error
         on.exit(progress$close())
         progress$set(message = "Creating New Config File of AirSensEUR Box", value = 0.5)
-        if (!file.exists(file.path(DirShiny, paste0(input$NewFile,".R"))) ) {
-            # !grepl(pattern = "[[:blank:]]", x = input$NewFile) & !grepl(pattern = "[[:punct:]]", x = input$NewFile) & prevent from using _
+        #if (!file.exists(file.path(DirShiny, paste0(input$NewFile,".R"))) ) {
+        if (!dir.exists(file.path(DirShiny, "ASE_Boxes", input$NewFile))) {
             #----------------------------------------------------------CR
             #  1.c Create file system structure. check for General.Rdata availability, sourcing ASEConfig_xx.R ####
             #----------------------------------------------------------CR
             # Check directories existence or create , create log file
             # Setting the current directory to the root of the file system with the name of The AirSensEUR
-            old_ASE_name       <- basename(input$Config_Files) ; for (i in c("\\.[[:alnum:]_]+$" ,"ASEconfig")) old_ASE_name <- sub(pattern = i,replacement = '', basename(as.character(old_ASE_name)))
-            ASE_name           <- basename(input$NewFile)      ; for (i in c("\\.[[:alnum:]_]+$" ,"ASEconfig")) ASE_name     <- sub(pattern = i,replacement = '', basename(as.character(ASE_name)))
-            if (ASE_name != "") {
-                DisqueFieldtestDir <- file.path(DisqueFieldtest, ASE_name)
+            old_ASE_name       <- basename(input$Config_Files)
+            if (input$NewFile != "") {
+                DisqueFieldtestDir <- file.path(DisqueFieldtest, "ASE_Boxes", input$NewFile)
                 # Creating the the working directory of the AirSensEUR box
                 cat("-----------------------------------------------------------------------------------\n")
-                cat(paste0("[shiny, Create.New] INFO, Creating the the working directory: ",DisqueFieldtestDir, ". Setting it as working directory."), sep = "\n")
+                cat(paste0("[shiny, Create.New] INFO, Creating the directory: ",DisqueFieldtestDir, ". Setting it as working directory."), sep = "\n")
                 if (!dir.exists(DisqueFieldtestDir)) dir.create(DisqueFieldtestDir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
                 # Creating File structure
                 cat("-----------------------------------------------------------------------------------\n")
                 cat(paste0("[shiny, Create.New] INFO creating the file system for data treatment at ", DisqueFieldtestDir), sep = "\n")
-                List.Dirs <- c("Calibration","Drift","Estimated_coef","General_data","Models","Modelled_gas","Outliers","scriptsLog",
+                List.Dirs <- c("Calibration","Configuration","Drift","Estimated_coef","General_data","Models","Modelled_gas","Outliers","scriptsLog",
                                "SensorData","Retrieved_plots","Statistics","Verification_plots", "MarkDown")
                 for (i in List.Dirs) {
                     if (!dir.exists(file.path(DisqueFieldtestDir, i))) {
@@ -778,34 +803,54 @@ server <- function(input, output, session) {
                         cat(paste0("[shiny, Create.New] INFO Dir. created: ", file.path(DisqueFieldtestDir,i)), sep = "\n\r")
                     } else cat(paste0("[shiny, Create.New] INFO Dir. already exists: ", file.path(DisqueFieldtestDir,i)), sep = "\n")
                 }
-                # Populating the configuration information, copy  old_ASE_name as new ASE_name
-                cat(paste0("[shiny, Create.New] INFO copying ", paste0("ASEconfig", ASE_name,".R")," the file system for data treatment at ", DisqueFieldtest), sep = "\n")
-                file.copy(from = input$Config_Files, to = paste0("ASEconfig", ASE_name,".R"), overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)
-                # Populating the configuration intormation
-                # cfg and effect files
-                Old_General_dir <- file.path(DisqueFieldtest, old_ASE_name , "General_data")
-                New_General_dir <- file.path(DisqueFieldtestDir            , "General_data")
-                cfg_Files       <- list.files(path = Old_General_dir, pattern = ".cfg")
+                # Populating the configuration intormation with cfg and effect files
+                New_General_dir <- file.path(DisqueFieldtestDir, "Configuration")
+                cfg_Files       <- list.files(path = file.path(input$Config_Files), pattern = ".cfg", recursive = TRUE)
+                cfg_Files       <- cfg_Files[-grep(pattern= paste(c("Boards.cfg", "Sensors.cfg"), collapse = "|"), cfg_Files)]
                 for (i in cfg_Files) {
-                    cat(paste0("[shiny, Create.New] INFO, copying ", gsub(pattern = old_ASE_name, replacement = ASE_name, i), " at ", New_General_dir), sep = "\n")
-                    file.copy(from = file.path(Old_General_dir,i),
-                              to   = file.path(New_General_dir, gsub(pattern = old_ASE_name, replacement = ASE_name, i)),
-                              overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)
-                }
+                    cat(paste0("[shiny, Create.New] INFO, copying ", basename(i), " at ", New_General_dir), sep = "\n")
+                    file.copy(from = file.path(input$Config_Files,i), to = file.path(DisqueFieldtestDir, "Configuration",gsub(pattern = old_ASE_name, replacement = input$NewFile, basename(i))),
+                              overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)}
                 # Updating list of ASE boxes and select the newly created one
-                Newchoices = list.files(path = DisqueFieldtest, pattern = glob2rx("ASEconfig*.R"))
-                updateSelectInput( session = session,inputId = "Config_Files", label = "Select config file",
-                                   choices = Newchoices,
-                                   selected = Newchoices[Newchoices %in% paste0("ASEconfig", ASE_name,".R")])
-            }
-        }
+                Newchoices      <- list.dirs(path = file.path(DirShiny, "ASE_Boxes"), recursive = FALSE)
+                updateSelectInput( session = session, inputId = "Config_Files", choices = Newchoices,
+                                   selected = DisqueFieldtestDir)
+            } else shinyalert(
+                title = "ERROR ASE box name",
+                text = "ERROR the same AirSensEUR box name cannot be empty",
+                closeOnEsc = TRUE,
+                closeOnClickOutside = TRUE,
+                html = FALSE,
+                type = "error",
+                showConfirmButton = TRUE,
+                showCancelButton = FALSE,
+                confirmButtonText = "OK",
+                confirmButtonCol = "#AEDEF4",
+                timer = 4000,
+                imageUrl = "",
+                animation = FALSE)
+        } else shinyalert(
+            title = "ERROR ASE box already exist",
+            text = "ERROR it is not possible to use twice the same AirSensEUR box name. Change name or delete directory in ../Shiny/ASE_Boxes if needed",
+            closeOnEsc = TRUE,
+            closeOnClickOutside = TRUE,
+            html = FALSE,
+            type = "error",
+            showConfirmButton = TRUE,
+            showCancelButton = FALSE,
+            confirmButtonText = "OK",
+            confirmButtonCol = "#AEDEF4",
+            timer = 4000,
+            imageUrl = "",
+            animation = FALSE)
         progress$set(message = "[shiny, Create.New] INFO, Creating New Config File of AirSensEUR Box", value = 1)
     })
     # NavBar"SelectASE", Button "Select AirSensEUR" ----
+    # NewFile used to be disabled. On 200114 it was enabled again, 
     observeEvent(input$Select, {
         # update disabled inoutText "Selected"
         updateTextInput(session, inputId = "Selected", value = input$Config_Files)
-        shinyjs::disable("NewFile")
+        #shinyjs::disable("NewFile")
     })
     observeEvent(input$Selected, {
         # not run without clicking once on button "Select ASE"
@@ -822,7 +867,7 @@ server <- function(input, output, session) {
             #----------------------------------------------------------CR
             # initial Config
             progress$set(message = "[Shiny] INFO, Loading config file", value = 0.1)
-            Config <<- reactiveValues(all = CONFIG(DirShiny, input$Config_Files))
+            Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data")))
             # Returning a list with 4 elements see below
             # Config$all[["Server"]]   : server parameters
             # Config$all[["sens2ref"]] : cfg parameters
@@ -833,7 +878,7 @@ server <- function(input, output, session) {
             if (file.exists(InfluxData.file())) {
                 if (extension(InfluxData.file()) == ".csv") {
                     Influx$DATA <- fread(file = InfluxData.file(), na.strings = c("","NA", "<NA>"))
-                    if (!"" %in% c(Config$all$Server$Influx.TZ)) {
+                    if (!"" %in% Config$all$Server$Influx.TZ) {
                         data.table::set(Influx$DATA, j = "date", value =  ymd_hms(Influx$DATA[["date"]], tz = Config$all$Server$Influx.TZ))
                     } else data.table::set(Influx$DATA, j = "date", value =  ymd_hms(Influx$DATA[["date"]], tz = "UTC"))
                 } else if (extension(InfluxData.file()) == ".Rdata") {
@@ -845,7 +890,7 @@ server <- function(input, output, session) {
             if (file.exists(SOSData.file())) {
                 if (extension(SOSData.file()) == ".csv") {
                     Sos$DATA <- fread(file = SOSData.file(), na.strings = c("","NA", "<NA>"))
-                    if (!"" %in% c(Config$all$Server$SOS.TZ)) {
+                    if (!"" %in% Config$all$Server$SOS.TZ) {
                         data.table::set(Sos$DATA, j = "date", value =  ymd_hms(Sos$DATA[["date"]], tz = Config$all$Server$SOS.TZ))
                     } else data.table::set(Sos$DATA, j = "date", value =  ymd_hms(Sos$DATA[["date"]], tz = "UTC"))
                 } else if (extension(SOSData.file()) == ".Rdata") {
@@ -857,7 +902,7 @@ server <- function(input, output, session) {
             if (file.exists(RefData.file())) {
                 if (extension(RefData.file()) == ".csv") {
                     Ref$DATA <- fread(file = RefData.file(), na.strings = c("","NA", "<NA>"))
-                    if (!"" %in% c(Config$all$Server$ref.tzone)) {
+                    if (!"" %in% Config$all$Server$ref.tzone) {
                         data.table::set(Ref$DATA, j = "date", value =  ymd_hms(Ref$DATA[["date"]], tz = Config$all$Server$ref.tzone))
                     } else data.table::set(Ref$DATA, j = "date", value =  ymd_hms(Ref$DATA[["date"]], tz = "UTC"))
                 } else if (extension(SOSData.file()) == ".Rdata") {
@@ -944,14 +989,16 @@ server <- function(input, output, session) {
             Download <<- reactiveValues(Sensor = DownloadSensor())
             # Initial SetTime
             progress$set(message = "[Shiny] INFO, Loading SetTime file", value = 0.35)
-            Set <<- reactiveValues(Time = SETTIME(DisqueFieldtestDir = DisqueFieldtestDir(),
+            Set <<- reactiveValues(Time = SETTIME(DisqueFieldtestDir = input$Selected, 
+                                                  DisqueFieldtest    = DirShiny, 
                                                   General.t.Valid    = DF$General,
                                                   Influx.TZ          = Config$all[["Server"]]$Influx.TZ,
                                                   SOS.TZ             = Config$all[["Server"]]$SOS.TZ,
                                                   Ref.TZ             = Config$all[["Server"]]$ref.tzone,
                                                   DownloadSensor     = Download$Sensor,
                                                   Config             = Config$all,
-                                                  sens2ref.shield    = Config$all$sens2ref.shield))
+                                                  sens2ref.shield    = Config$all$sens2ref.shield,
+                                                  Dir.Config         = "Configuration"))
             # Indexes of data discarded during warming time of sensors
             progress$set(message = "[Shiny] INFO, Loading indexes of data discarded during warming time of sensors", value = 0.5)
             Warm <<- reactiveValues(Forced = FALSE)
@@ -1009,39 +1056,39 @@ server <- function(input, output, session) {
             initial.dir <- DirShiny
             # Check directory existence or create
             cat("-----------------------------------------------------------------------------------\n")
-            cat(paste0("[shiny] INFO creating the file system for data treatment at ", DisqueFieldtestDir())," if it does not exist\n")
-            progress$set(message = paste0("[shiny] INFO creating the file system for data treatment at ", DisqueFieldtestDir()," if it does not exist\n"), value = 0.5)
-            if (!(initial.dir == DisqueFieldtestDir())) {if (!dir.exists(DisqueFieldtestDir())) dir.create(DisqueFieldtestDir())}
-            List.Dirs <- c("Calibration","Drift","Estimated_coef","General_data","Models","Modelled_gas","Outliers","scriptsLog","SensorData",
+            cat(paste0("[shiny] INFO creating the file system for data treatment at ", input$Selected)," if it does not exist\n")
+            progress$set(message = paste0("[shiny] INFO creating the file system for data treatment at ", input$Selected," if it does not exist\n"), value = 0.5)
+            if (!(initial.dir == input$Selected)) {if (!dir.exists(input$Selected)) dir.create(input$Selected)}
+            List.Dirs <- c("Calibration", "Configuration","Drift","Estimated_coef","General_data","Models","Modelled_gas","Outliers","scriptsLog","SensorData",
                            "Retrieved_plots","Statistics","Verification_plots")
             for (i in List.Dirs) {
-                if (!dir.exists(file.path(DisqueFieldtestDir(), i))) {
-                    dir.create(file.path(DisqueFieldtestDir(), i),
+                if (!dir.exists(file.path(input$Selected, i))) {
+                    dir.create(file.path(input$Selected, i),
                                showWarning = TRUE, recursive = TRUE)
-                    cat(paste0("[shiny, Selected] INFO Dir. created: ", file.path(DisqueFieldtestDir(),i)), sep = "\n\r")
-                } else cat(paste0("[shiny, Selected] INFO Dir. already exists: ", file.path(DisqueFieldtestDir(),i)), sep = "\n")
+                    cat(paste0("[shiny, Selected] INFO Dir. created: ", file.path(input$Selected,i)), sep = "\n\r")
+                } else cat(paste0("[shiny, Selected] INFO Dir. already exists: ", file.path(input$Selected,i)), sep = "\n")
             }
             remove(List.Dirs,i)
             # setting the current directory to the root of the file system with the name of the AirSensEUR
             cat("-----------------------------------------------------------------------------------\n")
-            cat(paste0("[shiny, Selected] INFO Change the working directory to: ",DisqueFieldtestDir()), sep = "\n")
-            setwd(DisqueFieldtestDir())
+            cat(paste0("[shiny, Selected] INFO Change the working directory to: ",input$Selected), sep = "\n")
+            setwd(input$Selected)
             #----------------------------------------------------------CR
             # 1.c sending console to a file in the directory three (script log) and to variable Console for shiny TextOutput ####
             #----------------------------------------------------------CR
             while (sink.number() > 0) {print(paste0("Number of sink channels opened: ", sink.number(), ". Closing opened channels"))
                 sink(file = NULL)
             }
-            sink(file.path(DisqueFieldtestDir(), "scriptsLog",paste0("console_", Sys.Date(),".log")),
+            sink(file.path(input$Selected, "scriptsLog",paste0("console_", Sys.Date(),".log")),
                  type = c("output", "message"),
                  split = TRUE, append = TRUE ) # with split = TRUE we get the file on the screen and in log file
             cat("-----------------------------------------------------------------------------------\n")
-            cat(paste0("[shiny, Selected] INFO Starting log file ", file.path(DisqueFieldtestDir(), "scriptsLog",paste0("console_", Sys.Date(),".log"))), sep = "\n")
-            progress$set(message = paste0("[shiny] INFO creating the file system for data treatment at ", DisqueFieldtestDir()," if it does not exist\n"), value = 0.5)
+            cat(paste0("[shiny, Selected] INFO Starting log file ", file.path(input$Selected, "scriptsLog",paste0("console_", Sys.Date(),".log"))), sep = "\n")
+            progress$set(message = paste0("[shiny] INFO creating the file system for data treatment at ", input$Selected," if it does not exist\n"), value = 0.5)
             cat("-----------------------------------------------------------------------------------\n")
             # Now ASEConfig can be sourced with function CONFIG and SETTIME to update the config files
             # Changed this source does not do anything anymore
-            source(file.path(initial.dir, input$Selected))
+            #source(file.path(initial.dir, input$Selected))
             #  NavBar"GetData", sideBar tabPanel "time-shield" ----
             output$uiUserMins       <- renderUI({
                 selectInput(inputId = "UserMins",
@@ -1214,6 +1261,7 @@ server <- function(input, output, session) {
                                                                      flatten = TRUE)
                                         series <- series$results$series[[1]]$values[[1]]
                                         series <- unique(sapply(strsplit(x = series, split = ","),function(x) x[1]))
+                                        series <- series[!grepl(pattern = paste(c("_Boards", "_Sensors"), collapse = "|"), x = series)]
                                         print(series)
                                         return(series)
                                     }
@@ -1647,7 +1695,7 @@ server <- function(input, output, session) {
                                             inputId = "coord.ref.Lat",
                                             value = paste0(geom@coords[1,], collapse = " "))
                         } else {
-                            # if no station selected use the ADE_server.cfg file
+                            # if no station selected use the ASE_server.cfg file
                             updateSelectInput(session  = session,
                                               inputId  = "RefPollutants",
                                               choices  = gsub(pattern = "!", replacement = " ", x = Config$all[["Server"]]$RefPollutants),
@@ -2133,10 +2181,10 @@ server <- function(input, output, session) {
                                          div(style = "display: inline-block;vertical-align:top; width: 94%;",
                                              selectInput(  inputId  = paste0("Cal", which(list.name.sensor() == i)),
                                                            label    = "Select a previous calibration "              ,
-                                                           choices  = substr(list.files(path = file.path(DisqueFieldtestDir(),"Models"),
+                                                           choices  = substr(list.files(path = file.path(input$Selected,"Models"),
                                                                                         pattern = glob2rx(paste0(Config$all[["Server"]]$AirSensEur.name,"__",i,"__*"))),
                                                                              start = nchar(paste0(Config$all[["Server"]]$AirSensEur.name,"__",i,"__")) + 1,
-                                                                             stop  = nchar(list.files(path = file.path(DisqueFieldtestDir(),"Models"),
+                                                                             stop  = nchar(list.files(path = file.path(input$Selected,"Models"),
                                                                                                       pattern = glob2rx(paste0(Config$all[["Server"]]$AirSensEur.name,"__",i,"__*"))))),
                                                            selected = Config$all[["sens2ref"]]$Cal.func[which(Config$all[["sens2ref"]]$name.sensor == i)])),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
@@ -2468,6 +2516,8 @@ server <- function(input, output, session) {
         progress$set(message = "Reading Server File", value = 0.5)
         if (file.exists(cfg_file.List())) {
             Servers_file <- fread(file = Servers_file.List(), header = TRUE)
+            # remove all password not to be displayed
+            Servers_file <- Servers_file[-which(Servers_file$PROXY %in% c("PASSWORD", "Pass", "Pass__a_i_p__"))]
             Servers_file[na.omit(match(c("UserMins","UserMinsAvg","Delay", "PROXY","URL","PORT","LOGIN",
                                          "Down.Influx","Host","Port","User","Db","Dataset","Influx.TZ",
                                          "Down.SOS","AirsensWeb","AirSensEur.name","SOS.TZ",
@@ -2514,8 +2564,7 @@ server <- function(input, output, session) {
         return(G)
     })
     # NavBar"SelectASE", mainTabPanel "SetTime" ----
-    output$SetTime.cfg       <- renderTable(SetTime_cfg(),
-                                            rownames = TRUE)
+    output$SetTime.cfg       <- renderTable(SetTime_cfg(), rownames = TRUE)
     SetTime_cfg              <- reactive({
         # Create a Progress object
         progress <- shiny::Progress$new()
@@ -2527,6 +2576,42 @@ server <- function(input, output, session) {
         } else SETTIME_file <- NULL
         progress$set(message = "Reading Date/Time File", value = 1)
         return(SETTIME_file)
+    })
+    output$Sensors.cfg        <- renderTable(Sensors.cfg(), rownames = TRUE)
+    output$Select.Sensors.cfg <- renderTable(Select.Sensors.cfg(), rownames = TRUE)
+    Sensors.cfg               <- reactive({
+        cfg.path <- ifelse(Configuration.TRUE(),file.path(input$Config_Files,"Configuration"),file.path(input$Config_Files,"General_data")) 
+        if (file.exists(file.path(cfg.path,"Sensors.cfg"))) {
+            Sensors.cfg       <- data.table::fread(file = file.path(cfg.path,"Sensors.cfg"), na.strings = c("NA","NaN"), header = TRUE)
+        } else {
+            Sensors.cfg <- "No data available about AirSensEUR Sensors at the Influx server. The AirSensEUR version is either too old or no data have been downloaded yet."  
+        } 
+        return(Sensors.cfg)
+    })
+    Select.Sensors.cfg        <- reactive({
+        cfg.path <- ifelse(Configuration.TRUE(),file.path(input$Selected,"Configuration"),file.path(input$Selected,"General_data")) 
+        if (file.exists(file.path(cfg.path,"Sensors.cfg"))) {
+            Sensors.cfg       <- data.table::fread(file = file.path(cfg.path,"Sensors.cfg"), na.strings = c("NA","NaN"), header = TRUE)
+        } else {
+            Sensors.cfg <- "No data available about AirSensEUR Sensors at the Influx server. The AirSensEUR version is either too old or no data have been downloaded yet."
+        } 
+        return(Sensors.cfg)
+    })
+    output$Boards.cfg        <- renderTable(Boards.cfg(), rownames = TRUE)
+    output$Select.Boards.cfg <- renderTable(Select.Boards.cfg(), rownames = TRUE)
+    Boards.cfg               <- reactive({
+        cfg.path <- ifelse(Configuration.TRUE(),file.path(input$Config_Files,"Configuration"),file.path(input$Config_Files,"General_data")) 
+        if (file.exists(file.path(cfg.path,"Boards.cfg"))) {
+            Boards.cfg       <- data.table::fread(file = file.path(cfg.path,"Boards.cfg"), na.strings = c("NA","NaN"), header = TRUE)
+        } else Boards.cfg <- "No data available about AirSensEUR Boards at the Influx server. The AirSensEUR version is likely too old or no data have been downloaded yet."
+        return(Boards.cfg)
+    })
+    Select.Boards.cfg        <- reactive({
+        cfg.path <- ifelse(Configuration.TRUE(),file.path(input$Selected,"Configuration"),file.path(input$Selected,"General_data")) 
+        if (file.exists(file.path(cfg.path,"Boards.cfg"))) {
+            Boards.cfg       <- data.table::fread(file = file.path(cfg.path,"Boards.cfg"), na.strings = c("NA","NaN"), header = TRUE)
+        } else Boards.cfg <- "No data available about AirSensEUR Boards at the Influx server. The AirSensEUR version is likely too old or no data have been downloaded yet."
+        return(Boards.cfg)
     })
     #  Observer asc.File of NavBar "Getdata", sideBarLayout: TimeShield - Proxy - InfluxDB - SOS -Refer.
     #  TimeShield
@@ -2541,7 +2626,7 @@ server <- function(input, output, session) {
             # Reading the _Servers.cfg file or using the one existing in Config$all
             if (!"Server" %in% names(Config$all)) {
                 if (file.exists(Servers_file())) {
-                    Config$all[["Server"]] <<- transpose(fread(file = Servers_file(), header = FALSE), fill = NA, make.names = 1)
+                    Config$all[["Server"]] <<- data.table::transpose(fread(file = Servers_file(), header = FALSE), fill = NA, make.names = 1)
                     cat(paste0("[shiny, asc.File] Info, the config file ", Servers_file(), " for the configuration of servers  is loaded"), sep = "\n")
                 } else stop(cat(paste0("[shiny, asc.File] The file of server configuration for AirSensEUR: ", Servers_file,
                                        " does not exist. Please select another AirSensEUR of manually create the file"), sep = "\n"))
@@ -2552,13 +2637,13 @@ server <- function(input, output, session) {
                     if (value == TRUE) {
                         set(Config$all[["Server"]], j = "asc.File", value = input$asc.File)
                         # save modified file
-                        fwrite(transpose(Config$all[["Server"]], fill = NA, make.names = 1, keep.names = "PROXY"), file = Servers_file(), row.names = FALSE)
+                        fwrite(data.table::transpose(Config$all[["Server"]], fill = NA, make.names = 1, keep.names = "PROXY"), file = Servers_file(), row.names = FALSE)
                         cat(paste0("[shiny, asc.File] INFO, ", paste0(ASE_name(),"_Servers.cfg")," config file  saved in directory General_data.\n"))
                         # now delete the existing General.Rdata and redo all data treatment
                         if (file.exists(General.file())) unlink(General.file(), recursive = FALSE, force = TRUE)
                         RDS.files <- list.files(path = file.path(DisqueFieldtestDir.List(), "General_data"), pattern = "\\.RDS$")
                         RDS.files <- RDS.files[RDS.files %in% c("ind_Invalid.RDS","ind_ref_out.RDS","ind_sens_out.RDS", "ind_TRh.RDS","ind_warm.RDS" )]
-                        if (!identical(RDS.files, character(0))) file.remove(file.path(DisqueFieldtestDir(), "General_data", RDS.files))
+                        if (!identical(RDS.files, character(0))) file.remove(file.path(input$Selected, "General_data", RDS.files))
                         # Remove calibration and modelled gas
                         # Quit to restart the UI and redo the whole data treatment
                         shinyjs::click(id = "Quit")
@@ -2622,7 +2707,7 @@ server <- function(input, output, session) {
             (!is.null(input$Merge)       && input$Merge > 0)) { # avoid computing INFLUX before input$Merge is clicked
             if (!is.null(Influx$DATA)) InfluxData <- Influx$DATA[] else InfluxData <- NA_real_
             A <- INFLUXDB(
-                WDoutput        = file.path(DisqueFieldtestDir(),"General_data"),
+                WDoutput        = file.path(input$Selected,"General_data"),
                 DownloadSensor  = Download$Sensor,
                 UserMins        = as.numeric(input$UserMins),
                 PROXY           = input$PROXY,
@@ -2638,15 +2723,15 @@ server <- function(input, output, session) {
                 Db              = input$Db,
                 Dataset         = input$Dataset,
                 Influx.TZ       = input$Influx.TZ,
-                name.SQLite     = file.path(DisqueFieldtestDir(),"General_data","airsenseur.db"),
-                name.SQLite.old = file.path(DisqueFieldtestDir(),"General_data","airsenseur_old.db"),
+                name.SQLite     = file.path(input$Selected,"General_data","airsenseur.db"),
+                name.SQLite.old = file.path(input$Selected,"General_data","airsenseur_old.db"),
                 sens2ref        = Config$all[["sens2ref"]],
                 asc.File        = Shield(),
                 InfluxData      = InfluxData)
         }  else {
             if (!is.null(Influx$DATA)) InfluxData <- Influx$DATA[] else InfluxData <- NA_real_
             A <- INFLUXDB(
-                WDoutput        = file.path(DisqueFieldtestDir(),"General_data"),
+                WDoutput        = file.path(input$Selected,"General_data"),
                 DownloadSensor  = Download$Sensor,
                 UserMins        = as.numeric(input$UserMins),
                 PROXY           = input$PROXY,
@@ -2661,8 +2746,8 @@ server <- function(input, output, session) {
                 Pass            = input$Pass,
                 Db              = input$Db,
                 Dataset         = input$Dataset,
-                name.SQLite     = file.path(DisqueFieldtestDir(),"General_data","airsenseur.db"),
-                name.SQLite.old = file.path(DisqueFieldtestDir(),"General_data","airsenseur_old.db"),
+                name.SQLite     = file.path(input$Selected,"General_data","airsenseur.db"),
+                name.SQLite.old = file.path(input$Selected,"General_data","airsenseur_old.db"),
                 sens2ref        = Config$all[["sens2ref"]],
                 InfluxData      = InfluxData)}
         
@@ -2694,7 +2779,7 @@ server <- function(input, output, session) {
         if ((!is.null(input$Down_SOS) && input$Down_SOS > 0) ||
             (!is.null(input$Merge)    && input$Merge > 0)) {
             # avoid computing SOSDATA before input$Merge is clicked
-            B <- SOS(WDoutput            = file.path(DisqueFieldtestDir(), "General_data"),
+            B <- SOS(WDoutput            = file.path(input$Selected, "General_data"),
                      DownloadSensor      = Download$Sensor,
                      Down.SOS            = input$Down.SOS,
                      AirSensEur.name     = input$AirSensEur.name,
@@ -2703,7 +2788,7 @@ server <- function(input, output, session) {
                      Duration            = 1,
                      sens2ref            = Config$all[["sens2ref"]])
         } else {
-            B <- SOS(WDoutput            = file.path(DisqueFieldtestDir(), "General_data"),
+            B <- SOS(WDoutput            = file.path(input$Selected, "General_data"),
                      DownloadSensor      = data.frame(Retrieve.data.SOS = FALSE,
                                                       SOS.file          = SOSData.file(),
                                                       stringsAsFactors  = FALSE),
@@ -2783,7 +2868,7 @@ server <- function(input, output, session) {
             if (!is.null(Ref$DATA)) RefData <- Ref$DATA[] else RefData <- NA_real_
             C <- REF(DownloadSensor     = Download$Sensor,
                      AirSensEur.name    = input$AirSensEur.name,
-                     DisqueFieldtestDir = (DisqueFieldtestDir()),
+                     DisqueFieldtestDir = (input$Selected),
                      UserMins           = as.numeric(input$UserMins),
                      Down.Ref           = input$Down.Ref,
                      ref.tzone          = input$ref.tzone,
@@ -2816,7 +2901,7 @@ server <- function(input, output, session) {
             if (!is.null(Ref$DATA)) RefData <- Ref$DATA[] else RefData <- NA_real_
             C <- REF(DownloadSensor     = Download$Sensor,
                      AirSensEur.name    = input$AirSensEur.name,
-                     DisqueFieldtestDir = DisqueFieldtestDir(),
+                     DisqueFieldtestDir = input$Selected,
                      UserMins           = NULL,
                      Down.Ref           = FALSE,
                      ref.tzone          = NULL,
@@ -3514,16 +3599,16 @@ server <- function(input, output, session) {
                 cat(paste0("[shiny, Delete.Model] INFO, deleting calibrattion model, value shinyalert : ", Cal))
                 if (!is.null(Cal)) {
                     #deleting
-                    do.call(file.remove, list(list.files(path       = DisqueFieldtestDir(),
+                    do.call(file.remove, list(list.files(path       = input$Selected,
                                                          pattern    = glob2rx(paste0("*", Cal,"*")),
                                                          full.names = TRUE,
                                                          recursive = TRUE,
                                                          include.dirs = TRUE)))
                     # Update list of Models
-                    choices <- substr(list.files(path = file.path(DisqueFieldtestDir(),"Models"),
+                    choices <- substr(list.files(path = file.path(input$Selected,"Models"),
                                                  pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",input$Calib.Sensors,"*"))),
                                       start = nchar(paste0(CalSet()$AirSensEur.name,"__",input$Calib.Sensors,"__")) + 1,
-                                      stop  = nchar(list.files(path = file.path(DisqueFieldtestDir(),"Models"),
+                                      stop  = nchar(list.files(path = file.path(input$Selected,"Models"),
                                                                pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",input$Calib.Sensors,"*"))))
                     )
                     # Update Selected Model
@@ -3609,15 +3694,14 @@ server <- function(input, output, session) {
         })
         # download report
         output$report <- downloadHandler(
-            filename <- file.path(CalSet()$WDModelled_gas, paste0(AirSensEur.name(),"__",CalSet()$name.sensor,"__",CalSet()$Cal,"__.docx")),
-            content <-
-                function(file) {
-                    file.remove(file.path(CalSet()$WDModelled_gas, paste0(AirSensEur.name(),"__",CalSet()$name.sensor,"__",CalSet()$Cal,"__.docx")))
-                    renderedFile <- render(
-                        input = file.path(DirShiny, "report.Rmd"),
-                        output_file = paste0(DisqueFieldtestDir(), "/", "report.docx"))
-                    markdown::markdownToHTML(paste0(DisqueFieldtestDir(),"/","report.md"),
-                                             paste0(DisqueFieldtestDir(),"/","report.html"), options = c("use_xhml"))})
+            filename = file.path(CalSet()$WDModelled_gas, paste0(AirSensEur.name(),"__",CalSet()$name.sensor,"__",CalSet()$Cal,"__.html")),
+            content  = function(file) {
+                #if (file.exists(filename)) file.remove(filename)
+                renderedFile <- render(
+                    input = file.path(DirShiny, "report.Rmd"),
+                    output_file = paste0(input$Selected, "/", "report.html"))
+                markdown::markdownToHTML(paste0(input$Selected,"/","report.md"),
+                                         paste0(input$Selected,"/","report.html"), options = c("use_xhml"))})
         # Reactive AirSensEur.name() name of ASE box ----
         AirSensEur.name <- reactive({
             old_ASE_name       <- basename(input$Selected)
@@ -3629,7 +3713,7 @@ server <- function(input, output, session) {
         output$console <- renderPrint({logText()})
         logText        <- reactive({
             input$UpdateLog # It updates each time we click of the button UpdateLog
-            return(ReadLastLines(file.path(DisqueFieldtestDir(), "scriptsLog",paste0("console_", Sys.Date(),".log")),1000)) # only 1000 lines can be viewed
+            return(ReadLastLines(file.path(input$Selected, "scriptsLog",paste0("console_", Sys.Date(),".log")),1000)) # only 1000 lines can be viewed
         })
         # Merging All data
         # Reactive Change.Delay ----
@@ -3671,7 +3755,7 @@ server <- function(input, output, session) {
             list.gas.sensor()
         },{
             # depends :
-            #           DisqueFieldtestDir()
+            #           input$Selected
             #           input$UserMins
             #           input$Delay
             #           Ref$DATA
@@ -3766,7 +3850,7 @@ server <- function(input, output, session) {
                                 )
                             } else {
                                 # getting what it would be to put sensor and reference data together to later compare with what is in DF$General
-                                D <- GENERAL(WDoutput            = file.path(DisqueFieldtestDir(), "General_data"),
+                                D <- GENERAL(WDoutput            = file.path(input$Selected, "General_data"),
                                              UserMins            = as.numeric(input$UserMins),
                                              Delay               = as.numeric(input$Delay),
                                              RefData             = Ref$DATA,
@@ -4159,7 +4243,7 @@ server <- function(input, output, session) {
             cat("-----------------------------------------------------------------------------------\n")
             cat("\n")
             if (input$SavePlot) {
-                WDoutput <- file.path(DisqueFieldtestDir(), "Verification_plots")
+                WDoutput <- file.path(input$Selected, "Verification_plots")
                 filename_html <- filename_png <- file.path(WDoutput,paste0(AirSensEur.name(),"_Full_time_series_",
                                                                            format(min(General.df[["date"]], na.rm = TRUE),"%Y%m%d"),"_",
                                                                            format(max(General.df[["date"]], na.rm = TRUE),"%Y%m%d"),"temp.html"))
@@ -4216,7 +4300,7 @@ server <- function(input, output, session) {
                              main = paste0("Last retrieved raw sensor digital values and AQMS station values for ", AirSensEur.name() ))
                     # Saving plot if requested
                     if (input$SavePlot) {
-                        WDoutput <- file.path(DisqueFieldtestDir(), "Retrieved_plots")
+                        WDoutput <- file.path(input$Selected, "Retrieved_plots")
                         dev.copy(png,
                                  filename = file.path(WDoutput,
                                                       paste0(AirSensEur.name(),"_Retrieved_",
@@ -4316,7 +4400,7 @@ server <- function(input, output, session) {
                 names(return.ind.warm) <- list.gas.sensor()
                 ind.warm$out <<- return.ind.warm
                 # Setting TRh$Forced to TRUE to be sure that it is done before ind.Sens
-                TRh$Forced <- TRUE
+                TRh$Forced <<- TRUE
                 progress$set(message = "[shiny, ind.warm()] INFO, Setting the index of dates for sensor warming time", value = 1)
             }
         },
@@ -4639,7 +4723,7 @@ server <- function(input, output, session) {
                     showCancelButton  = FALSE,
                     confirmButtonText = "OK",
                     confirmButtonCol  = "#AEDEF4",
-                    timer             = 0,
+                    timer             = 3000,
                     imageUrl          = "",
                     animation         = FALSE
                 )
@@ -4662,12 +4746,12 @@ server <- function(input, output, session) {
         # Reactive Invalid.DF
         Invalid.DF <- reactive({
             # depends on:
-            #DisqueFieldtestDir()
+            #input$Selected
             #input$Sensors
             #ASE_name()
             #min.General.date()
             input$At.Ref
-            nameFile <- file.path(DisqueFieldtestDir(),"General_data",paste0(AirSensEur.name(),"_Valid_",input$Sensors,".cfg"))
+            nameFile <- file.path(input$Selected,"Configuration",paste0(AirSensEur.name(),"_Valid_",input$Sensors,".cfg"))
             if (file.exists(nameFile)) {
                 DF <- read.table(file             = nameFile,
                                  header           = TRUE,
@@ -4695,7 +4779,7 @@ server <- function(input, output, session) {
             # Warning: Error in seq.default: 'by' must be of length 1
             finalDF <- hot_to_r(input$hot)
             finalDF <- dplyr::arrange(finalDF,In)
-            nameFile <- file.path(DisqueFieldtestDir(),"General_data",paste0(AirSensEur.name(),"_Valid_",input$Sensors,".cfg"))
+            nameFile <- file.path(input$Selected,"Configuration",paste0(AirSensEur.name(),"_Valid_",input$Sensors,".cfg"))
             write.table(finalDF, file = nameFile, row.names = FALSE)
         })
         observeEvent(input$At.Ref, {
@@ -4723,7 +4807,7 @@ server <- function(input, output, session) {
                 } else Invalid.DF <- Invalid.DF()
                 DF <- unique(rbindlist(list(Invalid.DF, Add.Away.Station)))
                 DF <- setkey(DF,In)
-                nameFile <- file.path(DisqueFieldtestDir(),"General_data",paste0(AirSensEur.name(),"_Valid_",input$Sensors,".cfg"))
+                nameFile <- file.path(input$Selected,"Configuration",paste0(AirSensEur.name(),"_Valid_",input$Sensors,".cfg"))
                 write.table(DF, file = nameFile, row.names = FALSE)
             } else {
                 my_message <- "[shiny, At.Ref] ERROR, there are no reference data or no coordiantes of reference station\n"
@@ -4749,7 +4833,7 @@ server <- function(input, output, session) {
         observeEvent(input$Del.row.Valid, {
             # rows must be in increasing order before saving otherwise the following error stops the script:
             # Warning: Error in seq.default: 'by' must be of length 1
-            nameFile <- file.path(DisqueFieldtestDir(),"General_data",paste0(AirSensEur.name(),"_Valid_",input$Sensors,".cfg"))
+            nameFile <- file.path(input$Selected,"Configuration",paste0(AirSensEur.name(),"_Valid_",input$Sensors,".cfg"))
             if (file.exists(nameFile)) file.remove(nameFile)
             # Need to reset Invalid.DF  ################################################################################################
         })
@@ -4789,7 +4873,7 @@ server <- function(input, output, session) {
                 if (!is.null(DF$General)) { # DF$General
                     # reading the files with period of valid data
                     for (i in seq_along(list.name.sensor())) {
-                        nameFile <- file.path(DisqueFieldtestDir(),"General_data",paste0(AirSensEur.name(),"_Valid_",list.name.sensor()[i],".cfg"))
+                        nameFile <- file.path(input$Selected,"Configuration",paste0(AirSensEur.name(),"_Valid_",list.name.sensor()[i],".cfg"))
                         if (file.exists(nameFile)) {
                             cat(paste0("[shiny, ind.Invalid()] INFO, the file with valid periods of sensor data ", nameFile, " exists "), sep = "\n")
                             assign(paste0("Valid_",list.name.sensor()[i]), read.table(file = nameFile, header = TRUE, row.names = NULL, comment.char = "#", stringsAsFactors = FALSE))
@@ -4856,7 +4940,7 @@ server <- function(input, output, session) {
             # depends: list.gas.sensor(), input$Sensors, list.name.sensor(), ,
             #          DF$General : dataFrame with invalidated data,
             #          ind.Invalid$out[[2]] : list with invalid date
-            #          input[[paste0("Out.Sens.Date",k)]],DisqueFieldtestDir(),
+            #          input[[paste0("Out.Sens.Date",k)]],input$Selected,
             #
             # isolate: input$Sensors
             # Create a Progress object
@@ -4908,9 +4992,22 @@ server <- function(input, output, session) {
                     updateCheckboxInput(session, inputId = "SavePlot", value = FALSE)
                 }
             } else {
-                cat(paste0("[Shiny, Plot.Inv()] INFO, There is no invalid data to discard \n"))
-                plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                text(1,1,paste0("[Shiny, Plot.Inv()] INFO, There is no invalid data to discard \n"))
+                my_message <- "[Shiny, Plot.Inv()] INFO, There is no invalid data to discard \n"
+                shinyalert(
+                    title = "INFO no sensor invalid data",
+                    text = "[Shiny]Plot.Neg.values, INFO, no negative reference values",
+                    closeOnEsc = TRUE,
+                    closeOnClickOutside = TRUE,
+                    html = FALSE,
+                    type = "info",
+                    showConfirmButton = TRUE,
+                    showCancelButton  = FALSE,
+                    confirmButtonText = "OK",
+                    confirmButtonCol  = "#AEDEF4",
+                    timer             = 3000,
+                    imageUrl          = "",
+                    animation         = FALSE
+                )
             }
             cat("-----------------------------------------------------------------------------------\n")
             cat("\n")
@@ -5113,18 +5210,17 @@ server <- function(input, output, session) {
                 # list of index of negative values
                 ################################ ADD a Test to check that all reference parameters exists ######################
                 #ind.neg <- apply(X = DF$General[,list.gas.reference2use(), with = FALSE], MARGIN = 2, function(x) {as.vector(which(x < 0))})
-                ind.neg <- apply(X = DF$General[, .SD, .SDcols = list.gas.reference2use()], MARGIN = 2, function(x) {which(x < 0)})
+                ind.neg <- apply(X = DF$General[, .SD, .SDcols = list.gas.reference2use()[list.gas.reference2use() %in% names(DF$General)]], MARGIN = 2, function(x) {which(x < 0)})
                 for (i in list.gas.reference2use()  ) {
                     # resetting to initial values
                     progress$set(message = "[shiny, ind.ref()] INFO, Initialising filtered reference data columns", value = 0.33)
                     cat("[shiny, ind.ref()] INFO, Initialising filtered reference data columns for ", i, "\n")
                     Vector.columns <- paste0(c("Out.", "Out.Neg."),i)
-                    set(DF$General, j = Vector.columns, value = rep(list(DF$General[[i]]), times = length(Vector.columns)))
-                    # discarding negative values if needed
+                    DF$General[,(Vector.columns) := rep(list(DF$General[[i]]), times = length(Vector.columns))]# discarding negative values if needed
                     # number index of reference pollutant in the list of references
                     k <- match(x = i, table = list.gas.reference2use())
                     if (input[[paste0("rm.neg",k)]]) {
-                        if (length(ind.neg) > 0 && length(ind.neg[[i]]) > 0) { # exists(ind.neg[[i]]) &&
+                        if (exists("ind.neg") && length(ind.neg) > 0 && length(ind.neg[[i]]) > 0) {
                             progress$set(message = "[shiny, ind.ref()] INFO, Discarding sensor data for reference negative values", value = 0.66)
                             cat("[shiny, ind.ref()] INFO, Discarding sensor data for reference negative values\n")
                             set(DF$General,i = ind.neg[[i]], j = Vector.columns, value = rep(list(rep(NA, times = length(ind.neg[[i]]))), times = length(Vector.columns)))
@@ -5132,8 +5228,9 @@ server <- function(input, output, session) {
                     }
                     progress$set(message = "[shiny, ind.ref()] INFO, initialising outlier sensor data", value = 1.0)
                     cat("[shiny, ind.ref()] INFO, initialising outlier sensor data for ", i, "\n")
-                    set(DF$General, j = paste0("Out.",i,".",1:input[[paste0("Ref.iterations", k)]]),
-                        value = rep(list(DF$General[[paste0("Out.Neg.",i)]]), times = input[[paste0("Ref.iterations", k)]]))
+                    DF$General[,(paste0("Out.",i,".",1:input[[paste0("Ref.iterations", k)]])) := rep(list(DF$General[[paste0("Out.Neg.",i)]]), times = input[[paste0("Ref.iterations", k)]])]
+                    # discarding negative values if needed
+                    
                     # deleting bigger iterations
                     j  <- input[[paste0("Ref.iterations", k)]]
                     repeat (
@@ -5206,7 +5303,7 @@ server <- function(input, output, session) {
         # Reactive FUN Plot.Sens.Outliers
         Plot.Sens.Outliers   <- reactive({
             # Plotting outliers for sensor data before calibration
-            # depends: list.gas.sensor(), input$Sensors, list.name.sensor(), , DF$General, input[[paste0("Out.Sens.Date",k)]],DisqueFieldtestDir(),
+            # depends: list.gas.sensor(), input$Sensors, list.name.sensor(), , DF$General, input[[paste0("Out.Sens.Date",k)]],input$Selected,
             #
             # isolate: number of iterations, "Treatments", "Filtering.Sensors"
             progress <- shiny::Progress$new()
@@ -5549,7 +5646,7 @@ server <- function(input, output, session) {
                 # save html to png
                 # check if PhantomJS is installed in C:\Users\karaf\AppData\Roaming\PhantomJS, else "install_phantomjs()"
                 if (input$SavePlot) {
-                    WDoutput <- file.path(DisqueFieldtestDir(), "Verification_plots")
+                    WDoutput <- file.path(input$Selected, "Verification_plots")
                     filename_html <- file.path(WDoutput,paste0(CalSet()$name.sensor,"_ts_",
                                                                format(input[[paste0("Date",CalSet()$k)]][1],"%Y%m%d"),"_",
                                                                format(input[[paste0("Date",CalSet()$k)]][2],"%Y%m%d"),"temp.html"))
@@ -5641,7 +5738,7 @@ server <- function(input, output, session) {
                 
                 # Saving plot if requested
                 if (input$SavePlot) {
-                    WDoutput <- file.path(DisqueFieldtestDir(), "Verification_plots")
+                    WDoutput <- file.path(input$Selected, "Verification_plots")
                     dev.copy(png,
                              filename = file.path(WDoutput,
                                                   paste0(CalSet()$name.sensor,"_pairs_",
@@ -5985,12 +6082,12 @@ server <- function(input, output, session) {
                                     my_message <- paste0(paste0("[shiny, Cal$Forced] INFO, there is no calibration function for sensors: ", list.name.sensor()[k], "\n"))
                                     cat(my_message)
                                     shinyalert(
-                                        title = "ERROR missing calibration",
+                                        title = "INFO missing calibration",
                                         text = my_message,
                                         closeOnEsc = TRUE,
                                         closeOnClickOutside = TRUE,
                                         html = FALSE,
-                                        type = "error",
+                                        type = "info",
                                         showConfirmButton = TRUE,
                                         showCancelButton  = FALSE,
                                         confirmButtonText = "OK",
@@ -5998,10 +6095,10 @@ server <- function(input, output, session) {
                                         timer             = 3000,
                                         imageUrl          = "",
                                         animation         = FALSE)
-                                    NewModel <- substr(list.files(path = file.path(DisqueFieldtestDir(),"Models"),
+                                    NewModel <- substr(list.files(path = file.path(input$Selected,"Models"),
                                                                   pattern = glob2rx(paste0(ASE_name(),"__",CalSet()$name.sensor,"__*"))),
                                                        start = nchar(paste0(ASE_name(),"__",CalSet()$name.sensor,"__")) + 1,
-                                                       stop  = nchar(list.files(path = file.path(DisqueFieldtestDir(),"Models"),
+                                                       stop  = nchar(list.files(path = file.path(input$Selected,"Models"),
                                                                                 pattern = glob2rx(paste0(ASE_name(),"__",CalSet()$name.sensor,"__*")))))
                                     if (length(NewModel) > 0) {
                                         updateSelectInput(session, inputId = paste0("Cal", CalSet()$k), label = "Select a previous calibration",
@@ -6058,7 +6155,7 @@ server <- function(input, output, session) {
             input$coord.ref.Long
             input$coord.ref.Lat
             AirSensEur.name()
-            DisqueFieldtestDir()
+            input$Selected
             sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Calibration" , i)]])
             sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Comparison" , i)]])
             sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Neg.mod" , i)]])
@@ -6213,20 +6310,20 @@ server <- function(input, output, session) {
                 unit.sensor        = input[[paste0("Sens.unit", k)]],
                 Sens.raw.unit      = input[[paste0("Sens.raw.unit", k)]],
                 Reference.name     = input$Reference.name,
-                coord.ref          = paste0(input$coord.ref.Long,",", input$coord.ref.lat),           # Hand written coordinates of the reference station
+                coord.ref          = paste0(input$coord.ref.Long,",", input$coord.ref.Lat),           # Hand written coordinates of the reference station
                 AirSensEur.name    = AirSensEur.name(),
-                WDoutputMod        = file.path(DisqueFieldtestDir(),"Models"),
-                WDoutput           = file.path(DisqueFieldtestDir(),"Calibration"),
-                WDoutputStats      = file.path(DisqueFieldtestDir(),"Statistics"),
-                WDModelled_gas     = file.path(DisqueFieldtestDir(),"Modelled_gas"),
-                WDOutliers         = file.path(DisqueFieldtestDir(),"Outliers"),
+                WDoutputMod        = file.path(input$Selected,"Models"),
+                WDoutput           = file.path(input$Selected,"Calibration"),
+                WDoutputStats      = file.path(input$Selected,"Statistics"),
+                WDModelled_gas     = file.path(input$Selected,"Modelled_gas"),
+                WDOutliers         = file.path(input$Selected,"Outliers"),
                 mod.eta.model.type = input[[paste0("Calibration",k)]],                                # Model for calibration"
                 NewCalSet          = NewCalSet,                                                       # Model of the  CalSet()$Cal
                 eta.model.type     = input[[paste0("Comparison",k)]],
                 remove.neg         = input[[paste0("Neg.mod",k)]],
                 Cal_Line           = input[[paste0("Cal.Line",k)]],                                   # "Equation of calibation/Prediction"
                 Cal                = paste0(AirSensEur.name(),"__",name.sensor,"__",input[[paste0("Cal",k)]]),# Selected calibration model  for the current sensor
-                Multi.File         = file.path(DisqueFieldtestDir(),"General_data", paste0(ASE_name(),"_Multi_",input$Sensors,".cfg")), # Config file for calibration with Multivariables
+                Multi.File         = file.path(input$Selected,"General_data", paste0(ASE_name(),"_Multi_",input$Sensors,".cfg")), # Config file for calibration with Multivariables
                 CovMod             = paste0(input[[paste0("CovMod",k)]], collapse = "&"),             # Selected List of covariates to calibrate
                 LV                 = LV ,                                                             # limit for the gas.sensor
                 LAT                = LAT ,                                                            # limit for the gas.sensor
@@ -6253,9 +6350,9 @@ server <- function(input, output, session) {
         pointsCal <- reactive( {
             # Selecting dates and coordinates
             Available.Coord <- grep(pattern = paste0(c("latitude","longitude", "Ref.Long", "Ref.Lat"), collapse = "|" ), x = names(DF$General), value = TRUE)
-            PointsCal <- DF$General[date >= CalSet()$Cal.DateIN & date <= CalSet()$Cal.DateEND + 1 &
-                                        !is.na(longitude) & !is.nan(longitude) & !is.na(latitude) & !is.nan(latitude), .SD, .SDcols = c("date", Available.Coord)]
-            if ("Ref.Long" %in% Available.Coord && "Ref.Lat" %in% Available.Coord && any(!is.na(PointsCal$Ref.Long)) && any(!is.na(PointsCal$Ref.Lat))) {
+            PointsCal <- DF$General[which(date >= CalSet()$Cal.DateIN & date <= CalSet()$Cal.DateEND + 1), .SD, .SDcols = c("date", Available.Coord)]
+            # Determining coordinates ofreference station
+            if ("Ref.Long" %in% names(PointsCal) && "Ref.Lat" %in% names(PointsCal) && any(!is.na(PointsCal$Ref.Long)) && any(!is.na(PointsCal$Ref.Lat))) {
                 Ref.coord_LON_LAT <- unique(PointsCal[!is.na(Ref.Long) & !is.nan(Ref.Long), .SD, .SDcols = c("Ref.Long","Ref.Lat")])
                 Ref.coord_LON <- Ref.coord_LON_LAT[["Ref.Long"]]
                 Ref.coord_LAT <- Ref.coord_LON_LAT[["Ref.Lat"]]
@@ -6263,7 +6360,7 @@ server <- function(input, output, session) {
                 # checking if the separator is ,
                 if (any(grepl(pattern =  ",", x = CalSet()$coord.ref))) {
                     # Checking is the coordinates are in spherical or decimal format, projection to OpenStreet map
-                    if (any(grep(pattern = paste0(c("N","S", "E", "W", "d"), collapse = "|" ), x = names(DF$General)))) {
+                    if (any(grep(pattern = paste0(c("N","S", "E", "W", "d"), collapse = "|" ), x = CalSet()$coord.ref))) {
                         # extract spherical coordinates
                         Ref.coord_LAT  <- unlist(strsplit(x = CalSet()$coord.ref, split = ","))[2]
                         Ref.coord_LON  <- unlist(strsplit(x = CalSet()$coord.ref, split = ","))[1]
@@ -6289,17 +6386,15 @@ server <- function(input, output, session) {
                             confirmButtonCol  = "#AEDEF4",
                             timer             = 0,
                             imageUrl          = "",
-                            animation         = FALSE)
-                    }
+                            animation         = FALSE)}
                 } else {
                     Ref.coord_LON <- as.numeric(unlist(strsplit(x = CalSet()$coord.ref, split = " "))[1])
-                    Ref.coord_LAT <- as.numeric(unlist(strsplit(x = CalSet()$coord.ref, split = " "))[2])
-                }
+                    Ref.coord_LAT <- as.numeric(unlist(strsplit(x = CalSet()$coord.ref, split = " "))[2])}
             } else {
                 my_message <- paste0("[shiny, pointsCal()] ERROR, the coordinates of the reference station are incorrect\n")
                 cat(my_message)
                 shinyalert(
-                    title = "ERROR missing data",
+                    title = "ERROR Incorrect coordinates",
                     text = my_message,
                     closeOnEsc = TRUE,
                     closeOnClickOutside = TRUE,
@@ -6317,67 +6412,102 @@ server <- function(input, output, session) {
                 Ref.coord_LAT <- NULL
             }
             # mean coordinates of the AirSensEUR
-            Names.coord.Station <- c("latitude", "longitude")
-            PointsCal[, latitude  := round(PointsCal[["latitude"]] , digits = 4)]
-            PointsCal[, longitude := round(PointsCal[["longitude"]], digits = 4)]
-            MEAS_LON_LAT <- unique(PointsCal[, date := mean(date), by = list(latitude, latitude)])[, .SD, .SDcols = c("date", "latitude", "longitude") ]
-            # # Position coordinates of the AirSensEUR
-            # # make a spatial dataframe with traffic data
-            sp_traffic_real <- SpatialPointsDataFrame(MEAS_LON_LAT[,c("longitude","latitude")], MEAS_LON_LAT[,],     # lat, lon
-                                                      proj4string = CRS("+init=epsg:4326"))
-            # make intersection between open street and the buffer
-            buffer_sp_traffic_real <- rgeos::gBuffer(sp_traffic_real, width = 0.0002)  #0.00005, units in grade
-            class(buffer_sp_traffic_real)
-            (p.df <- data.frame( ID = 1:length(buffer_sp_traffic_real)))
-            # # trasform SpatialPolygons to SpatialPolygonsDataFrame
-            buffer_sp_traffic_real <- SpatialPolygonsDataFrame(buffer_sp_traffic_real, p.df, match.ID = F)
-            buffer_sp_traffic_real <- ggplot2::fortify(buffer_sp_traffic_real)
-            MEAS_LON_LAT <- buffer_sp_traffic_real %>%
-                group_by(group) %>%
-                summarise(longitude = mean(long),
-                          latitude  = mean(lat))
-            popup_REF <- paste0("<strong><i>", "reference stn. @ " ,
-                                round(Ref.coord_LON, digits = 4), ", " ,
-                                round(Ref.coord_LAT, digits = 4), "</i></strong>")
-            popup_CAL <- paste0("<strong><i>", "AirSensEUR box. @ ",
-                                round(MEAS_LON_LAT$longitude, digits = 4) , ", " ,
-                                round(MEAS_LON_LAT$latitude , digits  = 4), ", " ,
-                                #format(MEAS_LON_LAT$date, "%Y-%m-%d %H:%M"),
-                                "</i></strong>")
-            return(list(Ref.coord_LON = Ref.coord_LON,
-                        Ref.coord_LAT = Ref.coord_LAT,
-                        Cal_LON = MEAS_LON_LAT$longitude,
-                        Cal_LAT = MEAS_LON_LAT$latitude,
-                        popup_REF = popup_REF,
-                        popup_CAL = popup_CAL))
+            PointsCal <- DF$General[which(date >= CalSet()$Cal.DateIN & date <= CalSet()$Cal.DateEND + 1 &
+                                              !is.na(longitude) & !is.nan(longitude) & !is.na(latitude) & !is.nan(latitude)), .SD, .SDcols = c("date", Available.Coord)]
+            if (PointsCal[,.N] > 0) {
+                Names.coord.Station <- c("latitude", "longitude")
+                PointsCal[, latitude  := round(PointsCal[["latitude"]] , digits = 4)]
+                PointsCal[, longitude := round(PointsCal[["longitude"]], digits = 4)]
+                MEAS_LON_LAT <- unique(PointsCal[, date := mean(date), by = list(latitude, latitude)])[, .SD, .SDcols = c("date", "latitude", "longitude") ]
+                # # Position coordinates of the AirSensEUR
+                # # make a spatial dataframe with traffic data
+                sp_traffic_real <- SpatialPointsDataFrame(MEAS_LON_LAT[,c("longitude","latitude")], MEAS_LON_LAT[,],     # lat, lon
+                                                          proj4string = CRS("+init=epsg:4326"))
+                # make intersection between open street and the buffer
+                buffer_sp_traffic_real <- rgeos::gBuffer(sp_traffic_real, width = 0.0002)  #0.00005, units in grade
+                class(buffer_sp_traffic_real)
+                (p.df <- data.frame( ID = 1:length(buffer_sp_traffic_real)))
+                # # trasform SpatialPolygons to SpatialPolygonsDataFrame
+                buffer_sp_traffic_real <- SpatialPolygonsDataFrame(buffer_sp_traffic_real, p.df, match.ID = F)
+                buffer_sp_traffic_real <- ggplot2::fortify(buffer_sp_traffic_real)
+                MEAS_LON_LAT <- buffer_sp_traffic_real %>%
+                    group_by(group) %>%
+                    summarise(longitude = mean(long),
+                              latitude  = mean(lat))
+                popup_REF <- paste0("<strong><i>", "reference stn. @ " ,
+                                    round(Ref.coord_LON, digits = 4), ", " ,
+                                    round(Ref.coord_LAT, digits = 4), "</i></strong>")
+                popup_CAL <- paste0("<strong><i>", "AirSensEUR box. @ ",
+                                    round(MEAS_LON_LAT$longitude, digits  = 4), ", " ,
+                                    round(MEAS_LON_LAT$latitude , digits  = 4), ", " ,
+                                    #format(MEAS_LON_LAT$date, "%Y-%m-%d %H:%M"),
+                                    "</i></strong>")
+                return(list(Ref.coord_LON = Ref.coord_LON,
+                            Ref.coord_LAT = Ref.coord_LAT,
+                            Cal_LON = MEAS_LON_LAT$longitude,
+                            Cal_LAT = MEAS_LON_LAT$latitude,
+                            popup_REF = popup_REF,
+                            popup_CAL = popup_CAL))
+            } else {
+                my_message <- paste0("[shiny, pointsCal()] ERROR, there are no coordinates of the AirSensEUR box\n")
+                cat(my_message)
+                shinyalert(
+                    title = "INFO no AirSensEUR coordinates available",
+                    text = my_message,
+                    closeOnEsc = TRUE,
+                    closeOnClickOutside = TRUE,
+                    html = FALSE,
+                    type = "info",
+                    showConfirmButton = TRUE,
+                    showCancelButton  = FALSE,
+                    confirmButtonText = "OK",
+                    confirmButtonCol  = "#AEDEF4",
+                    timer             = 0,
+                    imageUrl          = "",
+                    animation         = FALSE
+                )
+                return(list(Ref.coord_LON = Ref.coord_LON,
+                            Ref.coord_LAT = Ref.coord_LAT,
+                            Cal_LON = NULL,
+                            Cal_LAT = NULL,
+                            popup_REF = NULL,
+                            popup_CAL = NULL))
+            }
         })
         output$mymapCal <- renderLeaflet({
-            title_CAL <- paste0('<h0><strong>', "Position of ", CalSet()$AirSensEur.name, " during calibration",
-                                "</i></strong><br> The blue pointer is the location of the reference station, <br> the grey circle is the location of the AirSensEur during calibration")
-            m <- leaflet() %>%
-                addTiles(group = "OSM (default)") %>%
-                addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
-                addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
-                addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
-                #setView(lng = mean(pointsCal()$Cal_LON), lat = mean(pointsCal()$Cal_LAT), zoom = 10) %>%
-                fitBounds(lng1 = min(pointsCal()$Cal_LON, na.rm = T),
-                          lat1 = min(pointsCal()$Cal_LAT, na.rm = T),
-                          lng2 = max(pointsCal()$Cal_LON, na.rm = T),
-                          lat2 = max(pointsCal()$Cal_LAT, na.rm = T),
-                          options = list(maxZoom = 16)) %>%
-                addCircleMarkers(lng = pointsCal()$Cal_LON, lat = pointsCal()$Cal_LAT,
-                                 popup = pointsCal()$popup_CAL, opacity = 1, color = "black", fillOpacity = 0.7, radius = 5, weight = 1) %>%
-                addMarkers(lng = pointsCal()$Ref.coord_LON, lat = pointsCal()$Ref.coord_LAT,
-                           popup = pointsCal()$popup_REF) %>%
-                addPopups(pointsCal()$Ref.coord_LON,
-                          pointsCal()$Ref.coord_LAT +
-                              max(c(0.001,0.1*sqrt(diff(range(pointsCal()$Cal_LON))^2+diff(range(pointsCal()$Cal_LAT))^2)), na.rm = T),
-                          title_CAL,
-                          options = popupOptions(closeOnClick  = FALSE)) %>%
-                addLayersControl(
-                    baseGroups = c("Road map", "Satellite", "Toner Lite"),
-                    options = layersControlOptions(collapsed = TRUE))
-            m
+            # Map of location of AirSensEUR and reference station during calibration
+            if ((!is.null(pointsCal()$Cal_LON) && !is.null(pointsCal()$Cal_LAT)) || (!is.null(pointsCal()$Ref.coord_LON) && !is.null(pointsCal()$Ref.coord_LAT))) {
+                title_CAL <- paste0('<h0><strong>', "Position of ", CalSet()$AirSensEur.name, " during calibration",
+                                    "</i></strong><br> The blue pointer is the location of the reference station, <br> the grey circle is the location of the AirSensEur during calibration")
+                m <- leaflet() %>%
+                    addTiles(group = "OSM (default)") %>%
+                    addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
+                    addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
+                    addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+                    addLayersControl(
+                        baseGroups = c("Road map", "Satellite", "Toner Lite"),
+                        options = layersControlOptions(collapsed = TRUE))
+                    #setView(lng = mean(pointsCal()$Cal_LON), lat = mean(pointsCal()$Cal_LAT), zoom = 10)
+                if (!is.null(pointsCal()$Cal_LON) && !is.null(pointsCal()$Cal_LAT)) {
+                    m <- m %>%
+                        fitBounds(lng1 = min(pointsCal()$Cal_LON, na.rm = T),
+                                  lat1 = min(pointsCal()$Cal_LAT, na.rm = T),
+                                  lng2 = max(pointsCal()$Cal_LON, na.rm = T),
+                                  lat2 = max(pointsCal()$Cal_LAT, na.rm = T),
+                                  options = list(maxZoom = 16)) %>%
+                        addCircleMarkers(lng = pointsCal()$Cal_LON, lat = pointsCal()$Cal_LAT,
+                                         popup = pointsCal()$popup_CAL, opacity = 1, color = "black", fillOpacity = 0.7, radius = 5, weight = 1)}
+                if (!is.null(pointsCal()$Ref.coord_LON) && !is.null(pointsCal()$Ref.coord_LAT)) {
+                    m <- m %>%
+                        addMarkers(lng = pointsCal()$Ref.coord_LON, lat = pointsCal()$Ref.coord_LAT,
+                                   popup = pointsCal()$popup_REF) %>%
+                        addPopups(pointsCal()$Ref.coord_LON,
+                                  pointsCal()$Ref.coord_LAT +
+                                      max(c(0.001,0.1*sqrt(diff(range(pointsCal()$Cal_LON))^2+diff(range(pointsCal()$Cal_LAT))^2)), na.rm = T),
+                                  title_CAL,
+                                  options = popupOptions(closeOnClick  = FALSE))}
+                m
+            }
         })
         # NavBar"Data Treatment", mainTabPanel "Calibration",  ----
         output$Calibration   <- renderPlot(Plot.Calibration()      , width = 'auto', height = 'auto')
@@ -6439,9 +6569,9 @@ server <- function(input, output, session) {
         Multi.DF <- eventReactive(CalSet(),{
             # Return DataFrame for editing model wjrn calibration with MultiLinear is selected
             # depends on:
-            #  DisqueFieldtestDir(), input$Sensors, CalSet(), ASE_name()
+            #  input$Selected, input$Sensors, CalSet(), ASE_name()
             if (CalSet()$mod.eta.model.type == "MultiLinear") {
-                nameFile <- file.path(DisqueFieldtestDir(),"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
+                nameFile <- file.path(input$Selected,"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
                 # UI covariates
                 names.Covariates <- unlist(strsplit(CalSet()$CovMod, split = "&"))
                 # Is ther a multivariate file?
@@ -6493,7 +6623,7 @@ server <- function(input, output, session) {
             input$Save.row.Multi
             input$Del.row.Multi
             # Existing MultiLinear files
-            List.Multi.Files <- list.files(path    = file.path(DisqueFieldtestDir(),"General_data"), pattern = glob2rx(paste0("*Multi*", input$Sensors, "*")))
+            List.Multi.Files <- list.files(path    = file.path(input$Selected,"General_data"), pattern = glob2rx(paste0("*Multi*", input$Sensors, "*")))
             # Creating the text files to render
             Multi.Lignes <- paste0("Existing MultiLinear File in ASE/General_Data:\n")
             Multi.Lignes <- paste(Multi.Lignes,"\n")
@@ -6503,7 +6633,7 @@ server <- function(input, output, session) {
                     Multi.Lignes <- paste(Multi.Lignes, i, sep = "\n")
                     cat(paste0("Existing MultiLinear Files in ASE/General_Data:", i))
                     # reading Multivarites files line by line
-                    con = file(description = file.path(DisqueFieldtestDir(),"General_data", i), "r")
+                    con = file(description = file.path(input$Selected,"General_data", i), "r")
                     repeat {
                         Multi.1Ligne = readLines(con, n = 1)
                         # exiting if list is empty or appending the line to Multi.Lignes
@@ -6525,7 +6655,7 @@ server <- function(input, output, session) {
         # Del
         observeEvent(input$Del.row.Multi, {
             # delete current Multi file
-            nameFile <- file.path(DisqueFieldtestDir(),"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
+            nameFile <- file.path(input$Selected,"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
             file.remove(nameFile)
         })
         ## Save
@@ -6533,7 +6663,7 @@ server <- function(input, output, session) {
             # rows must be in increasing order before saving otherwise the following error stops the script:
             # Warning: Error in seq.default: 'by' must be of length 1
             finalDF <- hot_to_r(input$Multi)
-            nameFile <- file.path(DisqueFieldtestDir(),"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
+            nameFile <- file.path(input$Selected,"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
             write.table(finalDF, file = nameFile, row.names = FALSE)
             #click(id = "New.row.Multi")
         })
@@ -7339,7 +7469,7 @@ server <- function(input, output, session) {
                 # Saving plot if requested
                 # check if PhantomJS is installed in C:\Users\karaf\AppData\Roaming\PhantomJS, else "install_phantomjs()"
                 if (input$SavePlot) {
-                    WDoutput <- file.path(DisqueFieldtestDir(), "Verification_plots")
+                    WDoutput <- file.path(input$Selected, "Verification_plots")
                     filename_html <- file.path(CalSet()$WDoutput, paste0(CalSet()$Cal,"_Calibration_ts_",
                                                                          format(CalSet()$Cal.DateIN, "%Y%m%d"),"_",
                                                                          format(CalSet()$Cal.DateEND,"%Y%m%d"),"temp.html"))
@@ -7431,7 +7561,7 @@ server <- function(input, output, session) {
                       cex.labels  = 2) # cex.cor = 1.3
                 # Saving plot if requested
                 if (input$SavePlot) {
-                    dev.copy(png, filename = file.path(DisqueFieldtestDir(),"Calibration",
+                    dev.copy(png, filename = file.path(input$Selected,"Calibration",
                                                        paste0(CalSet()$Cal,"_Res_pairs_",
                                                               format(min(General.df[["date"]], na.rm = TRUE),"%Y%m%d"),"_",
                                                               format(max(General.df[["date"]], na.rm = TRUE),"%Y%m%d"),".png")),
@@ -7444,7 +7574,7 @@ server <- function(input, output, session) {
                     dev.off()
                     cat(paste0("[shiny] INFO, ", CalSet()$Cal,"_Res_pairs_",
                                format(min(General.df[["date"]], na.rm = TRUE),"%Y%m%d"),"_",
-                               format(max(General.df[["date"]], na.rm = TRUE),"%Y%m%d"),".png saved in ", file.path(DisqueFieldtestDir(),"Calibration"), "\n" ))
+                               format(max(General.df[["date"]], na.rm = TRUE),"%Y%m%d"),".png saved in ", file.path(input$Selected,"Calibration"), "\n" ))
                     updateCheckboxInput(session, inputId = "SavePlot", value = FALSE)
                 }
             }
@@ -7606,14 +7736,13 @@ server <- function(input, output, session) {
         pointsExtrap <- reactive( {
             # Selecting dates and coordinates
             Available.Coord <- grep(pattern = paste0(c("latitude","longitude", "Ref.Long", "Ref.Lat"), collapse = "|" ), x = names(DF$General), value = TRUE)
-            PointsExtrap    <- unique(DF$General[date >= CalSet()$Meas.DateIN & date <= CalSet()$Meas.DateEND + 1 &
-                                                     !is.na(longitude) & !is.nan(longitude) & !is.na(latitude) & !is.nan(latitude), .SD, .SDcols = c("date",Available.Coord)])
+            PointsExtrap    <- unique(DF$General[date >= CalSet()$Meas.DateIN & date <= CalSet()$Meas.DateEND + 1, .SD, .SDcols = c("date",Available.Coord)])
             # checking if the coordinates of the reference station are included into the data frame DF$General
             if (any("Ref.Long" %in% names(PointsExtrap)) && any("Ref.Lat" %in% names(PointsExtrap)) && any(!is.na(PointsExtrap$Ref.Long)) && any(!is.na(PointsExtrap$Ref.Lat))) {
                 Ref.coord_LON_LAT <- unique(PointsExtrap[!is.na(Ref.Long) & !is.nan(Ref.Long), .SD, .SDcols = c("Ref.Long","Ref.Lat")] )
                 Ref.coord_LON <- Ref.coord_LON_LAT[["Ref.Long"]]
                 Ref.coord_LAT <- Ref.coord_LON_LAT[["Ref.Lat"]]
-            } else if (!is.null(CalSet()$coord.ref) ) {
+            } else if (!is.null(CalSet()$coord.ref) && grepl(pattern = paste0(c(" ", ","), collapse = "|"), x = CalSet()$coord.ref)) {
                 # using the coordinates in the UI because the coordinates are not inluded in DF$General
                 # checking if the lat long separator is ,
                 if (grepl(pattern = paste0(c(","), collapse = "|"), x = CalSet()$coord.ref)) {
@@ -7634,10 +7763,10 @@ server <- function(input, output, session) {
                         Ref.coord_LAT <- as.numeric(unlist(strsplit(x = CalSet()$coord.ref, split = ","))[2])
                     }
                 } else {
-                    my_message <- paste0("[shiny, PointsExtrap()] ERROR, the coordinates of the reference station int UI are not separated with a comma.\n")
+                    my_message <- paste0("[shiny, PointsExtrap()] ERROR, the coordinates of the reference station are not separated with a comma.\n")
                     cat(my_message)
                     shinyalert(
-                        title = "ERROR missing data",
+                        title = "ERROR seperator of coordinates",
                         text = my_message,
                         closeOnEsc = TRUE,
                         closeOnClickOutside = TRUE,
@@ -7673,64 +7802,97 @@ server <- function(input, output, session) {
                 Ref.coord_LAT <- NULL
             }
             # mean coordinates of the AirSensEUR
-            Names.coord.Station <- c("latitude", "longitude")
-            PointsExtrap[, latitude  := round(PointsExtrap[["latitude"]] , digits = 4)]
-            PointsExtrap[, longitude := round(PointsExtrap[["longitude"]], digits = 4)]
-            MEAS_LON_LAT <- unique(PointsExtrap[, date := mean(date), by = list(latitude, latitude)])[, .SD, .SDcols = c("date", "latitude", "longitude") ]
-            # # Position coordinates of the AirSensEUR
-            # # make a spatial dataframe with traffic data
-            sp_traffic_real <- SpatialPointsDataFrame(MEAS_LON_LAT[,c("longitude","latitude")], MEAS_LON_LAT[,],     # lat, lon
-                                                      proj4string = CRS("+init=epsg:4326"))
-            # make intersection between open street and the buffer
-            buffer_sp_traffic_real <- rgeos::gBuffer(sp_traffic_real, width = 0.0002)  #0.00005, units in grade
-            class(buffer_sp_traffic_real)
-            (p.df <- data.frame( ID = 1:length(buffer_sp_traffic_real)))
-            # # transform SpatialPolygons to SpatialPolygonsDataFrame
-            buffer_sp_traffic_real <- SpatialPolygonsDataFrame(buffer_sp_traffic_real, p.df, match.ID = F)
-            buffer_sp_traffic_real <- ggplot2::fortify(buffer_sp_traffic_real)
-            MEAS_LON_LAT <- buffer_sp_traffic_real %>%
-                group_by(group) %>%
-                summarise(longitude = mean(long),
-                          latitude  = mean(lat))
-            popup_REF  <- paste0("<strong><i>", "reference stn. @ ",
-                                 round(Ref.coord_LON, digits = 4), ", " ,
-                                 round(Ref.coord_LAT, digits = 4), "</i></strong>")
-            popup_MEAS <- paste0("<strong><i>", "AirSensEUR box. @ ",
-                                 round(MEAS_LON_LAT$longitude, digits = 4), ", " ,
-                                 round(MEAS_LON_LAT$latitude, digits  = 4), "</i></strong>")
-            return(list(Ref.coord_LON = Ref.coord_LON,
-                        Ref.coord_LAT = Ref.coord_LAT,
-                        MEAS_LON      = MEAS_LON_LAT$longitude,
-                        MEAS_LAT      = MEAS_LON_LAT$latitude,
-                        popup_REF     = popup_REF,
-                        popup_MEAS    = popup_MEAS))
+            PointsExtrap <- unique(PointsExtrap[which(!is.na(longitude) & !is.nan(longitude) & !is.na(latitude) & !is.nan(latitude)), .SD, .SDcols = c("date",Available.Coord)])
+            if (PointsExtrap[,.N] > 0) {
+                Names.coord.Station <- c("latitude", "longitude")
+                PointsExtrap[, latitude  := round(PointsExtrap[["latitude"]] , digits = 4)]
+                PointsExtrap[, longitude := round(PointsExtrap[["longitude"]], digits = 4)]
+                MEAS_LON_LAT <- unique(PointsExtrap[, date := mean(date), by = list(latitude, latitude)])[, .SD, .SDcols = c("date", "latitude", "longitude") ]
+                # # Position coordinates of the AirSensEUR
+                # # make a spatial dataframe with traffic data
+                sp_traffic_real <- SpatialPointsDataFrame(MEAS_LON_LAT[,c("longitude","latitude")], MEAS_LON_LAT[,],     # lat, lon
+                                                          proj4string = CRS("+init=epsg:4326"))
+                # make intersection between open street and the buffer
+                buffer_sp_traffic_real <- rgeos::gBuffer(sp_traffic_real, width = 0.0002)  #0.00005, units in grade
+                class(buffer_sp_traffic_real)
+                (p.df <- data.frame( ID = 1:length(buffer_sp_traffic_real)))
+                # # trasform SpatialPolygons to SpatialPolygonsDataFrame
+                buffer_sp_traffic_real <- SpatialPolygonsDataFrame(buffer_sp_traffic_real, p.df, match.ID = F)
+                buffer_sp_traffic_real <- ggplot2::fortify(buffer_sp_traffic_real)
+                MEAS_LON_LAT <- buffer_sp_traffic_real %>%
+                    group_by(group) %>%
+                    summarise(longitude = mean(long),
+                              latitude  = mean(lat))
+                popup_REF  <- paste0("<strong><i>", "reference stn. @ ",
+                                     round(Ref.coord_LON, digits = 4), ", " ,
+                                     round(Ref.coord_LAT, digits = 4), "</i></strong>")
+                popup_MEAS <- paste0("<strong><i>", "AirSensEUR box. @ ",
+                                     round(MEAS_LON_LAT$longitude, digits = 4), ", " ,
+                                     round(MEAS_LON_LAT$latitude, digits  = 4), "</i></strong>")
+                return(list(Ref.coord_LON = Ref.coord_LON,
+                            Ref.coord_LAT = Ref.coord_LAT,
+                            MEAS_LON      = MEAS_LON_LAT$longitude,
+                            MEAS_LAT      = MEAS_LON_LAT$latitude,
+                            popup_REF     = popup_REF,
+                            popup_MEAS    = popup_MEAS))
+            } else {
+                my_message <- paste0("[shiny, PointsExtrap()] ERROR, there are no coordinates of the AirSensEUR box\n")
+                cat(my_message)
+                shinyalert(
+                    title = "INFO no AirSensEUR coordinates available",
+                    text = my_message,
+                    closeOnEsc = TRUE,
+                    closeOnClickOutside = TRUE,
+                    html = FALSE,
+                    type = "info",
+                    showConfirmButton = TRUE,
+                    showCancelButton  = FALSE,
+                    confirmButtonText = "OK",
+                    confirmButtonCol  = "#AEDEF4",
+                    timer             = 0,
+                    imageUrl          = "",
+                    animation         = FALSE
+                )
+                return(list(Ref.coord_LON = Ref.coord_LON,
+                            Ref.coord_LAT = Ref.coord_LAT,
+                            MEAS_LON = NULL,
+                            MEAS_LAT = NULL,
+                            popup_REF  = NULL,
+                            popup_MEAS = NULL))}
         })
         output$mymapExtrap <- renderLeaflet({
-            title_MEAS <- paste0('<h0><strong>', "Position of ", CalSet()$AirSensEur.name, " for calibrated data",
-                                 "</i></strong><br> The grey circle is the location of the AirSensEUR, <br> the pointer is the location of reference station")
-            m <- leaflet() %>%
-                addTiles(group = "OSM (default)") %>%
-                addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
-                addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
-                addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
-                #setView(lng = median(pointsExtrap()$MEAS_LON, na.rm = T), lat = median(pointsExtrap()$MEAS_LAT, na.rm = T), zoom = 10) %>%
-                fitBounds(lng1 = min(pointsExtrap()$MEAS_LON, na.rm = T),
-                          lat1 = min(pointsExtrap()$MEAS_LAT, na.rm = T),
-                          lng2 = max(pointsExtrap()$MEAS_LON, na.rm = T),
-                          lat2 = max(pointsExtrap()$MEAS_LAT, na.rm = T),
-                          options = list(maxZoom = 16)) %>%
-                addCircleMarkers(lng = pointsExtrap()$MEAS_LON, lat = pointsExtrap()$MEAS_LAT,
-                                 popup = pointsExtrap()$popup_MEAS, opacity = 1, color = "black", fillOpacity = 0.7, radius = 5, weight = 1) %>%
-                addMarkers(lng = pointsExtrap()$Ref.coord_LON, lat = pointsExtrap()$Ref.coord_LAT,
-                           popup = pointsExtrap()$popup_REF) %>%
-                addPopups(pointsExtrap()$Ref.coord_LON, pointsExtrap()$Ref.coord_LAT +
-                              max(c(0.001,0.1*sqrt(diff(range(pointsExtrap()$MEAS_LON))^2+diff(range(pointsExtrap()$MEAS_LAT))^2)), na.rm = T),
-                          title_MEAS,
-                          options = popupOptions(closeOnClick  = FALSE)) %>%
-                addLayersControl(
-                    baseGroups = c("Road map", "Satellite", "Toner Lite"),
-                    options = layersControlOptions(collapsed = TRUE))
-            m
+            if ((!is.null(pointsExtrap()$MEAS_LON) && !is.null(pointsExtrap()$MEAS_LAT)) || (!is.null(pointsExtrap()$Ref.coord_LON) && !is.null(pointsExtrap()$Ref.coord_LAT))) {
+                title_CAL <- paste0('<h0><strong>', "Position of ", CalSet()$AirSensEur.name, " during calibration",
+                                    "</i></strong><br> The blue pointer is the location of the reference station, <br> the grey circle is the location of the AirSensEur during calibration")
+                m <- leaflet() %>%
+                    addTiles(group = "OSM (default)") %>%
+                    addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
+                    addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
+                    addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
+                    addLayersControl(
+                        baseGroups = c("Road map", "Satellite", "Toner Lite"),
+                        options = layersControlOptions(collapsed = TRUE))
+                #setView(lng = mean(pointsExtrap()$MEAS_LON), lat = mean(pointsExtrap()$MEAS_LAT), zoom = 10)
+                if (!is.null(pointsExtrap()$MEAS_LON) && !is.null(pointsExtrap()$MEAS_LAT)) {
+                    m <- m %>%
+                        fitBounds(lng1 = min(pointsExtrap()$MEAS_LON, na.rm = T),
+                                  lat1 = min(pointsExtrap()$MEAS_LAT, na.rm = T),
+                                  lng2 = max(pointsExtrap()$MEAS_LON, na.rm = T),
+                                  lat2 = max(pointsExtrap()$MEAS_LAT, na.rm = T),
+                                  options = list(maxZoom = 16)) %>%
+                        addCircleMarkers(lng = pointsExtrap()$MEAS_LON, lat = pointsExtrap()$MEAS_LAT,
+                                         popup = pointsExtrap()$popup_CAL, opacity = 1, color = "black", fillOpacity = 0.7, radius = 5, weight = 1)}
+                if (!is.null(pointsExtrap()$Ref.coord_LON) && !is.null(pointsExtrap()$Ref.coord_LAT)) {
+                    m <- m %>%
+                        addMarkers(lng = pointsExtrap()$Ref.coord_LON, lat = pointsExtrap()$Ref.coord_LAT,
+                                   popup = pointsExtrap()$popup_REF) %>%
+                        addPopups(pointsExtrap()$Ref.coord_LON,
+                                  pointsExtrap()$Ref.coord_LAT +
+                                      max(c(0.001,0.1*sqrt(diff(range(pointsExtrap()$MEAS_LON))^2+diff(range(pointsExtrap()$MEAS_LAT))^2)), na.rm = T),
+                                  title_CAL,
+                                  options = popupOptions(closeOnClick  = FALSE))}
+                m
+            }
         })
         output$Prediction   <- renderPlot(Plot.Prediction()  , width = 'auto', height = 'auto')
         # Reactive FUN Plot.Prediction
@@ -8614,7 +8776,7 @@ server <- function(input, output, session) {
                 # Saving plot if requested
                 if (input$SavePlot) {
                     # Directory for saving plots
-                    WDoutput <- file.path(DisqueFieldtestDir(), "Drift")
+                    WDoutput <- file.path(input$Selected, "Drift")
                     dev.copy(png,
                              filename = file.path(WDoutput, paste0(CalSet()$Cal,"_Drift_ts_",
                                                                    format(CalSet()$Meas.DateIN, "%Y%m%d"),"_",
@@ -8719,7 +8881,7 @@ server <- function(input, output, session) {
                 # Saving plot if requested
                 if (input$SavePlot) {
                     # Directory for saving plots
-                    WDoutput <- file.path(DisqueFieldtestDir(), "Drift")
+                    WDoutput <- file.path(input$Selected, "Drift")
                     dev.copy(png,
                              filename = file.path(WDoutput, paste0(CalSet()$Cal,"_Rel.Drift_ts_",
                                                                    format(CalSet()$Meas.DateIN, "%Y%m%d"),"_",
@@ -8763,7 +8925,7 @@ server <- function(input, output, session) {
             #   DF$General
             #   CalSet()$nameGasRef
             #   CalSet()$nameGasMod
-            #   DisqueFieldtestDir()
+            #   input$Selected
             #   Drift.df() ( Drift.df()$add.dose, y = Drift.df()$drift )
             #   input$Sensors
             #   CalSet()$Cal
@@ -8823,7 +8985,7 @@ server <- function(input, output, session) {
                 # Saving plot if requested
                 if (input$SavePlot) {
                     # Directory for saving plots
-                    WDoutput <- file.path(DisqueFieldtestDir(), "Drift")
+                    WDoutput <- file.path(input$Selected, "Drift")
                     dev.copy(png,
                              filename = file.path(WDoutput,
                                                   paste0(CalSet()$Cal,"_Dose_",
@@ -8868,7 +9030,7 @@ server <- function(input, output, session) {
             #   DF$General
             #   CalSet()$nameGasRef
             #   CalSet()$nameGasMod
-            #   DisqueFieldtestDir()
+            #   input$Selected
             #   Drift.df() ( Drift.df()$add.dose, y = Drift.df()$drift )
             #   input$Sensors
             #   CalSet()$Cal
@@ -8930,7 +9092,7 @@ server <- function(input, output, session) {
                 # Saving plot if requested
                 if (input$SavePlot) {
                     # Directory for saving plots
-                    WDoutput <- file.path(DisqueFieldtestDir(), "Drift")
+                    WDoutput <- file.path(input$Selected, "Drift")
                     dev.copy(png,
                              filename = file.path(WDoutput,
                                                   paste0(CalSet()$Cal,"_Rel.Dose_",
@@ -8961,10 +9123,9 @@ server <- function(input, output, session) {
             #-----------------------------------------------------------------------------------CR
             # 1 - Saving all config files
             #-----------------------------------------------------------------------------------CR
-            # Saving file *.cfg (df sens2ref)
+            # Saving file *.cfg
             # Updating with new names of chemical sensors
-            File_cfg_new <- file.path(DisqueFieldtestDir(),"General_data", paste0(ASE_name(),".cfg"))
-            sens2ref_new <- transpose(fread(file = File_cfg_new, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
+            sens2ref_new <- data.table::transpose(fread(file = cfg_file(), header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
             # Saving file *.cfg (df sens2ref)
             Outliers_Ref.added   <- c(which(colnames(Outliers_Ref()) == "name.gas"),which(!(names(Outliers_Ref()) %in% intersect(names(Outliers_Sensor()), names(Outliers_Ref())))))
             sens2ref             <- merge(x = Outliers_Sensor(), y = Outliers_Ref()[,Outliers_Ref.added], by = "name.gas", all.x = TRUE, sort = FALSE)
@@ -9051,28 +9212,27 @@ server <- function(input, output, session) {
                               stringsAsFactors = FALSE)
             # saving
             fwrite(setDT(as.data.frame(t(cfg)), keep.rownames = "PROXY")[],
-                   file = file.path(DisqueFieldtestDir(),"General_data",paste0(ASE_name(),"_Servers.cfg")), row.names = FALSE, col.names = FALSE)
-            cat(paste0("[shiny, Save()] INFO,", ASE_name(),"_Servers.cfg config file saved in directory General_data.\n"))
+                   file = Servers_file(), row.names = FALSE, col.names = FALSE)
+            cat(paste0("[shiny, Save()] INFO,", ASE_name(),"_Servers.cfg config file saved in directory Configuration.\n"))
             # Saving file *_SETTIME
             progress$set(message = "[shiny, Save()] INFO,Saving Calibrated/predicted data in General.df", value = 0.2)
             sens2ref <- CalTime()
-            fwrite(setDT(as.data.frame(t(sens2ref)), keep.rownames = "name.gas")[],
-                   file = file.path(DisqueFieldtestDir(),"General_data",paste0(ASE_name(),"_SETTIME.cfg")), row.names = FALSE, col.names = FALSE)
-            cat(paste0("[Shiny, Save()] INFO, ", paste0(ASE_name(),"_SETTIME.cfg")," config file saved in directory General_data.\n"))
+            fwrite(setDT(as.data.frame(t(sens2ref)), keep.rownames = "name.gas")[], file = SETTIME_file(), row.names = FALSE, col.names = FALSE)
+            cat(paste0("[Shiny, Save()] INFO, ", paste0(ASE_name(),"_SETTIME.cfg")," config file saved in directory Configuration\n"))
             # saving Covariates and CovMod config file
             # Make sure it closes when we exit this reactive, even if there's an error
             progress$set(message = "[shiny, Save()] INFO, Saving Covariates and CovMod Config Files", value = 0.2)
             for (i in seq_along(list.name.sensor())) {
                 write.csv(data.frame(Effects = input[[paste0("Sens",i)]],
                                      stringsAsFactors = FALSE),
-                          file = file.path(DisqueFieldtestDir(),"General_data",paste0(ASE_name(),"_Covariates_",list.name.sensor()[i],".cfg")),
+                          file = file.path(input$Selected,"Configuration",paste0(ASE_name(),"_Covariates_",list.name.sensor()[i],".cfg")),
                           row.names = FALSE)
                 write.csv(data.frame(Effects = input[[paste0("CovMod",i)]],
                                      stringsAsFactors = FALSE),
-                          file = file.path(DisqueFieldtestDir(),"General_data",paste0(ASE_name(),"_CovMod_",list.name.sensor()[i],".cfg")),
+                          file = file.path(input$Selected,"Configuration",paste0(ASE_name(),"_CovMod_",list.name.sensor()[i],".cfg")),
                           row.names = FALSE)
             }
-            cat(paste0("[shiny, Save()] INFO,", paste0(ASE_name(),"_CovMod*.cfg")," config file  saved in directory General_data.\n"))
+            cat(paste0("[shiny, Save()] INFO,", paste0(ASE_name(),"_CovMod*.cfg")," config file  saved in directory Configuration\n"))
             #-----------------------------------------------------------------------------------CR
             # 2 - Saving data in General.file()
             #-----------------------------------------------------------------------------------CR
@@ -9082,7 +9242,6 @@ server <- function(input, output, session) {
             cat("[shiny, Save()] Saving Filtered, Calibrated and predicted data in ", General.file(),"\n")
             #General.df <- DF$General
             #save(General.df, file = General.file())
-            #General.csv.file    = file.path(DisqueFieldtestDir(), "General_data", "General.csv")
             fwrite(DF$General, General.file(), na = "")
             progress$set(message = "[shiny, Save()] Saving Filtered, Calibrated and predicted data", value = 1.0)
             #-----------------------------------------------------------------------------------CR

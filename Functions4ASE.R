@@ -1176,8 +1176,8 @@ Check_Download <- function(Influx.name = NULL, WDinput, UserMins, General.df = N
                 cat(paste0("[Check_Download] INFO, The database ", airsenseur.db.file, " includes the table ", list[1]," with the columns: ",
                            paste0(dbListFields(SQLite.con, list[1]), collapse = ", ") ), sep = "\n")
                 # DataSet in airsenseur.db exists and is not NULL
-                DateIN.db.prev      <- dbGetQuery(SQLite.con, paste0("SELECT min(time) FROM ", list[1]))[1,1]
-                DateEND.db.prev     <- dbGetQuery(SQLite.con, paste0("SELECT max(time) FROM ", list[1]))[1,1]
+                DateIN.db.prev      <- dbGetQuery(SQLite.con, paste0("SELECT min(time) FROM \"", list[1], "\""))[1,1]
+                DateEND.db.prev     <- dbGetQuery(SQLite.con, paste0("SELECT max(time) FROM \"", list[1], "\""))[1,1]
                 dbDisconnect(conn = SQLite.con)
                 # Checking if Download of InfluxData is necessary
                 if (difftime(Sys.time(), DateEND.db.prev , units = "mins") > UserMins) {    ### MG , I doubt about the tz here, I think all is changed to UTM, as it is a difference maybe it does not matter
@@ -1305,32 +1305,11 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
         return(cat(paste0("[Down_Influx] ERROR: no internet connection. SOS download cannot be carried out."), sep = "\n"))
     }
     #------------------------------------------------------------------------------CR
-    # Installing necessary packages
-    #------------------------------------------------------------------------------CR
-    # Both RSQLite and sqldf (and others too) are loaded by library(sqldf), so it is enough to instal sqldf
-    list.Packages <- c("curl", "devtools", "sqldf", "zoo", "xts", "XML", "httr", "RJSONIO", "jsonlite", "lubridate", "data.table")
-    Load.Packages(list.Packages)
-    #------------------------------------------------------------------------------CR
-    # Downloading timezone from Github
+    # create influx connection object and getting number of records
     #------------------------------------------------------------------------------CR
     if (PROXY) {
         if (is.null(LOGIN)) set_config(use_proxy(url=URL, port=PORT)) else set_config( use_proxy(url=URL, port=PORT, username    = LOGIN, password = PASSWORD))
     } else reset_config()
-    list.packages.github <- c("52North/sensorweb4R","rundel/timezone")
-    for (i in list.packages.github) {
-        # removing author name anad version number
-        lib.i <- tail(unlist(strsplit(i, split = "/")), n = 1)
-        lib.i <- head(unlist(strsplit(lib.i, split = "@")), n = 1)
-        if (!(lib.i %in% rownames(installed.packages()))) {
-            devtools::install_github(i)
-            cat(sprintf("Package ", lib.i, " installed"), sep = "\n")
-        } else cat(paste0("[Down_Influx] INFO, Package ", i, " already installed"), sep = "\n")
-        do.call("library", as.list(lib.i))
-        cat(sprintf("[Down_Influx] INFO, Package %s loaded",i), sep = "\n")
-    }
-    #------------------------------------------------------------------------------CR
-    # create influx connection object and getting number of records
-    #------------------------------------------------------------------------------CR
     Influx.con <- httr::GET(paste0("http://",Host,":",Port,"/ping"),
                             config = authenticate(user = User, password = Pass, type = "basic"))
     if (Influx.con$status_code != 204) {
@@ -1340,12 +1319,12 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     # total number of rows
     Influx.Total.N <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
                                 config = authenticate(user = User, password = Pass, type = "basic"),
-                                query = list(q = paste0("SELECT count(latitude) FROM ", Dataset)))
+                                query = list(q = paste0("SELECT count(latitude) FROM \"", Dataset,"\"")))
     Influx.Total.N <- Json_To_df(Influx.Total.N, Numeric = "count")$count
     # Last GPS time (and the timestamp together)
     Influx.Last <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
                              config = authenticate(user = User, password = Pass, type = "basic"),
-                             query = list(q = paste0("SELECT  LAST(gpsTimestamp) FROM ", Dataset)))
+                             query = list(q = paste0("SELECT  LAST(gpsTimestamp) FROM \"", Dataset,"\"")))
     Influx.Last <- Json_To_df(Influx.Last, Numeric = "last")
     # Downloading Influxdb data in airsenseur.db:
     # if airsenseur.db does not exist       -->     create database : now we are in the 2nd case, airsenseur.db exists!
@@ -1386,12 +1365,11 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     if (dbExistsTable(conn = SQLite.con, name = Dataset)) { # the table Dataset exists in airsenseur.db
         cat(paste0("[Down_Influx] INFO, the table ", Dataset, " already exists in airsenseur.db"), sep = "\n")
         # Counting the number of records in AirSensEUR$Dataset - This will work provided that all rowid exist.
-        #Dataset.N   <- dbGetQuery(SQLite.con, paste0("SELECT COUNT(gpsTimestamp) FROM ", Dataset))[1,1]
-        Dataset.N               <- dbGetQuery(SQLite.con, paste0("SELECT max(rowid) FROM ", Dataset))[1,1]
-        SQL.time.Last           <- dbGetQuery(SQLite.con, paste0("SELECT * FROM ", Dataset,"  order by rowid desc limit 1;"))$time
-        SQL.gpsTimestamp.Last   <- dbGetQuery(SQLite.con, paste0("SELECT * FROM ", Dataset,"  order by rowid desc limit 1;"))$gpsTimestamp
+        Dataset.N               <- dbGetQuery(SQLite.con, paste0("SELECT max(rowid) FROM \"", Dataset, "\""))[1,1]
+        SQL.time.Last           <- dbGetQuery(SQLite.con, paste0("SELECT * FROM \"", Dataset,"\"  order by rowid desc limit 1;"))$time
+        SQL.gpsTimestamp.Last   <- dbGetQuery(SQLite.con, paste0("SELECT * FROM \"", Dataset,"\"  order by rowid desc limit 1;"))$gpsTimestamp
         # Error Message and stop the script if there more data in the airsenseur.db than in InfluxDB
-        if (difftime(Influx.Last$time, SQL.time.Last, units = "mins") < Mean) {
+        if (difftime(ymd_hms(Influx.Last$time), ymd_hms(SQL.time.Last), units = "mins") < Mean) {
             cat("[Down_Influx] Warning,  Downloading is up to date. No need for data download.\n")
         } else cat(paste0("[Down_Influx] INFO, records between ",format(ymd_hms(SQL.time.Last),"%Y-%m-%d %H:%M")," and ",format(ymd_hms(Influx.Last$time),"%Y-%m-%d %H:%M"), " are going to be added into the table ", Dataset, " in the local airsenseur.db.\n"))
         Dataset.index   <- FALSE # if airsenseur.db exists then the indexes were already created, then no need to create the indexes
@@ -1402,11 +1380,12 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
         # Get SQL.time.Last as First GPS time (and the timestamp together) of InfluxDB
         SQL.time.Last <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
                                    config = authenticate(user = User, password = Pass, type = "basic"),
-                                   query = list(q = paste0("SELECT  FIRST(sampleEvaluatedVal) FROM ", Dataset)))
+                                   query = list(q = paste0("SELECT  FIRST(sampleEvaluatedVal) FROM \"", Dataset, "\"")))
         if (SQL.time.Last$status_code != 200) cat("[Down_Influx] ERROR query last GPSTime in airsenseur.db, Influx server may be down. Stopping the script.", "/n")
         SQL.time.Last <- Json_To_df(SQL.time.Last)$time
         Dataset.index   <- TRUE # if true indexes will be created
     } # the table Dataset exists in airsenseur.db
+    #SQL.time.Last <- ymd_hms(SQL.time.Last, tz = Influx.TZ)
     #------------------------------------------------------------------------------CR
     # Downloading InfluxDB data and add them to the airsenseur.db
     #------------------------------------------------------------------------------CR
@@ -1414,14 +1393,16 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     # Sensors names, it seems that I cannot query directly name or channel (strings). Adding SELECT of a float field it works. Selecting the first 50 ones. Use SHOW TAG VALUES INSTEAD
     Influx.Sensor <-  httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
                                 config = authenticate(user = User, password = Pass, type = "basic"),
-                                query = list(q = paste0("SHOW TAG VALUES FROM ", Dataset," WITH KEY IN ( \"name\") ; ")))
-    Influx.Sensor <- Json_To_df(Influx.Sensor);
+                                query = list(q = paste0("SHOW TAG VALUES FROM \"", Dataset,"\" WITH KEY IN ( \"name\") ; ")))
+    Influx.Sensor <- Json_To_df(Influx.Sensor)
     colnames(Influx.Sensor)[colnames(Influx.Sensor) == "value"] <- "name";
     # Adding channel for each Sensor names
+    # deleting rows with name in c("L2942CUR","L2942VOL","L4156STA") which have periodicity of 10 minutes making the calculation of boardtime not continuous evey 11 minutes
+    if (any(grepl(pattern = paste(c("L2942CUR","L2942VOL","L4156STA"), collapse = "|"),Influx.Sensor$name))) Influx.Sensor <- Influx.Sensor[-which(Influx.Sensor$name %in% c("L2942CUR","L2942VOL","L4156STA")),]
     for (i in Influx.Sensor$name) {
         Influx.Channel.number <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
                                            config = authenticate(user = User, password = Pass, type = "basic"),
-                                           query = list(q = paste0("SELECT altitude, channel, \"name\" FROM ", Dataset," WHERE \"name\" = '",i,"' LIMIT 1;")))
+                                           query = list(q = paste0("SELECT altitude, channel, \"name\" FROM \"", Dataset,"\" WHERE \"name\" = '",i,"' LIMIT 1;")))
         Influx.Channel.number <- Json_To_df(Influx.Channel.number)
         Influx.Sensor[which(Influx.Sensor$name == i),"channel"] <- Influx.Channel.number$channel
         Influx.Sensor[which(Influx.Sensor$name == i),"time"]    <- Influx.Channel.number$time
@@ -1432,22 +1413,29 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     NbofDays.For10000data <- 10000/(24*60/Mean)
     # Number of seconds corresponding to NbofDays.For10000data
     Step <- NbofDays.For10000data * 24 * 60 * 60
-    while (difftime(Influx.Last$time, SQL.time.Last, units = "mins") > Mean) {
+    while (difftime(ymd_hms(Influx.Last$time), ymd_hms(SQL.time.Last), units = "mins") > Mean) {
         # Trying to query 5 times all numeric field keys
         for (j in 1:length(Influx.Sensor$name)) { # Downloadding sensor by sensor
             cat(paste0("[Down_Influx] INFO, downloading averages every ",Mean," min Influx data between ", format(ymd_hms(SQL.time.Last),"%Y-%m-%d %H:%M"),
                        " and ",format(ymd_hms(SQL.time.Last) + Step,"%Y-%m-%d %H:%M")," for sensor ",Influx.Sensor[j,"name"],"\n"))
-            # Downloading from Inlfux server using httr
+            # Downloading from Influx server using httr
             Trial <- 1
             repeat {
-                Mean.Query <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
-                                        config = authenticate(user = User, password = Pass, type = "basic"),
-                                        query = list(q = paste0("SELECT mean(*) FROM ", Dataset," WHERE \"name\" = '",Influx.Sensor[j,"name"],
-                                                                "'  AND time >= '",format(ymd_hms(SQL.time.Last),"%Y-%m-%d %H:%M:%S"),"' AND time < '",
-                                                                format(ymd_hms(SQL.time.Last) + Step,"%Y-%m-%d %H:%M:%S"),"' GROUP BY time(",Mean,"m);"
-                                                                # LIMIT " , format(round(1440/Mean), scientific = FALSE), " OFFSET ", format(0, scientific = FALSE)
-                                                                # It is necessary to add :%S in the time tags
-                                        )))
+                if ( Mean == 1) {
+                    Mean.Query <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
+                                            config = authenticate(user = User, password = Pass, type = "basic"),
+                                            query = list(q = paste0("SELECT * FROM \"", Dataset,"\" WHERE \"name\" = '",Influx.Sensor[j,"name"],
+                                                                    "'  AND time > '",format(ymd_hms(SQL.time.Last),"%Y-%m-%d %H:%M:%S"),"' AND time <= '",
+                                                                    format(ymd_hms(SQL.time.Last) + Step,"%Y-%m-%d %H:%M:%S"), "'")))
+                } else {
+                    Mean.Query <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
+                                            config = authenticate(user = User, password = Pass, type = "basic"),
+                                            query = list(q = paste0("SELECT mean(*) FROM \"", Dataset,"\" WHERE \"name\" = '",Influx.Sensor[j,"name"],
+                                                                    "'  AND time > '",format(ymd_hms(SQL.time.Last),"%Y-%m-%d %H:%M:%S"),"' AND time <= '",
+                                                                    format(ymd_hms(SQL.time.Last) + Step,"%Y-%m-%d %H:%M:%S"),"' GROUP BY time(",Mean,"m);")))
+                                            # LIMIT " , format(round(1440/Mean), scientific = FALSE), " OFFSET ", format(0, scientific = FALSE)
+                                            # It is necessary to add :%S in the time tags))
+                }
                 if (Mean.Query$status_code == 200 || Trial > 5) break
                 Trial <- Trial + 1
             }
@@ -1455,7 +1443,6 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
             if (Mean.Query$status_code != 200) cat(paste0("[Down_Influx] ERROR, does not succed to query the influxDB with status_code <> 200. After 5 trials the script is stopped.\n")) else {
                 # extracting lists from json
                 if (length(colnames(Json_To_df(Mean.Query))) > 1 ) {
-                    #Adding <- Json_To_df(Mean.Query, Numeric = c("altitude", "boardTimeStamp", "calibrated", "gpsTimestamp", "latitude", "longitude", "sampleEvaluatedVal", "sampleRawVal"))
                     # calibrated is not necessary, we will create a new table in influx in cloud
                     Adding <- Json_To_df(Mean.Query,
                                          Numeric = c("altitude", "boardTimeStamp", "gpsTimestamp", "latitude", "longitude", "sampleEvaluatedVal", "sampleRawVal"),
@@ -1466,8 +1453,8 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
             }
             # updating Adding
             Adding <- data.table(Adding)
-            #if (exists("All.Sensors.Adding")) All.Sensors.Adding <- rbind.fill(All.Sensors.Adding,Adding) else All.Sensors.Adding <- Adding
             if (exists("All.Sensors.Adding")) All.Sensors.Adding <- rbindlist(list(All.Sensors.Adding,Adding), use.names = TRUE, fill = TRUE) else All.Sensors.Adding <- Adding
+            remove(Adding)
         }
         # adding data to airSensEUR.db
         if (exists("All.Sensors.Adding")) {
@@ -1482,9 +1469,9 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
             # add overwrite = TRUE to allow to recalculate the last 10 min values when some values are added
             RSQLite::dbWriteTable(conn = SQLite.con, name = Dataset, value = All.Sensors.Adding, append = TRUE)
             cat(paste0("[Down_Influx] INFO, ", format(nrow(All.Sensors.Adding), scientific = FALSE), " records downloaded between ",
-                       format(ymd_hms(SQL.time.Last),"%Y-%m-%d %H:%M")," and ",format(ymd_hms(SQL.time.Last)+Step,"%Y-%m-%d %H:%M")
+                       format(ymd_hms(All.Sensors.Adding[1,time]),"%Y-%m-%d %H:%M")," and ",format(ymd_hms(All.Sensors.Adding[.N,time]),"%Y-%m-%d %H:%M")
                        ," added to table ", Dataset, " of airsenseur.db"), sep = "\n")
-            remove(All.Sensors.Adding, Adding)
+            remove(All.Sensors.Adding)
         } else cat(paste0("[Down_Influx] INFO, No influx data between ", format(ymd_hms(SQL.time.Last),"%Y-%m-%d %H:%M")," and ",format(ymd_hms(SQL.time.Last) + Step,"%Y-%m-%d %H:%M"),".\n"))
         # updating SQL.time.Last for while loop
         SQL.time.Last  <- ymd_hms(SQL.time.Last) + Step
@@ -1492,13 +1479,13 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     cat(paste0("[Down_Influx] INFO, the downloading of sensor data from the Influx server is finished.\n"))
     # I need to add index ?!?
     # Counting the number of records in AirSensEUR$Dataset
-    Dataset.N   <- dbGetQuery(SQLite.con, paste0("SELECT max(rowid) FROM ", Dataset))[1,1]
+    Dataset.N   <- dbGetQuery(SQLite.con, paste0("SELECT max(rowid) FROM \"", Dataset, "\""))[1,1]
     # getting the time zone, port 443 of the Browser shall be opened
     if (is.null(Influx.TZ) || Influx.TZ == "Local time") {
         cat(paste0("[Down_influx] INFO, determining the time zone with the last valid latitude and longitude of ", Dataset, " in airsenseur.db"), sep = "\n")
         Offset <- Dataset.N
         repeat {
-            Coord.lat.long   <- dbGetQuery(SQLite.con, paste0("SELECT time, longitude, latitude FROM ", Dataset, " WHERE rowid > ", Offset - 500, " AND rowid <= ", Offset, " ;"))
+            Coord.lat.long   <- dbGetQuery(SQLite.con, paste0("SELECT time, longitude, latitude FROM \"", Dataset, "\" WHERE rowid > ", Offset - 500, " AND rowid <= ", Offset, " ;"))
             if (all(is.na.data.frame(Coord.lat.long[,c("longitude","latitude")])) ||
                 all(Coord.lat.long[!is.na.data.frame(Coord.lat.long[,c("longitude")]),c("longitude","latitude")] == 0)) {
                 if (Offset > 500) {
@@ -1519,7 +1506,7 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     # # getting the last date, latitude and longitude in name.SQLite.
     # Last date to add only new data, latitude and longitude to get the time zone
     # checking for non zero values and no NA()
-    LastDate <- dbGetQuery(SQLite.con, paste0("SELECT time FROM ", Dataset," ORDER BY rowid DESC LIMIT 1;"))$time
+    LastDate <- dbGetQuery(SQLite.con, paste0("SELECT time FROM \"", Dataset,"\" ORDER BY rowid DESC LIMIT 1;"))$time
     # InfluxDB gives everything in UTC not in local time zone - Well by observation in grafana it seems that the dates are in Local Time
     if (is.null(Influx.TZ) || Influx.TZ == "Local time") {
         LastDate <- ymd_hms(LastDate, tz = "UTC")
@@ -1532,12 +1519,38 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     #     dbGetQuery(SQLite.con, paste0("CREATE INDEX IDchanne ON " , Dataset, " (channel);"))
     #     dbGetQuery(SQLite.con, paste0("CREATE INDEX IDname ON "   , Dataset, " (name);"))
     # }
+    # looking for table _Board and _Sensors, saving in directory Confiiguration
+    series <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
+                        config = authenticate(user = User, password = Pass),
+                        query = list(q = "SHOW SERIES"))
+    series <- jsonlite::fromJSON(content(series, "text", encoding = "ISO-8859-1"), simplifyVector = TRUE, flatten = TRUE)
+    series <- series$results$series[[1]]$values[[1]]
+    series <- unique(sapply(strsplit(x = series, split = ","),function(x) x[1]))
+    series <- series[grepl(pattern = paste(c("_Boards", "_Sensors"), collapse = "|"), x = series)]
+    if (any(grepl(pattern = Dataset, series))) {
+        Boards <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
+                  config = authenticate(user = User, password = Pass, type = "basic"),
+                  query = list(q = paste0("SELECT * FROM \"", Dataset,"_Boards\"")))
+        Boards <- jsonlite::fromJSON(content(Boards, "text", encoding = "ISO-8859-1"), simplifyVector = TRUE, flatten = TRUE)
+        names.Boards <- Boards$results$series[[1]]$columns[[1]]
+        Boards <- data.table(Boards$results$series[[1]]$values[[1]])
+        setnames(Boards,names.Boards)
+        fwrite(Boards, file.path(dirname(dirname(SQLite.con@dbname)), "Configuration","Boards.cfg"))
+        Sensors <- httr::GET(URLencode(paste0("http://",Host,":",Port,"/query?db=", Db)),
+                             config = authenticate(user = User, password = Pass, type = "basic"),
+                             query = list(q = paste0("SELECT * FROM \"", Dataset,"_Sensors\"")))
+        Sensors <- jsonlite::fromJSON(content(Sensors, "text", encoding = "ISO-8859-1"), simplifyVector = TRUE, flatten = TRUE)
+        names.Sensors <- Sensors$results$series[[1]]$columns[[1]]
+        Sensors <- data.table(Sensors$results$series[[1]]$values[[1]])
+        setnames(Sensors,names.Sensors)
+        fwrite(Sensors, file.path(dirname(dirname(SQLite.con@dbname)), "Configuration","Sensors.cfg"))
+    }
     # Disconnect SQLite.con
     dbDisconnect(conn = SQLite.con)
     cat(paste0("[Down_Influx] INFO, the airsenseur.db goes until ", format(LastDate, "%Y-%m-%d %H:%M"), ", with ", Dataset.N, " records for the table ", Dataset), sep = "\n")
     cat("-----------------------------------------------------------------------------------\n")
     cat("\n")
-    return(Influx.TZ)
+    return(list(Influx.TZ = Influx.TZ,LastDate = LastDate))
 }
 #=====================================================================================CR
 # 161123 MG : Sqlite2df                 converting a local airsenseur.db into a General dataframe
@@ -1594,7 +1607,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     cat(paste0("[SQLite2df] INFO, reading table ", Dataset), sep = "\n")
     # Initial values
     Download.N  <- 0
-    SQL.Total.N <- dbGetQuery(SQLite.con, paste0("SELECT max(rowid) FROM ", Dataset))[1,1]
+    SQL.Total.N <- dbGetQuery(SQLite.con, paste0("SELECT max(rowid) FROM \"", Dataset, "\""))[1,1]
     if (!is.null(DownloadSensor$DateEND.Influx.prev)) { # the table Dataset exists in airsenseur.db
         cat(paste0("[SQLite2df] INFO, InfluxData already exists."), sep = "\n")
         # Counting the row number where to add records in AirSensEUR$Dataset
@@ -1603,7 +1616,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         # changing FirstDate timezone from the value in DownloadSensor to the local timezone called Influx.TZ
         FirstDate <- as.POSIXct(DownloadSensor$DateEND.Influx.prev, tz = "UTC", usetz = TRUE) # attr(FirstDate, "tzone") <- "UTC"
         FirstDate <- format(FirstDate, tz = Influx.TZ, usetz = TRUE)
-        Dataset.N <- dbGetQuery(SQLite.con, paste0("SELECT min(rowid) FROM ", Dataset, " WHERE datetime(time) >= '", # >= instead of > to recalculate the last average
+        Dataset.N <- dbGetQuery(SQLite.con, paste0("SELECT min(rowid) FROM \"", Dataset, "\" WHERE datetime(time) >= '", # >= instead of > to recalculate the last average
                                                    FirstDate,"';"))[1,1]
         #Dataset.N   <- dbGetQuery(SQLite.con, paste0("SELECT rowid FROM ", Dataset, " WHERE datetime(time) > '2016-11-14 17:18:00';"))
         if (is.na(Dataset.N)) return(cat("[SQLite2df] ERROR, there are no new data in airSenseur.db to add to InfluxData.Rdata and InfluxData.csv. The script is stopped"))
@@ -1795,14 +1808,19 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         # Buffer <- spread(data = Values_db[(i + 1):(i + Page), c("time", "boardTimeStamp","gpsTimestamp", "altitude", "latitude", "longitude", "Pollutants", "sampleEvaluatedVal")],
         #                  key = Pollutants, value = sampleEvaluatedVal) %>% arrange(time)
         #Buffer <- dcast.data.table(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal", fun.aggregate = mean, na.rm = TRUE)
-        Buffer <- dcast(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal")
+        if (!any(duplicated(Values_db[(i + 1):(i + Page)]))) {
+            Buffer <- dcast(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal")
+        } else {
+            # without fun aggregate the Freq, can be returned
+            Buffer <- dcast(Values_db[(i + 1):(i + Page)], time+boardTimeStamp+gpsTimestamp+altitude+latitude+longitude ~ Pollutants, value.var = "sampleEvaluatedVal", fun.aggregate = mean, na.rm = TRUE)   
+        }
         # aggregating in Values_db_cast
         if (exists("Values_db_cast")) {
             Values_db_cast <- rbindlist(list(Values_db_cast, Buffer), use.names = TRUE, fill = TRUE)
         } else Values_db_cast <- Buffer
         i <- i + Page
     }
-    Values_db <- DF_avg(Values_db_cast, key = "time", width = UserMins)
+    Values_db <- DF_avg(Values_db_cast, keyDate = "time", width = UserMins)
     remove(Values_db_cast, Buffer, Sensor.names, Channel.names, Meteo.names.change)
     # Transforming column time in POSIX with the correct time zone (UTC), changing name to date
     if (is.null(Influx.TZ)) {
@@ -1833,7 +1851,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
                 load(DownloadSensor$Influx.Rdata.file)
                 InfluxData <- data.table(InfluxData)
             }
-        } else cat(paste0("[INFLUXDB] INFO: there is no previously saved Influx.Rdata.file. Missing InfluxData and Down.Influx request of sensor data download ."), sep = "\n")
+        } else cat(paste0("[SQLite2df] INFO: there is no previously saved Influx.Rdata.file. Missing InfluxData and Down.Influx request of sensor data download ."), sep = "\n")
     }
     if (!Complete) {
         if (exists("Values_db_Mins") && !is.na(Values_db_Mins) && nrow(Values_db_Mins) > 0) {
@@ -1923,11 +1941,11 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
     # Add new sensor model to be recognized if needed
     Reference.names        <- list(date        = c("date" ,"Date", "DATE", "DateTime"),
                                    time        = c("time" , "Time"),
-                                   Ref.NO2     = c("NO2"  , "Nitrogen dioxide (air)", "Ref.NO2", "nitrogen dioxide"),
+                                   Ref.NO2     = c("NO2"  , "Nitrogen dioxide (air)", "Ref.NO2", "nitrogen dioxide", "nitrogen dioxide caps","nitrogen dioxide BLC"),
                                    Ref.SO2     = c("SO2"  , "Sulfur dioxide (air)", "Ref.SO2", "sulfur dioxide"),
                                    Ref.O3      = c("O3"   , "Ozone (air)", "Ref.O3", "ozone"),
-                                   Ref.NO      = c("NO"   , "Nitrogen monoxide (air)", "Ref.NO", "nitrogen monoxide")  ,
-                                   Ref.NOx     = c("NOx"   , "nitrogen oxides")  ,
+                                   Ref.NO      = c("NO"   , "Nitrogen monoxide (air)", "Ref.NO", "nitrogen monoxide", "nitrogen monoxide BLC")  ,
+                                   Ref.NOx     = c("NOx"   , "nitrogen oxides", "nitrogen oxides BLC")  ,
                                    Ref.PM10    = c("PM10" , "Particulate matter < 10 µµm (aerosol)", "Ref.PM10"),
                                    Ref.PM2.5   = c("PM2.5", "Particulate matter < 2.5 µµm (aerosol)", "Ref.PM2.5"),
                                    Ref.CO_ppm  = c("CO"   , "Carbon monoxide (air)", "co", "Ref.CO_ppm", "CO_ppm", "carbon monoxide"),
@@ -2480,7 +2498,7 @@ Down_Ref <- function(Reference.name, urlref, UserMins, DownloadSensor, AirsensWe
                     Last.Day        <- lubridate::ceiling_date(as.POSIXct.Date(DateEND), unit = "day")
                 }
             }
-            # SOS downloading, added + 1 to be able to downalod current day
+            # SOS downloading, added + 1 to be able to download current day
             while (DateIN.partial < Last.Day) {
                 # interval of time for the get data of SOS
                 date.partial <- lubridate::interval(DateIN.partial, DateEND.partial)
@@ -2722,7 +2740,7 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
                               eta.model.type, remove.neg = TRUE, Covariates = NULL, PlotCal = TRUE, Auto.Lag = FALSE) {
     #INput:
     #  General              : dataframe- containing all data within selected dates
-    #  DateIN/END           : as.POSIXct- datetime in and datetime out to start validation
+    #  DateIN/END           : as.POSIXct- datetime in and datetime out to start validation (adding 1 day to DateEnd)
     #  DateINCal/DateENDCal : Dates of previous calibration with which nameGasMod was calibrated
     #  name.gas             : char() - gas component
     #  model.log            : logic  - If true calibration nA/V to ppm/ppb is perfomed
@@ -2766,7 +2784,7 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
         if (timeseries.display) {
             Relationships         <- na.omit(colnames(General)[colnames(General) %in% Covariates_i])
             if (!is.null(Relationships))
-                timePlot(mydata = General[ date >= DateINPlot & date <= DateENDPlot,], pollutant = Relationships, date.pad = TRUE, auto.text = FALSE, y.relation = "free",
+                timePlot(mydata = General[ date >= DateINPlot & date <= DateENDPlot + 1,], pollutant = Relationships, date.pad = TRUE, auto.text = FALSE, y.relation = "free",
                          main = paste0(AirSensEur.name, ": Effects on ", name.sensor," from ",format(DateIN,"%d-%b-%y")," to ",format(DateEND,"%d-%b-%y"),
                                        " at ",Reference.name))
             # save plots in files
@@ -2780,13 +2798,13 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
         }
         # Setting axis and labels
         if (mod.eta.model.type == "gam") {# General additive model
-            y = General[[nameGasRef]][General[["date"]] >= DateIN & General[["date"]] <= DateEND]
-            x = General[[nameGasVolt]][General[["date"]] >= DateIN & General[["date"]] <= DateEND]
+            y = General[[nameGasRef]][General[["date"]] >= DateIN & General[["date"]] <= DateEND + 1]
+            x = General[[nameGasVolt]][General[["date"]] >= DateIN & General[["date"]] <= DateEND + 1]
             AxisLabelY = paste0(nameGasRef," ", unit.ref, " ",Reference.name)
             AxisLabelX = paste0(nameGasVolt," in ", Sens.raw.unit," ", AirSensEur.name)
         } else {
-            x = General[[nameGasRef]][General[["date"]] >= DateIN & General[["date"]] <= DateEND]
-            y = General[[nameGasVolt]][General[["date"]] >= DateIN & General[["date"]] <= DateEND]
+            x = General[[nameGasRef]][General[["date"]] >= DateIN & General[["date"]] <= DateEND + 1]
+            y = General[[nameGasVolt]][General[["date"]] >= DateIN & General[["date"]] <= DateEND + 1]
             AxisLabelX = paste0(nameGasRef," ", unit.ref, " ",Reference.name)
             AxisLabelY = paste0(nameGasVolt," in ", Sens.raw.unit," ", AirSensEur.name)
         }
@@ -2797,7 +2815,7 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
                                , Marker = 1, Couleur = "blue", ligne = 'p', XY_same = FALSE, lim = NULL, steps = c(10,10)
                                , digitround = c(3,3), marges = c(4,4,3,0.5))
         if (mod.eta.model.type == "MultiLinear") {
-            Matrice         <- General[date >= DateINPlot & date <= DateENDPlot, .SD, .SDcols = Covariates]
+            Matrice         <- General[date >= DateINPlot & date <= DateENDPlot + 1, .SD, .SDcols = Covariates]
             names(Matrice)  <- Covariates
             if (!is.null(Multi.File)) {
                 if (file.exists(Multi.File)) {
@@ -2821,7 +2839,7 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
             namesCovariates <- paste0(paste(Covariates,Degrees, sep = "-"),collapse = "&")
         } else if (any(mod.eta.model.type %in% c("exp_kT", "exp_kK", "T_power", "K_power"))) {
             namesCovariates <- "Temperature"
-            Matrice         <- General[date >= DateINPlot & date <= DateENDPlot, .SD, .SDcols = Covariates]
+            Matrice         <- General[date >= DateINPlot & date <= DateENDPlot + 1, .SD, .SDcols = Covariates]
             names(Matrice)  <- namesCovariates
         } else {
             namesCovariates <- ""
@@ -2860,27 +2878,27 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
         # Fill in General with modelled data
         General[, ..nameGasMod ] <- NULL # General[ (date >= DateIN & date <= DateEND ), ..nameGasMod ] <-NA
         if (mod.eta.model.type == "Linear"| mod.eta.model.type == "Linear.Robust" ) {
-            General[date >= DateIN  & date <= DateEND & !is.na(General[, nameGasVolt]), nameGasMod] <-
-                (General[ date >= DateIN  & date <= DateEND & !is.na(General[, nameGasVolt]), nameGasVolt]- coef(Model.i)[1]) /  coef(Model.i)[2]
+            General[date >= DateIN  & date <= DateEND + 1 & !is.na(General[, nameGasVolt]), nameGasMod] <-
+                (General[ date >= DateIN  & date <= DateEND + 1 & !is.na(General[, nameGasVolt]), nameGasVolt]- coef(Model.i)[1]) /  coef(Model.i)[2]
         }
         if (mod.eta.model.type == "gam") {
-            General[ General$date >= DateIN  & General$date <= DateEND  & !is.na(General[, nameGasVolt]), nameGasMod] <-
-                predict(Model.i, newdata = data.frame(x = General[ General$date >= DateIN  & General$date <= DateEND  & !is.na(General[, nameGasVolt]), nameGasVolt])
+            General[ General$date >= DateIN  & General$date <= DateEND + 1  & !is.na(General[, nameGasVolt]), nameGasMod] <-
+                predict(Model.i, newdata = data.frame(x = General[ General$date >= DateIN  & General$date <= DateEND + 1 & !is.na(General[, nameGasVolt]), nameGasVolt])
                         , type = "response")
         }
         # Remove negative values when using the linear median regression (linear.robust). This is good to do
         if (remove.neg) {
-            index.which <- which(General[(General$date >= DateIN & General$date <= DateEND ),nameGasMod] < 0., arr.ind = TRUE)
+            index.which <- which(General[(General$date >= DateIN & General$date <= DateEND + 1),nameGasMod] < 0., arr.ind = TRUE)
             if (length(index.which)>0) {
-                General[(General$date >= DateIN & General$date <= DateEND ),nameGasMod][index.which] <- NA
-                cat(paste0("Length of values < zero: ", length(index.which), " out of ",length(General[(General$date >= DateIN & General$date <= DateEND ),nameGasMod])), sep = "\n")
-                cat(paste0("Loss of ",format(length(index.which)/length(General[(General$date >= DateIN & General$date <= DateEND ),nameGasMod])*100), digit = 0, " [%] of data"), sep = "\n")
+                General[(General$date >= DateIN & General$date <= DateEND + 1),nameGasMod][index.which] <- NA
+                cat(paste0("Length of values < zero: ", length(index.which), " out of ",length(General[(General$date >= DateIN & General$date <= DateEND +1),nameGasMod])), sep = "\n")
+                cat(paste0("Loss of ",format(length(index.which)/length(General[(General$date >= DateIN & General$date <= DateEND + 1),nameGasMod])*100), digit = 0, " [%] of data"), sep = "\n")
             } else {}
         } else {}
         # plotting the modelled/calibrated values
-        EtalLim <- Etalonnage( x = General[,nameGasRef][ (General$date >= DateIN & General$date <= DateEND)]
+        EtalLim <- Etalonnage( x = General[,nameGasRef][ (General$date >= DateIN & General$date <= DateEND + 1)]
                                , s_x = NULL
-                               , y = General[,nameGasMod][ (General$date >= DateIN & General$date <= DateEND)]
+                               , y = General[,nameGasMod][ (General$date >= DateIN & General$date <= DateEND + 1)]
                                , s_y = NULL
                                , AxisLabelX = paste0(nameGasRef," ",unit.ref," ",Reference.name)
                                , AxisLabelY = paste0(nameGasMod," ", unit.sensor, " ", AirSensEur.name)
@@ -2888,9 +2906,9 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
                                                 " at ",Reference.name)
                                , Marker = 1, Couleur = "blue", ligne = 'p', XY_same = TRUE, lim = NULL, steps = c(10,10)
                                , digitround = c(2,3), marges = c(4,4,3,0.5))
-        Cal_Line(x = General[,nameGasRef][ (General$date >= DateIN & General$date <= DateEND)]
+        Cal_Line(x = General[,nameGasRef][ (General$date >= DateIN & General$date <= DateEND + 1)]
                  , s_x = NULL
-                 ,y = General[,nameGasMod][ (General$date >= DateIN & General$date <= DateEND)]
+                 ,y = General[,nameGasMod][ (General$date >= DateIN & General$date <= DateEND + 1)]
                  , s_y = NULL
                  , Mod_type = eta.model.type, Matrice = General, line_position = 0, Couleur = "red", Sensor_name = "",
                  f_coef1 = "%.3e", f_coef2 = "%.3e", f_R2 = "%.4f", lim = EtalLim, marges = NULL, Covariates = NULL)
@@ -2905,11 +2923,11 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
         # timeplots calibrated values
         if (timeseries.display) {
             if (model.log) {
-                timePlot(General[ General$date >= DateINPlot & General$date <= DateENDPlot,], pollutant = c(nameGasRef,nameGasMod), group=TRUE, date.pad=TRUE
+                timePlot(General[ General$date >= DateINPlot & General$date <= DateENDPlot +1,], pollutant = c(nameGasRef,nameGasMod), group=TRUE, date.pad=TRUE
                          , main = paste0(AirSensEur.name, ": Calibrated ", name.sensor," from ",format(DateIN,"%d-%b-%y")," to "
                                          , format(DateEND,"%d-%b-%y"), " at ",Reference.name))
             } else {
-                timePlot(General[ General$date >= DateINPlot & General$date <= DateENDPlot,], pollutant = c(nameGasRef,nameGasMod), group=TRUE, date.pad=TRUE
+                timePlot(General[ General$date >= DateINPlot & General$date <= DateENDPlot +1,], pollutant = c(nameGasRef,nameGasMod), group=TRUE, date.pad=TRUE
                          , main = paste0(AirSensEur.name, ": Calibrated ", name.sensor," from ",format(DateIN,"%d-%b-%y")," to "
                                          , format(DateEND,"%d-%b-%y"), " at ",Reference.name)
                          , ref.x = list(v = c(DateINCal, DateENDCal), lty = c(1, 1), col = c("black", "black"), lwd = c(2,2)))
@@ -2921,7 +2939,7 @@ Validation.tool <- function(  General, DateIN, DateEND, DateINCal = NULL, DateEN
             dev.off()
         }
         # statistics
-        gas.statistics <-modStats(General[ (General$date >= DateIN & General$date <= DateEND),]
+        gas.statistics <-modStats(General[ (General$date >= DateIN & General$date <= DateEND + 1),]
                                   , mod = nameGasMod
                                   , obs = nameGasRef
                                   , statistic = c("n", "FAC2", "MB", "MGE", "NMB", "NMGE", "RMSE", "r", "COE", "IOA")
@@ -3247,15 +3265,19 @@ INFLUXDB <- function(WDoutput, DownloadSensor, UserMins,
     }
     if (DownloadSensor$Retrieve.data.Influx) {
         if (Down.Influx) {
+            Init.DB <- lubridate::ymd_hms(DownloadSensor$DateEND.Influx.prev, tz = Influx.TZ)
             # downloading data from InfluxDB and updating airsenseur.db
             Influx.TZ <- Down_Influx(PROXY = PROXY, URL = URL  , PORT = as.numeric(PORT), LOGIN = LOGIN, PASSWORD = PASSWORD,
                                      Host = Host  , User = User, Port = as.numeric(Port), Pass = Pass, name.SQLite = name.SQLite, name.SQLite.old = name.SQLite.old,
                                      Db = Db      , Dataset = Dataset, Influx.TZ = Influx.TZ, use_google = FALSE, Page = 10000, Mean = as.numeric(UserMins))
             # if there are problems accessing port 443 for the google api to determine time zone add , use_google = FALSE
             # Sqlite2df returns only the new data from the AirSensEUR.db, if the whole set is needed add: Complete = TRUE in function Down_Influx
-            InfluxDataNew <- Sqlite2df(name.SQLite = name.SQLite, Dataset = Dataset, Influx.TZ = Influx.TZ, UserMins = UserMins, DownloadSensor = DownloadSensor, asc.File = asc.File, InfluxData = InfluxData)
+            if (file.exists(DownloadSensor$airsenseur.db.file) && (length(Init.DB) == 0 || Influx.TZ[["LastDate"]] >= (Init.DB  + UserMins * 60) || !file.exists(DownloadSensor$Influx.Rdata.file))) {
+                InfluxDataNew <- Sqlite2df(name.SQLite = name.SQLite, Dataset = Dataset, Influx.TZ = Influx.TZ[["Influx.TZ"]], 
+                                           UserMins = UserMins, DownloadSensor = DownloadSensor, asc.File = asc.File, InfluxData = InfluxData)
+            }
         } else cat(paste0("[INFLUXDB] INFO: Data download not requested."), sep = "\n")
-    } else cat(paste0("[INFLUXDB] INFO: Data downalod is already up to date."), sep = "\n")
+    } else cat(paste0("[INFLUXDB] INFO: Data download is already up to date."), sep = "\n")
     # Trying to use the existing data or Influx.Rdata.file
     if (is.null(InfluxData) || is.na(InfluxData)) {
         if (file.exists(DownloadSensor$Influx.Rdata.file)) {
@@ -3848,24 +3870,25 @@ Etalonnage <- function(x, s_x, y, s_y, AxisLabelX, AxisLabelY, Title, Marker , C
 # 11. Valid Periods                                                                 (NOT USED)
 # 12. SET TIME PARAMETERS -> see in ASE_OPER_SCRIPT.R                               (NOT USED)
 #=====================================================================================CR
-CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = TRUE) {
+CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL, shiny = TRUE, Dir.Config = "Configuration") {
     # Return a list with the config of servers, sensors and effects
-    # DisqueFieldtest   : directory where is the file ASEconfig*.R file
-    # ASEConfig         : AirSensEUR name e.g LANUV_01 in ASEConfigLANUV_01.R or the AirSensEUR config file as in ASEConfigLANUV_01.R
-    # sens2ref.shield   : dataframe, default is NULL, dataframe returned by function ASEPanel04Read giving the configuration of the chemical shield
+    # DisqueFieldtestDir : file.path of the data of AirSensEUR box with sub-directories General_data, configuration, Models ..., e.g. "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/ASE_Boxes/4047D0"
+    # DisqueFieldtest    : directory where is the file ASEconfig*.R file, which is not used anymore. It is now used because it it the directory of the Shiny App with directory Shield_files
+    # sens2ref.shield    : dataframe, default is NULL, dataframe returned by function ASEPanel04Read giving the configuration of the chemical shield
+    # shiny              : logical, default value is TRUE. If TRUE the function ised in a Shiny reactive context and shinyalert message can be returned.
+    # Dir.Config         : character string, default value is "Configuration". Sub dirctory of DisqueFieldtestDir that includes the config fles (*.cfg)
     cat("-----------------------------------------------------------------------------------\n")
-    ASE_name           <- basename(ASEconfig); for (i in c("\\.[[:alnum:]]+$","ASEconfig")) ASE_name <- sub(pattern=i,replacement = '', basename(as.character(ASE_name)))
-    DisqueFieldtestDir <- file.path(DisqueFieldtest, ASE_name)
+    ASE_name           <- basename(DisqueFieldtestDir)
     #=====================================================================================CR
     #  ASE_name,"_Servers.cfg"
     #=====================================================================================CR
     # Read config file (TRUE)
-    File_Server_cfg <- list.files(path = file.path(DisqueFieldtestDir, "General_data"), pattern = paste0(ASE_name,"_Servers.cfg"))
+    File_Server_cfg <- list.files(path = file.path(DisqueFieldtestDir, Dir.Config), pattern = paste0(ASE_name,"_Servers.cfg"))
     if (!identical(File_Server_cfg,character(0))) {
         # reading the Server configuration files
-        File_Server_cfg <- file.path(DisqueFieldtestDir, "General_data", paste0(ASE_name,"_Servers.cfg"))
+        File_Server_cfg <- file.path(DisqueFieldtestDir, Dir.Config, paste0(ASE_name,"_Servers.cfg"))
         if (file.exists(File_Server_cfg)) {
-            cfg <- transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
+            cfg <- data.table::transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
             cat(paste0("[CONFIG] Info, the config file ", File_Server_cfg, " for the configuration of servers exists"), sep = "\n")
             # Changing names
             if ("AirsensEur.name" %in% names(cfg)) names(cfg)[which(names(cfg) == "AirsensEur.name")] <- "AirSensEur.name"
@@ -3920,10 +3943,10 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = 
     #  ASE_name,".cfg"
     #=====================================================================================CR
     # This is to insert both sensors and reference configuration into a dataframe and file
-    File_cfg <- list.files(path = file.path(DisqueFieldtestDir,"General_data"), pattern = paste0(ASE_name,".cfg"))
+    File_cfg <- list.files(path = file.path(DisqueFieldtestDir,Dir.Config), pattern = paste0(ASE_name,".cfg"))
     if (!identical(File_cfg,character(0))) {
         # reading the configuration files sens2ref
-        File_cfg <- file.path(DisqueFieldtestDir,"General_data", paste0(ASE_name,".cfg"))
+        File_cfg <- file.path(DisqueFieldtestDir,Dir.Config, paste0(ASE_name,".cfg"))
         if (file.exists(File_cfg)) {
             cat(paste0("[CONFIG] Info, the config file ", File_cfg, " for the configuration of AirSensEUR exists"), sep = "\n")
             sens2ref <- data.table::transpose(fread(file = File_cfg, header = FALSE, na.strings = c("","NA", "<NA>"), fill = TRUE), fill = NA, make.names = 1)
@@ -3956,8 +3979,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = 
                     sens2ref$ubss  <- rep(0, times = nrow(sens2ref))
                 } else {
                     sens2ref$ubss  <- sens2ref$uxi
-                    sens2ref[, uxi := NULL]
-                }
+                    sens2ref[, uxi := NULL]}
             }
             #change the type of column in df
             Vector.type <- c("Ref.rm.Out","Sens.Inval.Out","Apply.Invalid", "remove.neg","Sens.rm.Out","Neg.mod", "Sync.Cal" , "Sync.Pred")
@@ -3969,7 +3991,8 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = 
                              "temp.thres.min","temp.thres.max","rh.thres.min","rh.thres.max","hoursWarming")
             Vector.type <- Vector.type[Vector.type %in% names(sens2ref)]
             for (j in Vector.type) set(sens2ref, j = j, value = as.numeric(gsub(" ","",sens2ref[[j]])))
-        } else { # if ASE_name,".cfg", Message of error
+        } else { 
+            # if no ASE_name,".cfg", Message of error
             my_message <- paste0("[CONFIG] ERROR, no config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
@@ -3986,14 +4009,13 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = 
                 confirmButtonCol = "#AEDEF4",
                 timer = 0,
                 imageUrl = "",
-                animation = FALSE)
-        }
+                animation = FALSE)}
         # updating names of sensors with the sensor schield config file
         if (is.null(sens2ref.shield)) {
             # Reading chemical shield config file and merging with sens2ref if the file exists
             Shield.file <- file.path(DisqueFieldtest,"Shield_Files",cfg$asc.File)
             if (file.exists(Shield.file)) {
-                sens2ref.shield <-ASEPanel04Read(ASEPanel04File = Shield.file)
+                sens2ref.shield <- ASEPanel04Read(ASEPanel04File = Shield.file)
             } else {
                 # if ASE_name,".cfg", Message of error
                 my_message <- paste0("[CONFIG] ERROR, no chemical shield config file for the AirSensEUR box. \n",
@@ -4035,7 +4057,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = 
                 for (j in Vector.type) set(sens2ref.shield, j = j, value = as.numeric(gsub(" ","",sens2ref.shield[[j]])))
                 set(sens2ref, i = match(na.omit(sens2ref.shield[["gas.sensor"]]), sens2ref$gas.sensor), j = sens2ref.cols2change, value = sens2ref.shield)
                 # Saving new version
-                fwrite(setDT(as.data.frame(t(sens2ref)), keep.rownames = "name.gas")[], file = file.path(DisqueFieldtestDir,"General_data",paste0(ASE_name,".cfg")), row.names = FALSE,col.names = FALSE)
+                fwrite(setDT(as.data.frame(t(sens2ref)), keep.rownames = "name.gas")[], file = file.path(DisqueFieldtestDir,Dir.Config,paste0(ASE_name,".cfg")), row.names = FALSE,col.names = FALSE)
             }
         }
     } else { # if File_cfg does not exist, , Message of error
@@ -4060,10 +4082,10 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = 
     }
     # reading the files with Covariates to plot and covariates to calibrate
     for (i in 1:length(sens2ref$name.sensor[!is.na(sens2ref$name.sensor)])) {
-
+        
         nameSens <- sens2ref$name.sensor[which(!is.na(sens2ref$name.sensor))][i]
         nameGas  <- sens2ref$name.gas[which(sens2ref$name.sensor == nameSens)]
-        nameFile <- file.path(DisqueFieldtestDir,"General_data",paste0(ASE_name,"_Covariates_",nameSens,".cfg"))
+        nameFile <- file.path(DisqueFieldtestDir,Dir.Config,paste0(ASE_name,"_Covariates_",nameSens,".cfg"))
         # Covariates to plot
         if (file.exists(nameFile)) {
             cat(paste0("[CONFIG] INFO, the file with covariates to plot ", nameFile, " exists "), sep = "\n")
@@ -4091,7 +4113,7 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = 
             rm(SENS)
         }
         # Covariates to calibrate
-        nameFile <- file.path(DisqueFieldtestDir,"General_data",paste0(ASE_name,"_CovMod_",nameSens,".cfg"))
+        nameFile <- file.path(DisqueFieldtestDir,Dir.Config,paste0(ASE_name,"_CovMod_",nameSens,".cfg"))
         if (file.exists(nameFile) && nrow(read_csv(nameFile, col_types = cols(Effects = col_character()))) > 0) {
             cat(paste0("[CONFIG] INFO, the file with covariates to calibrate ", nameFile, " exists "), sep = "\n")
             assign(paste0(nameSens,"CovMod"),
@@ -4115,53 +4137,68 @@ CONFIG <- function(DisqueFieldtest , ASEconfig, sens2ref.shield = NULL, shiny = 
     names(Covariates) <- paste0(sens2ref$name.sensor[!is.na(sens2ref$name.sensor)])
     CovMod <- lapply(which(!is.na(sens2ref$name.sensor)), function(i) get(paste0(sens2ref$name.sensor[i],"CovMod")))
     names(CovMod) <- paste0(sens2ref$name.sensor[!is.na(sens2ref$name.sensor)])
+    # Moving Config files to directory Configuration if needed
+    if (Dir.Config == "General_data") {
+        # Populating the configuration intormation with cfg and effect files, create if it does not exist
+        New_General_dir <- file.path(DisqueFieldtestDir, "Configuration")
+        if (!dir.exists(New_General_dir)) dir.create(New_General_dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
+        cfg_Files       <- list.files(path = file.path(DisqueFieldtestDir, "General_data"), pattern = ".cfg", recursive = TRUE, full.names = TRUE)
+        for (i in cfg_Files) {
+            cat(paste0("[shiny, Create.New] INFO, copying ", basename(i), " at ", New_General_dir), sep = "\n")
+            file.copy(from = i, to = file.path(New_General_dir, basename(i)), overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)
+            file.remove(i)}
+        
+    }
     cat("-----------------------------------------------------------------------------------\n")
     return.CONFIG <- list(cfg,sens2ref,Covariates,CovMod, sens2ref.shield)
-    cat("-----------------------------------------------------------------------------------\n")
     names(return.CONFIG) <- c("Server","sens2ref","CovPlot","CovMod", "sens2ref.shield")
     return(return.CONFIG)
 }
 #=====================================================================================CR
 # Valid Periods
 #=====================================================================================CR
-SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC" , SOS.TZ = "UTC", Ref.TZ = "UTC", DownloadSensor, Config = NULL,
-                    sens2ref.shield = NULL, shiny = TRUE) {
+SETTIME <- function(DisqueFieldtestDir, DisqueFieldtest, General.t.Valid = NULL, Influx.TZ = "UTC" , SOS.TZ = "UTC", Ref.TZ = "UTC", DownloadSensor, Config = NULL,
+                    sens2ref.shield = NULL, shiny = TRUE, Dir.Config = "Configuration") {
     # Return             : list with sens2ref (only time parameters)
-    # DisqueFieldtestDir : file.path where the config files of the AIrSensEUR are located. The directory ""Shield_Files" shall be located at the pareent directory
+    # DisqueFieldtestDir : file.path of the data of AirSensEUR box with sub-directories General_data, configuration, Models ..., e.g. "S:/Box Sync/AirSensEUR/Fieldtests/Shiny/ASE_Boxes/4047D0"
+    # DisqueFieldtest    : directory where is the file ASEconfig*.R file, which is not used anymore. It is now used because it it the directory of the Shiny App with directory Shield_files
     # General.t.Valid    : dataframe with date , sensor and reference data, default is NULL, it is only use if the the File_SETTIME_cfg file does not exist
     # DownloadSensor     : output of function DownloadSensor()
     # Influx.TZ          : String, time zone of INFLUXDB data, default is UTC
     # SOS.TZ             : String, time zone of SOS data, default is UTC
     # Ref.TZ             : String, time zone of Reference data, default is UTC
     # Config             : List, default is null, list returned by function CONFIG()
+    # shiny              : logical, default value is TRUE. If TRUE the function ised in a Shiny reactive context and shinyalert message can be returned.
+    # Dir.Config         : character string, defualt value is "Configuration". Sub dirctory of DisqueFieldtestDir that includes the config fles (*.cfg)
     cat("-----------------------------------------------------------------------------------\n")
     ASE_name           <- basename(DisqueFieldtestDir)
     # Setting the General time zone to the one of DownloadSensor$DateIN.General.prev
     # or DateIN.Influx.prev or DateIN.SOS.prev otherwise it is set to "UTC"
     if (exists("DownloadSensor")) {
         if (!is.null(DownloadSensor$DateIN.General.prev) && !is.na(DownloadSensor$DateIN.General.prev)) {
-            General.TZ <- base::format(DownloadSensor$DateIN.General.prev, format= "%Z")
+            General.TZ <- base::format(DownloadSensor$DateIN.General.prev, format = "%Z")
         } else {
             if (!is.null(DownloadSensor$DateIN.Influx.prev) && !is.na(DownloadSensor$DateIN.Influx.prev)) {
-                General.TZ <- base::format(DownloadSensor$DateIN.Influx.prev, format= "%Z")
+                General.TZ <- base::format(DownloadSensor$DateIN.Influx.prev, format = "%Z")
             } else {
                 if (!is.null(DownloadSensor$DateIN.SOS.prev) && !is.na(DownloadSensor$DateIN.SOS.prev)) {
-                    General.TZ <- base::format(DownloadSensor$DateIN.SOS.prev, format= "%Z")
+                    General.TZ <- base::format(DownloadSensor$DateIN.SOS.prev, format = "%Z")
                 } else General.TZ <- "UTC"
             }
         }
     } else  General.TZ <- "UTC"
     # Read SetTime file
-    File_SETTIME_cfg   <- list.files(path = file.path(DisqueFieldtestDir, "General_data"), pattern = paste0(ASE_name,"_SETTIME.cfg")  )
+    File_SETTIME_cfg   <- list.files(path = file.path(DisqueFieldtestDir, Dir.Config), pattern = paste0(ASE_name,"_SETTIME.cfg")  )
     if (!identical(File_SETTIME_cfg,character(0))) {
         # reading the configuration files sens2ref
-        File_SETTIME_cfg <- file.path(DisqueFieldtestDir, "General_data", paste0(ASE_name,"_SETTIME",".cfg"))
+        File_SETTIME_cfg <- file.path(DisqueFieldtestDir, Dir.Config, paste0(ASE_name,"_SETTIME",".cfg"))
         if (file.exists(File_SETTIME_cfg)) {
             cat(paste0("[SETTIME] Info, the config file ", File_SETTIME_cfg, " for the configuration of AirSensEUR exists"), sep = "\n")
-            sens2ref <- data.table::fread(file = File_SETTIME_cfg, header = TRUE, na.strings=c("","NA", "<NA>"))
+            sens2ref <- data.table::fread(file = File_SETTIME_cfg, header = TRUE, na.strings = c("","NA", "<NA>"))
             # sens2ref.order <- sens2ref$name.gas
             # if (is.null(key(sens2ref))) sens2ref <- data.table::setkey(x = sens2ref, key = "name.gas")
-        } else { # sens2Ref missing, error message
+        } else { 
+            # sens2Ref missing, error message
             my_message <- paste0("[SETTIME] ERROR, no SetTime server config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
@@ -4203,9 +4240,9 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
         # Changing the name.sensor when asc.File changes
         # First  read the -server.cfg file to get the file name of the shield config file
         if (is.null(Config) || !"sens2ref" %in% names(Config) || is.null(Config[["sens2ref"]])) {
-            File_Server_cfg    <- file.path(DisqueFieldtestDir, "General_data", paste0(ASE_name,"_Servers.cfg"))
+            File_Server_cfg    <- file.path(DisqueFieldtestDir, Dir.Config, paste0(ASE_name,"_Servers.cfg"))
             if (file.exists(File_Server_cfg)) {
-                cfg <- transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
+                cfg <- data.table::transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
                 # Changes names for change Shiny App version 0.9 to 0.10
                 Change.names <- rbind(c("TZ"           , "Influx.TZ"),     # Time zone of Influx data
                                       c("sens.tzone"   , "SOS.TZ"))         # Time zone of SOS data
@@ -4213,8 +4250,8 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
             } else cat(paste0("[SETTIME] The file of server configuration for AirSensEUR: ", File_Server_cfg, " does not exist.\n"))
         } else cfg <- Config[["Server"]]
         # Second read the shield config file to get the sensor names
-        if (file.exists(file.path(dirname(DisqueFieldtestDir),"Shield_Files",cfg$asc.File))) {
-            sens2ref.shield <- ASEPanel04Read(ASEPanel04File = file.path(dirname(DisqueFieldtestDir),"Shield_Files",cfg$asc.File))
+        if (file.exists(file.path(DisqueFieldtest,"Shield_Files",cfg$asc.File))) {
+            sens2ref.shield <- ASEPanel04Read(ASEPanel04File = file.path(DisqueFieldtest,"Shield_Files",cfg$asc.File))
         }  else cat("[SETTIME] ERROR shield file (asc.File) not found\n")}
     # update the name of sensors in the SETTIME.cfg
     Save.sens2ref <- FALSE
@@ -4225,9 +4262,9 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
                 j = which(names(sens2ref) %in% sens2ref.shield$name.gas[i]), value = sens2ref.shield$name.sensor[i])
         }
         # set to save file
-        Save.sens2ref}
+        Save.sens2ref <- TRUE}
     # transpose the data.table
-    sens2ref <- cbind(names(sens2ref)[-1],transpose(sens2ref, fill = NA, make.names =  "name.gas"))
+    sens2ref <- cbind(names(sens2ref)[-1],data.table::transpose(sens2ref, fill = NA, make.names =  "name.gas"))
     setnames(sens2ref, c("name.gas",names(sens2ref)[-1]) )
     # Changes names for change Shiny App version 0.6 to 0.7
     Change.names <- rbind(c("RefDateINPlot"   ,"Out.Ref.IN"),       # for plotting outlier of reference data
@@ -4253,18 +4290,18 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
         Names2Change <- which(Change.names[,1] %in% names(sens2ref))
         for (k in Names2Change) colnames(sens2ref)[colnames(sens2ref) == Change.names[k,1]] <- Change.names[k,2]
         # set to save file
-        Save.sens2ref}
+        Save.sens2ref <- TRUE}
     # adding "Cov.Date.IN" "Cov.Date.END"if missing
     if (!"Cov.Date.IN"  %in% names(sens2ref)) {
         sens2ref <-  cbind(sens2ref, sens2ref[,Valid.IN])
         setnames(sens2ref, length(names(sens2ref)), "Cov.Date.IN")
         # set to save file
-        Save.sens2ref}
+        Save.sens2ref <- TRUE}
     if (!"Cov.Date.END" %in% names(sens2ref)) {
         sens2ref <-  cbind(sens2ref, sens2ref[,Valid.END])
         setnames(sens2ref, length(names(sens2ref)), "Cov.Date.END")
         # set to save file
-        Save.sens2ref}
+        Save.sens2ref <- TRUE}
     # coerce Sens.Inval.Out  and "Apply.Invalid" to logical
     Vector.type <- c("Sens.Inval.Out", "Apply.Invalid")
     Vector.type <- Vector.type[Vector.type %in% names(sens2ref)]
@@ -4325,22 +4362,22 @@ SETTIME <- function(DisqueFieldtestDir, General.t.Valid = NULL, Influx.TZ = "UTC
         Check_Dates.IN <- c("Out.Ref.IN", "Out.Sens.IN", "Cov.Date.IN", "DateCal.IN", "DatePlotCal.IN", "DateMeas.IN", "DatePlotMeas.IN")
         for (i in Check_Dates.IN) {
             if (any(is.na(sens2ref[[i]]))) {
-                sens2ref[[i]][which(is.na(sens2ref[[i]]))]               <- sens2ref$Valid.IN[which(is.na(sens2ref[[i]]))]
+                sens2ref[[i]][which(is.na(sens2ref[[i]]))]          <- sens2ref$Valid.IN[which(is.na(sens2ref[[i]]))]
                 # set to save file
                 Save.sens2ref <- TRUE}
             Out.range <- which(sens2ref[[i]] < sens2ref$Valid.IN | sens2ref[[i]] > sens2ref$Valid.END)
-            if (length(Out.range) > 0){
+            if (length(Out.range) > 0) {
                 sens2ref[[i]][Out.range]  <- sens2ref$Valid.IN[Out.range]
                 # set to save file
                 Save.sens2ref <- TRUE}}
         Check_Dates.END <- c("Out.Ref.END", "Out.Sens.END", "Cov.Date.END", "DateCal.END", "DatePlotCal.END", "DateMeas.END", "DatePlotMeas.END")
         for (i in Check_Dates.END) {
             if (any(is.na(sens2ref[[i]]))) {
-                sens2ref[[i]][which(is.na(sens2ref[[i]]))]               <- sens2ref$Valid.END[which(is.na(sens2ref[[i]]))]
+                sens2ref[[i]][which(is.na(sens2ref[[i]]))]          <- sens2ref$Valid.END[which(is.na(sens2ref[[i]]))]
                 # set to save file
                 Save.sens2ref <- TRUE}
             Out.range <- which(sens2ref[[i]] < sens2ref$Valid.IN | sens2ref[[i]] > sens2ref$Valid.END)
-            if (length(Out.range) > 0){
+            if (length(Out.range) > 0) {
                 sens2ref[[i]][Out.range] <- sens2ref$Valid.END[Out.range]
                 # set to save file
                 Save.sens2ref <- TRUE}}
@@ -5530,37 +5567,21 @@ a_i_p_data <- function(URL, username, password, organisation, station,
         # Param.i <- data.table::rbindlist(lapply(Refi$Components[[1]]$MeasuredValues, as.data.frame.list, stringsAsFactors = F),
         #                                  fill = T, use.names = T)
         Param.i <- data.table::rbindlist(Refi$Components[[1]]$MeasuredValues)
-        if ("Value" %in% names(Param.i) && Refi$Components[[1]]$Component %in% strsplit(param, "!")[[1]]) {
+        if ("!" %in% param) param <- strsplit(param, "!")[[1]] 
+        if ("Value" %in% names(Param.i) && Refi$Components[[1]]$Component %in% param) {
             cat(paste0("Component ",stringr::str_pad(which(Components %in% Refi$Components[[1]]$Component), 2, side = "left", pad = " "),"/",length(seq_along(Ref)),": ",
                        stringr::str_pad(Refi$Components[[1]]$Component, max(nchar(Components)), side = "right", pad = " ")," was correctly downloaded\n"))
-            Param.i <- Param.i %>%
-                dplyr::select(Time,Value)
-            # %>% dplyr::filter(Valid == TRUE)
             colnames(Param.i) <- c("date", Refi$Components[[1]]$Component)
             return(Param.i)
         } else {
             cat(paste0("Component ",stringr::str_pad(which(Components %in% Refi$Components[[1]]$Component), 2, side = "left", pad = " "),"/",length(seq_along(Ref)), ": ",
-                       str_pad(Refi$Components[[1]]$Component, max(nchar(Components)), side ="right", pad=" "), " no data to be downloaded\n"))
+                       str_pad(Refi$Components[[1]]$Component, max(nchar(Components)), side ="right", pad=" "), " no data to be downloaded or parameter not requested\n"))
         }
     })
     # Creating ReferenceData
-    RefData <- MeasuredValues[!sapply(MeasuredValues, is.null)] %>%
-        purrr::reduce(full_join, by = "date") %>%
-        dplyr::mutate(date = ymd_hms(date, tz = Time_zone))
-    # if (exists("MeasuredValues")) remove(MeasuredValues)
-    # if (exists("Ref"))            remove(Ref)
-    # #----------------------------------------------------------------CR
-    # # 3) convert Reference names
-    # #----------------------------------------------------------------CR
-    # # remove the Units of the element if there are no data
-    # Units <- Units[Components %in% names(RefData)]
-    # Columns   <- names(RefData)[-which(names(RefData) == "date")]
-    # # Add Ref names to be recognized if needed, "carbon monoxide parallel" is from the Los gatos anayser than filer values > 2 pmm: not ot be used.
-    # Ref.names <- data.frame(Ref.names = c(             "NO2",              "CO",    "O3",                "NO",             "NOx",            "SO2",                   "Temp", "manifold flow", "temperature cpu",             "CO Los Gatos", "nitrogen dioxide caps", "pressure caps", "temperature caps"),
-    #                         Columns   = c("nitrogen dioxide", "carbon monoxide", "ozone", "nitrogen monoxide", "nitrogen oxides", "sulfur dioxide", "Sample_air temperature", "manifold flow", "temperature cpu", "carbon monoxide parallel", "nitrogen dioxide caps", "pressure caps", "temperature caps"))
-    # Refs.meta <- data.frame(Columns = Columns,
-    #                         Units   = Units) %>%
-    #     left_join(Ref.names, by = "Columns")
+    RefData <- rbindlist(MeasuredValues[!sapply(MeasuredValues, is.null)], use.names = TRUE, fill = TRUE)
+    data.table::set(RefData, j = "date", value =  ymd_hms(RefData[["date"]], tz = Time_zone))
+    RefData <- DF_avg(RefData, width = avgtime)
     # returning
     return(RefData)
 }
