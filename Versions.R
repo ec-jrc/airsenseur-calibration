@@ -1,6 +1,22 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
+# New release V0.18, 2020-02-11
+#             E80 - bug correction: In function General, the merge of INfluxData and refData into General Data crashes when they are duplicated in these datasets. Corrected: duplicated are now discarded
+#                                   Still to find why duplicates appears. For security, when saving InfluxData.csv, RefData.csv and General.csv, duplicated are also discarded .
+#             E81 - bug correction: HavingIP() is replaced with curl::has_internet() which works
+#            N117 - functions REFDATA and DownRef were rewritten: it is now possible to add several sources of data for the same date, e. g. from a_i_p server then form a .csv file ...
+#                   data are combined into refData.csv, keeping only dates for which sensor data exist in InfluxData.csv. Therefore sensor data shall be downloaded first.
+#                   Data for reference pollutants (e. g. Ref.NO2) are added to RefData.csv provided that there are recognized using the list Reference.names in the Down_ref function
+#                   It is possible to re-add several time the same data (same dates). Previous data are overwritten with new data.
+#                   It is possible to add new pollutants for existing dates (new reference data at existing dates) are merged with existing RefData.
+#                   It is possible to add pollutants (new ones or already existing ones) at new dates. They are appended to the exisitng RefData using rbindlist.
+#            N118 - The ASE-App will can now be used to calibrate CO2 sensors, reported as D300 sensor by AirSensEUR in InfluxDB. 
+#                   The shiny App will automatically recognize if CO2 sensor (D300) is included into InfluxData and RefData (you need to upload reference CO2 data). It will modify the config files as needed
+#                   (files ASE.cfg, ASE_SETTIME.cfg and Covariates, CovMod and Valid files)
+#            N119 - The Down_Influx and SQL2df functions were modified in order to save the the ASExx table airsenseur.db in tabulated/casted/wide/ format instead of sequential/long format as before.
+#                   This allows to decrease the size of airsdenseur.db by 12.5 fold, going from 277 MB to 22.5 MB for about 2 weeks of data with all availabel sensors  (including 2 OPCs). An automatic process
+#                   is built in function Down_Influx so that everything should be transparent for user. Otherwise it is possible to manually delete the file airsenseur.db and restart from downaloding.
 # New release V0.17, 2020-01-24
 #             E71 - bug correction: In function Down_Influx, Httr::GET is corrected adding \" in front and behind datasets. 
 #             E72 - bug correction: In function Down_Ref, for a_i_p download, an error in case of lack of separator ("!") between parameters to download was making the app to crash. Corrected. 
@@ -24,7 +40,7 @@
 #             E78 - bug correction: in function Down_influx, when dowloading new Influx data, updating of an existing ASE, the last timepstamps present in airsenseur.db were repeated making duplicated data.
 #                   Consequently in SQLite2df, there were duplicated data of the same timestamps. When casting pollutants name with dcast, the number of the duplicates (count) was returned instead of the
 #                   actual data values. Corrected in Down_Influx (> instead of >=) and the options fun.aggregate is added to dcast() to solve the cases when data are duplicated.
-#            N116 - The file Global.R is now splitted into GLobal.R and Global4Shiny.R. The 1st load packages related to computation and the 2nd one packages related to shiny and plotting.
+#            N116 - The file Global.R is now splitted into GLobal.R and Global4Shiny.R. The 1st loads packages related to computation and the 2nd one loads packages related to shiny and plotting.
 
 #  ----#TO BE DONE  : ----
 # BUG CORRECTIONS
@@ -70,6 +86,7 @@
 #             N89 - Add the possibility to set some of the coefficients of calibration models with plotty
 #            N106 - Add the possibility to use several calibration models at different date interval
 #            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
+#            N108 - Allow to select only data with GPStimestamp and GPS coordinates
 
 # New release V0.16
 # 2019-12-17   N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
