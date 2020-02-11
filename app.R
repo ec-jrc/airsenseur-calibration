@@ -181,7 +181,7 @@ TableTZ           <- as.data.frame(cbind(seq_along(TimeZone), TimeZone), strings
 Influx.TableTZ    <- as.data.frame(cbind( seq_along(Influx.TimeZone), Influx.TimeZone), stringsAsFactors = FALSE)
 choices.shield    <- list.files(path = file.path(getwd(), "Shield_Files"), pattern = "*.asc")
 choices.Ref.unit  <- c("ppb","ppm", "ug/m3","mg/m3","counts")
-Models            <- c("Linear", "Linear.Robust","MultiLinear", "exp_kT", "exp_kK", "T_power", "K_power", "RH_Hysteresis","gam", "Quadratic", "Cubic", "Michelis", "Sigmoid")
+Models            <- c("Linear", "Linear.Robust","MultiLinear", "exp_kT", "exp_kK", "T_power", "K_power", "BeerLambert", "RH_Hysteresis","gam", "Quadratic", "Cubic", "Michelis", "Sigmoid")
 # ui =============================================================
 ui <- navbarPage(title = "ASE_App v0.17", id = "ASE", theme = shinytheme("cerulean"), selected = "SelectASE",
                  # shinyjs must be initialized with a call to useShinyjs() in the app's ui.
@@ -709,18 +709,21 @@ server <- function(input, output, session) {
     list.gas.sensor       <- reactive({
         Config$all[["sens2ref"]]$gas.sensor[
             !is.na(Config$all[["sens2ref"]]$gas.sensor) &
-                Config$all[["sens2ref"]]$gas.sensor  != "" &
-                Config$all[["sens2ref"]]$name.sensor %in% Config$all$sens2ref.shield$name.sensor]})
+                Config$all[["sens2ref"]]$gas.sensor  != "" 
+            #& Config$all[["sens2ref"]]$name.sensor %in% Config$all$sens2ref.shield$name.sensor
+            ]})
     list.name.sensor      <- reactive({
         Config$all[["sens2ref"]]$name.sensor[
             !is.na(Config$all[["sens2ref"]]$name.sensor) &
-                Config$all[["sens2ref"]]$name.sensor != "" &
-                Config$all[["sens2ref"]]$name.sensor %in% Config$all$sens2ref.shield$name.sensor]})
+                Config$all[["sens2ref"]]$name.sensor != "" 
+            # & Config$all[["sens2ref"]]$name.sensor %in% Config$all$sens2ref.shield$name.sensor
+            ]})
     list.name.gas      <- reactive({
         Config$all[["sens2ref"]]$name.gas[
             !is.na(Config$all[["sens2ref"]]$name.sensor) &
-                Config$all[["sens2ref"]]$name.sensor != "" &
-                Config$all[["sens2ref"]]$name.sensor %in% Config$all$sens2ref.shield$name.sensor]})
+                Config$all[["sens2ref"]]$name.sensor != "" 
+            # & Config$all[["sens2ref"]]$name.sensor %in% Config$all$sens2ref.shield$name.sensor
+            ]})
     list.gas.reference2use <- reactive({
         # return a vector with the names of gas reference using the file ASE.cfg
         Config$all[["sens2ref"]]$gas.reference2use[!is.na(Config$all[["sens2ref"]]$gas.reference2use) &
@@ -743,7 +746,7 @@ server <- function(input, output, session) {
             DF$General
             input$Selected
         },{
-            Check_Download(Influx.name = input$Dataset,
+            Check_Download(Influx.name = basename(input$Selected),
                            WDinput     = file.path(input$Selected, "General_data"),
                            UserMins    = if (!is.null(input$UserMins)) as.numeric(input$UserMins) else Config$all$Server$UserMins,
                            General.df  = if (!is.null(DF$General))  DF$General else NA,
@@ -867,7 +870,8 @@ server <- function(input, output, session) {
             #----------------------------------------------------------CR
             # initial Config
             progress$set(message = "[Shiny] INFO, Loading config file", value = 0.1)
-            Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data")))
+            Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, 
+                                                   Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data")))
             # Returning a list with 4 elements see below
             # Config$all[["Server"]]   : server parameters
             # Config$all[["sens2ref"]] : cfg parameters
@@ -984,7 +988,16 @@ server <- function(input, output, session) {
                 DF$General   <<- NULL
                 DF.NULL$Init <<- TRUE
             }
-            # Initial DownloadSensor
+            progress$set(message = "[Shiny] INFO, Loading config file", value = 0.1)
+            if (!is.null(Influx$DATA)) Names.Influx <- names(Influx$DATA) else Names.Influx <- NULL
+            if (!is.null(Ref$DATA))    Names.ref    <- names(Ref$DATA)    else Names.ref    <- NULL
+            if (!is.null(Names.Influx) && !is.null(Names.ref) && 
+                !"CO2" %in% Config$all$sens2ref$name.gas && "Carbon_dioxide" %in% Names.Influx && "Ref.CO2" %in% Names.ref) {
+                    Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, 
+                                                           Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data"),
+                                                           Names.Influx = Names.Influx, 
+                                                           Names.ref    = Names.ref))
+                }
             progress$set(message = "[Shiny] INFO, Initial DownloadSensor", value = 0.4)
             Download <<- reactiveValues(Sensor = DownloadSensor())
             # Initial SetTime
@@ -1212,8 +1225,7 @@ server <- function(input, output, session) {
                                         confirmButtonCol = "#AEDEF4",
                                         timer = 0,
                                         imageUrl = "",
-                                        animation = FALSE
-                                    )
+                                        animation = FALSE)
                                 } else {
                                     my_message <- paste0("[shiny, ASE.names.Influx()] INFO, Influx server is up; connected to server. Message : \"", http_status(Influx.con)$message, "\".\n")
                                     cat(my_message)
@@ -1228,7 +1240,7 @@ server <- function(input, output, session) {
                                         showCancelButton = FALSE,
                                         confirmButtonText = "OK",
                                         confirmButtonCol = "#AEDEF4",
-                                        timer = 0,
+                                        timer = 3000,
                                         imageUrl = "",
                                         animation = FALSE
                                     )
@@ -1923,7 +1935,7 @@ server <- function(input, output, session) {
                                                               sliderInput(inputId   = paste0("Temperature", which(list.name.sensor() == i)) ,
                                                                           label = "Range of accepted temperature (Celsius degrees):" ,
                                                                           min = -20,
-                                                                          max = 60 ,
+                                                                          max = 65,
                                                                           step = 0.5,
                                                                           value = c(Config$all[["sens2ref"]]$temp.thres.min[which(Config$all[["sens2ref"]]$name.sensor == i)],
                                                                                     Config$all[["sens2ref"]]$temp.thres.max[which(Config$all[["sens2ref"]]$name.sensor == i)])
@@ -2896,6 +2908,25 @@ server <- function(input, output, session) {
                      coord.ref          = coord.ref,
                      Ref.Type           = input$Ref.Type,
                      RefData            = RefData)
+            if (!is.null(Influx$DATA)) Names.Influx <- names(Influx$DATA) else Names.Influx <- NULL
+            if (!is.null(Ref$DATA))    Names.ref    <- names(Ref$DATA)    else Names.ref    <- NULL
+            if (!is.null(Names.Influx) && !is.null(Names.ref) && 
+                !"CO2" %in% Config$all$sens2ref$name.gas && "Carbon_dioxide" %in% Names.Influx && "Ref.CO2" %in% Names.ref) {
+                Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, 
+                                                       Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data"),
+                                                       Names.Influx = Names.Influx, 
+                                                       Names.ref    = Names.ref))
+                Set <<- reactiveValues(Time = SETTIME(DisqueFieldtestDir = input$Selected, 
+                                                      DisqueFieldtest    = DirShiny, 
+                                                      General.t.Valid    = DF$General,
+                                                      Influx.TZ          = Config$all[["Server"]]$Influx.TZ,
+                                                      SOS.TZ             = Config$all[["Server"]]$SOS.TZ,
+                                                      Ref.TZ             = Config$all[["Server"]]$ref.tzone,
+                                                      DownloadSensor     = Download$Sensor,
+                                                      Config             = Config$all,
+                                                      sens2ref.shield    = Config$all$sens2ref.shield,
+                                                      Dir.Config         = "Configuration"))
+            }
         } else {
             # loading existing RefData
             if (!is.null(Ref$DATA)) RefData <- Ref$DATA[] else RefData <- NA_real_
@@ -2982,7 +3013,7 @@ server <- function(input, output, session) {
                 shinyjs::disable(paste0("Cal.Line", CalSet()$k))
             }
         })
-        # Updating date of al dateRange when date of input$Valid is changed and moving buttons ----
+        # Updating date of all dateRange when date of input$Valid is changed and moving buttons ----
         observeEvent({
             # inputs to react on
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Valid", i)]]))
@@ -2990,7 +3021,6 @@ server <- function(input, output, session) {
             # index k of selected sensor in list.namesensors(())
             Sens.Index    <- match(x = input$SetTime.Sensors, table = list.name.sensor())
             if (!any(is.na(input[[paste0("Valid", Sens.Index)]]))) {
-
                 if (input[[paste0("Valid", Sens.Index)]][1] %within% interval(min.General.date(), max.General.date())) {
                     MINI <- as.Date(input[[paste0("Valid", Sens.Index)]][1])
                     Update.MINI <- FALSE
@@ -3009,19 +3039,35 @@ server <- function(input, output, session) {
                 Is.na.Valid <- is.na(input[[paste0("Valid", Sens.Index)]])
                 if (which(Is.na.Valid) == 1) {
                     MINI <- as.Date(min.General.date())
-                    Update.MINI <- TRUE}
+                    Update.MINI <- TRUE
+                } else {
+                    MINI <- as.Date(input[[paste0("Valid", Sens.Index)]][1])
+                    Update.MINI <- FALSE  
+                } 
                 if (which(Is.na.Valid) == 2) {
                     MAXI <- as.Date(max.General.date())
-                    Update.MAXI <- TRUE}
+                    Update.MAXI <- TRUE
+                } else {
+                    MAXI <- as.Date(input[[paste0("Valid", Sens.Index)]][2])
+                    Update.MAXI <- FALSE  
+                } 
             }
             if (Update.MINI) updateDateRangeInput(session = session,
                                                   inputId = paste0("Valid",Sens.Index),
                                                   start   = MINI,
                                                   min     = as.Date(min.General.date()))
-            if (Update.MAXI) updateDateRangeInput(session = session,
-                                                  inputId = paste0("Valid",Sens.Index),
-                                                  end     = MAXI,
-                                                  max     = as.Date(max.General.date()))
+            if (Update.MAXI) {
+                # Extend when there are new data (new dates available)
+                List.Sliders2Extend <- c(paste0("Out.Ref.Date",Sens.Index),
+                                         paste0("Out.Sens.Date",Sens.Index),
+                                         paste0("Date",Sens.Index),
+                                         paste0("DatePlotCal",Sens.Index),
+                                         paste0("DateMeas",Sens.Index),
+                                         paste0("DatePlotMeas",Sens.Index))
+                for (i in List.Sliders2Extend) updateDateRangeInput(session = session,
+                                                                 inputId = paste0("Valid",Sens.Index),
+                                                                 end     = MAXI,
+                                                                 max     = as.Date(max.General.date()))} 
             # updating the dateRange according to input$valid, using only the date
             List.dateRange <- c(paste0("Out.Ref.Date",Sens.Index),
                                 paste0("Out.Sens.Date",Sens.Index),
@@ -3944,6 +3990,8 @@ server <- function(input, output, session) {
                                     # saving New General data
                                     progress$set(message = "[shiny, General()] INFO, Saving General dataset", value = 0.6)
                                     if (extension(General.file()) == ".csv") {
+                                        duplicated.Data <- which(duplicated(DF$General$date, fromLast = T))
+                                        if (length(duplicated.Data) > 0) DF$General <- DF$General[-duplicated.Data]
                                         fwrite(DF$General, file = General.file(), na = "NA")
                                     } else if (extension(General.file()) == ".Rdata") save(DF$General, file = General.file())
                                     # if general is saved, it is necessary to run the detection of warming, T/RH out of tolerance, Negative Ref., Invalids and outlier detection, sensor data conversion and calibration.
@@ -5942,7 +5990,7 @@ server <- function(input, output, session) {
                         No.Shield.name.Sensors <- setdiff(list.name.sensor(), Shield()$name.sensor)
                         x <- DF$General[,paste0("Out.",No.Shield.gas.Sensors), with = FALSE]
                         data.table::set(DF$General,  j =  paste0(No.Shield.name.Sensors,"_volt"),
-                                        value = lapply(seq_len(ncol(x)), function(i) x[,i]))
+                                        value = lapply(seq_len(ncol(x)), function(i) x[[i]]))
                         rm(x)
                     }
                     progress$set(message = "[shiny, General.conv()] INFO, Converting sensor digital data to V or nA", value = 1)
@@ -6058,6 +6106,14 @@ server <- function(input, output, session) {
                                                               row.names = row.names(DF$General[is.not.NA.y,]),
                                                               stringsAsFactors = FALSE)
                                         names(Matrice) <- "Temperature"
+                                    }  else if (Mod_type %in% c("BeerLambert")) {
+                                        # take only the one that is nor NA of y = DF$General[!is.na(DF$General[, nameGasVolt]), nameGasVolt]
+                                        is.not.NA.y <- which(complete.cases(DF$General[, .SD, .SDcols = c(nameGasVolt, "Temperature", "Atmospheric_pressure")]))
+                                        is.NA.y     <- setdiff(1:nrow(DF$General), is.not.NA.y)
+                                        Matrice <- data.frame(DF$General[is.not.NA.y, c("Temperature", "Atmospheric_pressure")],
+                                                              row.names = row.names(DF$General[is.not.NA.y,]),
+                                                              stringsAsFactors = FALSE)
+                                        names(Matrice) <- c("Temperature", "Atmospheric_pressure")
                                     } else {
                                         Matrice <- NULL
                                     }
@@ -6292,6 +6348,16 @@ server <- function(input, output, session) {
                 DQO.3 = 1.00 * LV
                 LAT   = 0.50 * LV
                 UAT   = 1.00 * LV
+            } else if (gas.sensor == "Carbon_dioxide") {
+                # Using LV for 24 hours time average
+                LV    = 500
+                IT    = NA
+                AT    = NA
+                DQO.1 = 0.05 * LV
+                DQO.2 = 0.20 * LV
+                DQO.3 = 0.30 * LV
+                LAT   = 0.50 * LV
+                UAT   = 1.00 * LV
             }
             CalSet <- data.frame(
                 # index (1,2,3,4, of the selected  sensors in uiFiltering, Calib and SetTime) corresponding of rows of ASE_name.cfg
@@ -6323,7 +6389,7 @@ server <- function(input, output, session) {
                 remove.neg         = input[[paste0("Neg.mod",k)]],
                 Cal_Line           = input[[paste0("Cal.Line",k)]],                                   # "Equation of calibation/Prediction"
                 Cal                = paste0(AirSensEur.name(),"__",name.sensor,"__",input[[paste0("Cal",k)]]),# Selected calibration model  for the current sensor
-                Multi.File         = file.path(input$Selected,"General_data", paste0(ASE_name(),"_Multi_",input$Sensors,".cfg")), # Config file for calibration with Multivariables
+                Multi.File         = file.path(input$Selected,"Configuration", paste0(ASE_name(),"_Multi_",input$Sensors,".cfg")), # Config file for calibration with Multivariables
                 CovMod             = paste0(input[[paste0("CovMod",k)]], collapse = "&"),             # Selected List of covariates to calibrate
                 LV                 = LV ,                                                             # limit for the gas.sensor
                 LAT                = LAT ,                                                            # limit for the gas.sensor
@@ -6571,7 +6637,7 @@ server <- function(input, output, session) {
             # depends on:
             #  input$Selected, input$Sensors, CalSet(), ASE_name()
             if (CalSet()$mod.eta.model.type == "MultiLinear") {
-                nameFile <- file.path(input$Selected,"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
+                nameFile <- file.path(input$Selected,"Configuration",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
                 # UI covariates
                 names.Covariates <- unlist(strsplit(CalSet()$CovMod, split = "&"))
                 # Is ther a multivariate file?
@@ -6588,7 +6654,7 @@ server <- function(input, output, session) {
                         # not the same number of Covariates in Multi.file and selected -> new Multi.df
                         Multi.DF <- data.frame(Covariates = c(names.Covariates, "Intercept"),
                                                Enabled    = rep(TRUE      , length(c(names.Covariates, "Intercept"))),
-                                               degree     = factor(c(rep("1", length(names.Covariates)), NA), levels = c("1","1.75","2","3","0","ExpGrowth"), ordered = TRUE) ,
+                                               degree     = factor(c(rep("1", length(names.Covariates)), NA), levels = c("-1","0","1","1.75","2","3","ExpGrowth"), ordered = TRUE) ,
                                                Forced     = rep(FALSE     , length(c(names.Covariates, "Intercept"))),
                                                a0_an      = rep("1"       , length(c(names.Covariates, "Intercept"))))
                         # , stringsAsFactors = FALSE)
@@ -6623,17 +6689,17 @@ server <- function(input, output, session) {
             input$Save.row.Multi
             input$Del.row.Multi
             # Existing MultiLinear files
-            List.Multi.Files <- list.files(path    = file.path(input$Selected,"General_data"), pattern = glob2rx(paste0("*Multi*", input$Sensors, "*")))
+            List.Multi.Files <- list.files(path    = file.path(input$Selected,"Configuration"), pattern = glob2rx(paste0("*Multi*", input$Sensors, "*")))
             # Creating the text files to render
-            Multi.Lignes <- paste0("Existing MultiLinear File in ASE/General_Data:\n")
+            Multi.Lignes <- paste0("Existing MultiLinear File in ASE/Configuration:\n")
             Multi.Lignes <- paste(Multi.Lignes,"\n")
             if (length(List.Multi.Files) > 0) {
                 for (i in List.Multi.Files) {
                     # Adding the name of the Multivariate file to Multi.Lignes
                     Multi.Lignes <- paste(Multi.Lignes, i, sep = "\n")
-                    cat(paste0("Existing MultiLinear Files in ASE/General_Data:", i))
+                    cat(paste0("Existing MultiLinear Files in ASE/Configuration:", i))
                     # reading Multivarites files line by line
-                    con = file(description = file.path(input$Selected,"General_data", i), "r")
+                    con = file(description = file.path(input$Selected,"Configuration", i), "r")
                     repeat {
                         Multi.1Ligne = readLines(con, n = 1)
                         # exiting if list is empty or appending the line to Multi.Lignes
@@ -6655,7 +6721,7 @@ server <- function(input, output, session) {
         # Del
         observeEvent(input$Del.row.Multi, {
             # delete current Multi file
-            nameFile <- file.path(input$Selected,"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
+            nameFile <- file.path(input$Selected,"Configuration",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
             file.remove(nameFile)
         })
         ## Save
@@ -6663,7 +6729,7 @@ server <- function(input, output, session) {
             # rows must be in increasing order before saving otherwise the following error stops the script:
             # Warning: Error in seq.default: 'by' must be of length 1
             finalDF <- hot_to_r(input$Multi)
-            nameFile <- file.path(input$Selected,"General_data",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
+            nameFile <- file.path(input$Selected,"Configuration",paste0(ASE_name(),"_Multi_",input$Sensors,".cfg"))
             write.table(finalDF, file = nameFile, row.names = FALSE)
             #click(id = "New.row.Multi")
         })
@@ -6730,109 +6796,42 @@ server <- function(input, output, session) {
         observeEvent({
             CalSet()$Cal_Line # trigger on "Method of Prediction" for new calibration model
         },{
+            # Create a Progress object
+            progress <- shiny::Progress$new()
+            progress$set(message = "[shiny] INFO, New Calibration Function", value = 0.5)
+            # Make sure it closes when we exit this reactive, even if there's an error
+            on.exit(progress$close())
+            # 1 - if "Calibration with current data" is selected
+            #     1.1 Check that the model does not already exist for the same sensor, model type, unit, dateIN/date/END and covariates
+            #     1.2 Check that the model does not already exist for Covariates. If model does not alrady exist then calibrate
             if (CalSet()$Cal_Line == "Calibration with current data") {
-                # put here the calibration function
-                # Create a Progress object
-                progress <- shiny::Progress$new()
-                progress$set(message = "[shiny] INFO, New Calibration Function", value = 0.5)
-                # Make sure it closes when we exit this reactive, even if there's an error
-                on.exit(progress$close())
                 cat("\n")
                 cat("-----------------------------------------------------------------------------------\n")
                 cat(paste0("[shiny] INFO, New Calibration Function for ", input$Sensors, sep = "\n"))
-                # 1 - if "Calibration with current data" is selected
-                #     1.1 Check that the model does not already exist for the same sensor, model type, unit, dateIN/date/END and covariates
-                #     1.2 Check that the model does not already exist for Covariates. If model does not alrady exist then calibrate
-                # 1
-                if (CalSet()$Cal_Line == "Calibration with current data") {
-                    # 1.1 Check that the model does not already exist for the same sensor, model type, unit, dateIN/date/END
-                    # List of files for current AirSensEUR name, sensor name, unit, model type, start and end dates
-                    ModelFiles <-  list.files(path = CalSet()$WDoutputMod,
-                                              pattern = glob2rx(
-                                                  paste0(CalSet()$AirSensEur.name,"__",
-                                                         CalSet()$name.sensor,"__",
-                                                         CalSet()$Sens.raw.unit,"_",
-                                                         CalSet()$mod.eta.model.type,"__",
-                                                         format(CalSet()$Cal.DateIN ,"%Y%m%d"),"__",format(CalSet()$Cal.DateEND,"%Y%m%d"),"__*", "*")))
-                    # Flag to request new model
-                    NewModelFlag <- TRUE
-                    # Model exist with current AirSensEUR name, sensor name, unit, model type, start and end dates?
-                    if (!identical(ModelFiles,character(0))) {
-                        # Checking if within existing ModelFiles there is the same set of covariates only for MultiLinear Models
-                        if (CalSet()$mod.eta.model.type == "MultiLinear") {
-                            # The model use covariates, it is fine to ask for a model with same AirSensEUR name, sensor name, unit, model type, start and end dates, if other covariates are requested
-                            # listing the Covariates
-                            for (i in ModelFiles) {
-                                # Covariates in the selected model - MISTAKE ON Covariates.Model
-                                Splitted.Model      <- unlist(strsplit(x = CalSet()$Cal, split = "__"))
-                                Covariates.Model    <- str_replace(Splitted.Model[7], pattern = ".rdata", replacement = "")
-                                Covariates.Model    <- unlist(strsplit(x = Covariates.Model , split = "&"))
-                                # Co-Variates selected in UI
-                                Covariates.CovMod <- unlist(strsplit(x = CalSet()$CovMod, split = "&"))
-                                if (file.exists(CalSet()$Multi.File)) {
-                                    # read Multi.File
-                                    Multi.File.df <-  read.table(file             = CalSet()$Multi.File,
-                                                                 header           = TRUE,
-                                                                 row.names        = NULL,
-                                                                 comment.char     = "#",
-                                                                 stringsAsFactors = FALSE
-                                    )
-                                    # degree of polynomial of all Co_Variates
-                                    Degrees <-  Multi.File.df[Multi.File.df$Covariates %in% Covariates.CovMod, "degree"]
-                                    Covariates.CovMod <- paste(unlist(strsplit(split = "&", CalSet()$CovMod)), Degrees, sep = "-")
-                                } else if (identical(Covariates.Model, character(0))) {
-                                    # Set to "" to be able to test all(Covariates.Model %in% Covariates.CovMod) & all(Covariates.CovMod %in%  Covariates.Model)
-                                    Covariates.Model = ""
-                                    Degrees <-  base::rep(1, times = length(Covariates.CovMod))
-                                } else if (any(grepl(pattern = "-", x = Covariates.Model))) {
-                                    # When more than one covariates is selected for fitting
-                                    Degrees <-  base::rep(1, times = length(Covariates.CovMod))
-                                    Covariates.CovMod <- paste(unlist(strsplit(split = "&", CalSet()$CovMod)), Degrees, sep = "-")
-                                }
-                                # Checking if model i is the model asked to fit and already exists
-                                if (all(Covariates.Model %in% Covariates.CovMod) &
-                                    all(Covariates.CovMod %in%  Covariates.Model)
-                                ) {
-                                    # Set that the model with the list of coavariates already exists
-                                    NewModelFlag <- FALSE
-                                    break
-                                }
-                            }
-                        } else NewModelFlag <- FALSE # Model already exists (we are sure it exists)
-                    }
-                    if (NewModelFlag) {
-                        cat(paste0("[shiny, Plot.Calibration()], INFO, new calibration with ", isolate(CalSet()$mod.eta.model.type), " calibration method between ",
-                                   format(CalSet()$Cal.DateIN ,"%Y%m%d")," and ",format(CalSet()$Cal.DateEND,"%Y%m%d"),"\n")) # ADD Calibration DATES
-                        # Setting parameters
-                        model.log          = TRUE
-                        timeseries.display = FALSE
-                        process.step       = "Calibration"
-                        # Checking if there are data to calibrate
-                        General.df <- DF$General[date >= CalSet()$Cal.DateIN & date <= CalSet()$Cal.DateEND + 1]
-                        if (all(is.na(General.df[[CalSet()$nameGasRef]])) || all(is.na(General.df[[CalSet()$nameGasVolt]]))) {
-                            # Message missing data
-                            my_message <- paste0("[shiny, Plot.Calibration()] ERROR, No data for calibration for sensor ", CalSet()$name.sensor,
-                                                 " in  the \"Range of date for calibration:\" under \"SetTime\". Change date or use \"New calibration with current data\".\n")
-                            cat(my_message)
-                            shinyalert(
-                                title = "ERROR missing data",
-                                text = my_message,
-                                closeOnEsc = TRUE,
-                                closeOnClickOutside = TRUE,
-                                html = FALSE,
-                                type = "error",
-                                showConfirmButton = TRUE,
-                                showCancelButton  = FALSE,
-                                confirmButtonText = "OK",
-                                confirmButtonCol  = "#AEDEF4",
-                                timer             = 0,
-                                imageUrl          = "",
-                                animation         = FALSE)
-                            plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                            text(1,1,my_message)
-                        } else {
-                            Covariates <- unlist(strsplit(split = "&",CalSet()$CovMod))
-                            is.Cov.Ok  <- TRUE
+                # 1.1 Check that the model does not already exist for the same sensor, model type, unit, dateIN/date/END
+                # List of files for current AirSensEUR name, sensor name, unit, model type, start and end dates
+                ModelFiles <-  list.files(path = CalSet()$WDoutputMod,
+                                          pattern = glob2rx(
+                                              paste0(CalSet()$AirSensEur.name,"__",
+                                                     CalSet()$name.sensor,"__",
+                                                     CalSet()$Sens.raw.unit,"_",
+                                                     CalSet()$mod.eta.model.type,"__",
+                                                     format(CalSet()$Cal.DateIN ,"%Y%m%d"),"__",format(CalSet()$Cal.DateEND,"%Y%m%d"),"__*", "*")))
+                # Flag to request new model
+                NewModelFlag <- TRUE
+                # Model exist with current AirSensEUR name, sensor name, unit, model type, start and end dates?
+                if (!identical(ModelFiles,character(0))) {
+                    # Checking if within existing ModelFiles there is the same set of covariates only for MultiLinear Models
+                    if (CalSet()$mod.eta.model.type == "MultiLinear") {
+                        # The model use covariates, it is fine to ask for a model with same AirSensEUR name, sensor name, unit, model type, start and end dates, if other covariates are requested
+                        # listing the Covariates
+                        for (i in ModelFiles) {
+                            # Covariates in the selected model - MISTAKE ON Covariates.Model
+                            Splitted.Model      <- unlist(strsplit(x = CalSet()$Cal, split = "__"))
+                            Covariates.Model    <- str_replace(Splitted.Model[7], pattern = ".rdata", replacement = "")
+                            Covariates.Model    <- unlist(strsplit(x = Covariates.Model , split = "&"))
+                            # Co-Variates selected in UI
+                            Covariates.CovMod <- unlist(strsplit(x = CalSet()$CovMod, split = "&"))
                             if (file.exists(CalSet()$Multi.File)) {
                                 # read Multi.File
                                 Multi.File.df <-  read.table(file             = CalSet()$Multi.File,
@@ -6841,98 +6840,45 @@ server <- function(input, output, session) {
                                                              comment.char     = "#",
                                                              stringsAsFactors = FALSE
                                 )
-                                if (!identical(Covariates , Multi.File.df$Covariates[-which(Multi.File.df$Covariates == "Intercept")])) {
-                                    my_message <- paste0("ERROR, multilinear calibration requested \n
-                                                     with covariates list different or not ordered as the list \n
-                                                     in MultiLinear file list.\n
-                                                     Change the \"Covariates for calibration\" or change-delete the MultiLinear file.\n
-                                                     The app  may crash.\n")
-                                    cat(my_message)
-                                    shinyalert(
-                                        title = "Wrong Co-variates",
-                                        text = my_message,
-                                        closeOnEsc = TRUE,
-                                        closeOnClickOutside = TRUE,
-                                        html = FALSE,
-                                        type = "error",
-                                        showConfirmButton = TRUE,
-                                        showCancelButton  = FALSE,
-                                        confirmButtonText = "OK",
-                                        confirmButtonCol  = "#AEDEF4",
-                                        timer             = 0,
-                                        imageUrl          = "",
-                                        animation         = FALSE)
-                                    is.Cov.Ok <- FALSE
-                                }
+                                # degree of polynomial of all Co_Variates
+                                Degrees <-  Multi.File.df[Multi.File.df$Covariates %in% Covariates.CovMod, "degree"]
+                                Covariates.CovMod <- paste(unlist(strsplit(split = "&", CalSet()$CovMod)), Degrees, sep = "-")
+                            } else if (identical(Covariates.Model, character(0))) {
+                                # Set to "" to be able to test all(Covariates.Model %in% Covariates.CovMod) & all(Covariates.CovMod %in%  Covariates.Model)
+                                Covariates.Model = ""
+                                Degrees <-  base::rep(1, times = length(Covariates.CovMod))
+                            } else if (any(grepl(pattern = "-", x = Covariates.Model))) {
+                                # When more than one covariates is selected for fitting
+                                Degrees <-  base::rep(1, times = length(Covariates.CovMod))
+                                Covariates.CovMod <- paste(unlist(strsplit(split = "&", CalSet()$CovMod)), Degrees, sep = "-")
                             }
-                            # Calibration model
-                            if (is.Cov.Ok #&& !file.exists(CalSet()$Multi.File) || (file.exists(CalSet()$Multi.File) && identical(Covariates, Multi.File.df$Covariates[-which(Multi.File.df$Covariates == "Intercept")])
+                            # Checking if model i is the model asked to fit and already exists
+                            if (all(Covariates.Model %in% Covariates.CovMod) &
+                                all(Covariates.CovMod %in%  Covariates.Model)
                             ) {
-                                Validation.tool(General            = General.df,
-                                                DateIN             = CalSet()$Cal.DateIN ,
-                                                DateEND            = CalSet()$Cal.DateEND,
-                                                name.gas           = CalSet()$name.gas,
-                                                model.log          = model.log ,
-                                                nameGasRef         = CalSet()$nameGasRef,   # reference gas
-                                                nameGasVolt        = CalSet()$nameGasVolt,  # sensor gas in volt (or nA)
-                                                nameGasMod         = CalSet()$nameGasMod,   # modelled sensor gas
-                                                unit.ref           = CalSet()$unit.ref,
-                                                unit.sensor        = CalSet()$unit.sensor,
-                                                Sens.raw.unit      = CalSet()$Sens.raw.unit,
-                                                Reference.name     = CalSet()$Reference.name,
-                                                AirSensEur.name    = CalSet()$AirSensEur.name,
-                                                name.sensor        = CalSet()$name.sensor,
-                                                timeseries.display = timeseries.display ,
-                                                WDoutputMod        = CalSet()$WDoutputMod,
-                                                WDoutput           = CalSet()$WDoutput,
-                                                WDoutputStats      = CalSet()$WDoutputStats,
-                                                process.step       = process.step,
-                                                mod.eta.model.type = isolate(CalSet()$mod.eta.model.type),
-                                                Multi.File         = CalSet()$Multi.File,
-                                                eta.model.type     = CalSet()$eta.model.type,
-                                                remove.neg         = CalSet()$remove.neg,
-                                                Covariates         = unlist(strsplit(split = "&",CalSet()$CovMod)),
-                                                PlotCal            = FALSE,
-                                                Auto.Lag           = CalSet()$Sync.Cal)
-                                # updating the calibration function in GUI and claibration to use "Prediction with previous calibration"
-                                updateRadioButtons(session, inputId = paste0("Cal.Line", CalSet()$k), label = "Method of Prediction",
-                                                   choices = list("Calibration with current data","Prediction with previous calibration","Calibration with slope and intercept"),
-                                                   selected = "Prediction with previous calibration")
-                                # Removing the name of AirSensEUR from the model because there may be a confusion between Influx name and SOS name
-                                Newchoices <- substr(list.files(path    = CalSet()$WDoutputMod,
-                                                                pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*"))),
-                                                     start = nchar(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__")) + 1,
-                                                     stop  = nchar(list.files(path    = CalSet()$WDoutputMod,
-                                                                              pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*")))))
-                                # Current model
-                                # Use separator "__" because the character "_" maybe be used in the name of ASE
-                                if (CalSet()$mod.eta.model.type == "MultiLinear") {
-                                    if (file.exists(CalSet()$Multi.File)) {
-                                        # read Multi.File
-                                        Multi.File.df <-  read.table(file             = CalSet()$Multi.File,
-                                                                     header           = TRUE,
-                                                                     row.names        = NULL,
-                                                                     comment.char     = "#",
-                                                                     stringsAsFactors = FALSE)
-                                        # their degree of polynomial
-                                        Degrees <-  Multi.File.df[Multi.File.df$Covariates %in% unlist(strsplit(split = "&",CalSet()$CovMod)), "degree"]
-                                    } else Degrees <-  base::rep(1, times = length(unlist(strsplit(split = "&",CalSet()$CovMod))) )
-                                    namesCovariates <- paste0(paste(unlist(strsplit(split = "&", CalSet()$CovMod)), Degrees, sep = "-"), collapse = "&")
-                                } else if (CalSet()$mod.eta.model.type %in% c("exp_kT", "exp_kK", "T_power", "K_power")) namesCovariates = "Temperature" else namesCovariates = ""
-                                NewModel  <-  paste0(paste(CalSet()$Sens.raw.unit, CalSet()$mod.eta.model.type, format(CalSet()$Cal.DateIN,"%Y%m%d"),format(CalSet()$Cal.DateEND,"%Y%m%d"),namesCovariates,sep = "__"),".rdata")
-                                updateSelectInput(session, inputId = paste0("Cal", CalSet()$k), label = "Select a previous calibration ",
-                                                  choices = Newchoices, selected = NewModel[1])
+                                # Set that the model with the list of coavariates already exists
+                                NewModelFlag <- FALSE
+                                break
                             }
                         }
-                    } else {
-                        # 2.2
-                        # Message Model already esists
-                        my_message <- paste0("[shiny, Plot.Calibration()] ERROR, a calibration model with the same \"Raw unit of sensor data\" or
-                                         \" Model for calibration\" or date range of calibration in \"SetTime\" already exists. Click on \"Previous Calibration \"
-                                         and select it in \"Select previous calibration\".\n")
+                    } else NewModelFlag <- FALSE # Model already exists (we are sure it exists)
+                }
+                if (NewModelFlag) {
+                    cat(paste0("[shiny, Plot.Calibration()], INFO, new calibration with ", isolate(CalSet()$mod.eta.model.type), " calibration method between ",
+                               format(CalSet()$Cal.DateIN ,"%Y%m%d")," and ",format(CalSet()$Cal.DateEND,"%Y%m%d"),"\n")) # ADD Calibration DATES
+                    # Setting parameters
+                    model.log          = TRUE
+                    timeseries.display = FALSE
+                    process.step       = "Calibration"
+                    # Checking if there are data to calibrate
+                    General.df <- DF$General[date >= CalSet()$Cal.DateIN & date <= CalSet()$Cal.DateEND + 1]
+                    if (all(is.na(General.df[[CalSet()$nameGasRef]])) || all(is.na(General.df[[CalSet()$nameGasVolt]]))) {
+                        # Message missing data
+                        my_message <- paste0("[shiny, Plot.Calibration()] ERROR, No data for calibration for sensor ", CalSet()$name.sensor,
+                                             " in  the \"Range of date for calibration:\" under \"SetTime\". Change date or use \"New calibration with current data\".\n")
                         cat(my_message)
                         shinyalert(
-                            title = "ERROR Model Already exists",
+                            title = "ERROR missing data",
                             text = my_message,
                             closeOnEsc = TRUE,
                             closeOnClickOutside = TRUE,
@@ -6945,14 +6891,133 @@ server <- function(input, output, session) {
                             timer             = 0,
                             imageUrl          = "",
                             animation         = FALSE)
-                        
                         plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
                         text(1,1,my_message)
+                    } else {
+                        if (CalSet()$mod.eta.model.type %in% c("exp_kT", "exp_kK", "T_power", "K_power")) {
+                            namesCovariates = "Temperature"  
+                        } else if (CalSet()$mod.eta.model.type %in% c("BeerLambert")) {
+                            namesCovariates = c("Temperature", "Atmospheric_pressure")  
+                        } else namesCovariates <- unlist(strsplit(split = "&",CalSet()$CovMod))
+                        is.Cov.Ok  <- TRUE
+                        if (exists(CalSet()$Multi.File) && file.exists(CalSet()$Multi.File)) {
+                            # read Multi.File
+                            Multi.File.df <-  read.table(file             = CalSet()$Multi.File,
+                                                         header           = TRUE,
+                                                         row.names        = NULL,
+                                                         comment.char     = "#",
+                                                         stringsAsFactors = FALSE
+                            )
+                            if (!identical(namesCovariates , Multi.File.df$Covariates[-which(Multi.File.df$Covariates == "Intercept")])) {
+                                my_message <- paste0("ERROR, multilinear calibration requested with covariates list different or not ordered as the list 
+                                                     in MultiLinear file list.\n
+                                                     Change the \"Covariates for calibration\" or change-delete the MultiLinear file.\n
+                                                     The app  may crash.\n")
+                                cat(my_message)
+                                shinyalert(
+                                    title = "Wrong Co-variates",
+                                    text = my_message,
+                                    closeOnEsc = TRUE,
+                                    closeOnClickOutside = TRUE,
+                                    html = FALSE,
+                                    type = "error",
+                                    showConfirmButton = TRUE,
+                                    showCancelButton  = FALSE,
+                                    confirmButtonText = "OK",
+                                    confirmButtonCol  = "#AEDEF4",
+                                    timer             = 5000,
+                                    imageUrl          = "",
+                                    animation         = FALSE)
+                                is.Cov.Ok <- FALSE
+                            }
+                        }
+                        # Calibration model
+                        if (is.Cov.Ok #&& !file.exists(CalSet()$Multi.File) || (file.exists(CalSet()$Multi.File) && identical(Covariates, Multi.File.df$Covariates[-which(Multi.File.df$Covariates == "Intercept")])
+                        ) {
+                            Validation.tool(General            = General.df,
+                                            DateIN             = CalSet()$Cal.DateIN ,
+                                            DateEND            = CalSet()$Cal.DateEND,
+                                            name.gas           = CalSet()$name.gas,
+                                            model.log          = model.log ,
+                                            nameGasRef         = CalSet()$nameGasRef,   # reference gas
+                                            nameGasVolt        = CalSet()$nameGasVolt,  # sensor gas in volt (or nA)
+                                            nameGasMod         = CalSet()$nameGasMod,   # modelled sensor gas
+                                            unit.ref           = CalSet()$unit.ref,
+                                            unit.sensor        = CalSet()$unit.sensor,
+                                            Sens.raw.unit      = CalSet()$Sens.raw.unit,
+                                            Reference.name     = CalSet()$Reference.name,
+                                            AirSensEur.name    = CalSet()$AirSensEur.name,
+                                            name.sensor        = CalSet()$name.sensor,
+                                            timeseries.display = timeseries.display ,
+                                            WDoutputMod        = CalSet()$WDoutputMod,
+                                            WDoutput           = CalSet()$WDoutput,
+                                            WDoutputStats      = CalSet()$WDoutputStats,
+                                            process.step       = process.step,
+                                            mod.eta.model.type = isolate(CalSet()$mod.eta.model.type),
+                                            Multi.File         = CalSet()$Multi.File,
+                                            eta.model.type     = CalSet()$eta.model.type,
+                                            remove.neg         = CalSet()$remove.neg,
+                                            Covariates         = namesCovariates,
+                                            PlotCal            = FALSE,
+                                            Auto.Lag           = CalSet()$Sync.Cal)
+                            # updating the calibration function in GUI and claibration to use "Prediction with previous calibration"
+                            updateRadioButtons(session, inputId = paste0("Cal.Line", CalSet()$k), label = "Method of Prediction",
+                                               choices = list("Calibration with current data","Prediction with previous calibration","Calibration with slope and intercept"),
+                                               selected = "Prediction with previous calibration")
+                            # Removing the name of AirSensEUR from the model because there may be a confusion between Influx name and SOS name
+                            Newchoices <- substr(list.files(path    = CalSet()$WDoutputMod,
+                                                            pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*"))),
+                                                 start = nchar(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__")) + 1,
+                                                 stop  = nchar(list.files(path    = CalSet()$WDoutputMod,
+                                                                          pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*")))))
+                            # Current model
+                            # Use separator "__" because the character "_" maybe be used in the name of ASE
+                            if (CalSet()$mod.eta.model.type == "MultiLinear") {
+                                if (file.exists(CalSet()$Multi.File)) {
+                                    # read Multi.File
+                                    Multi.File.df <-  read.table(file             = CalSet()$Multi.File,
+                                                                 header           = TRUE,
+                                                                 row.names        = NULL,
+                                                                 comment.char     = "#",
+                                                                 stringsAsFactors = FALSE)
+                                    # their degree of polynomial
+                                    Degrees <-  Multi.File.df[Multi.File.df$Covariates %in% unlist(strsplit(split = "&",CalSet()$CovMod)), "degree"]
+                                } else Degrees <-  base::rep(1, times = length(unlist(strsplit(split = "&",CalSet()$CovMod))) )
+                                namesCovariates <- paste0(paste(unlist(strsplit(split = "&", CalSet()$CovMod)), Degrees, sep = "-"), collapse = "&")
+                            } else if (CalSet()$mod.eta.model.type %in% c("exp_kT", "exp_kK", "T_power", "K_power")) namesCovariates = "Temperature" else {
+                                if (CalSet()$mod.eta.model.type %in% c("BeerLambert")) namesCovariates = c("Temperature","Atmospheric_pressure") else namesCovariates = ""} 
+                            NewModel  <-  paste0(paste(CalSet()$Sens.raw.unit, CalSet()$mod.eta.model.type, format(CalSet()$Cal.DateIN,"%Y%m%d"),format(CalSet()$Cal.DateEND,"%Y%m%d"),namesCovariates,sep = "__"),".rdata")
+                            updateSelectInput(session, inputId = paste0("Cal", CalSet()$k), label = "Select a previous calibration ",
+                                              choices = Newchoices, selected = NewModel[1])
+                        }
                     }
+                } else {
+                    # 2.2
+                    # Message Model already esists
+                    my_message <- paste0("[shiny, Plot.Calibration()] ERROR, a calibration model with the same \"Raw unit of sensor data\" or
+                                         \" Model for calibration\" or date range of calibration in \"SetTime\" already exists. Click on \"Previous Calibration \"
+                                         and select it in \"Select previous calibration\".\n")
+                    cat(my_message)
+                    shinyalert(
+                        title = "ERROR Model Already exists",
+                        text = my_message,
+                        closeOnEsc = TRUE,
+                        closeOnClickOutside = TRUE,
+                        html = FALSE,
+                        type = "error",
+                        showConfirmButton = TRUE,
+                        showCancelButton  = FALSE,
+                        confirmButtonText = "OK",
+                        confirmButtonCol  = "#AEDEF4",
+                        timer             = 0,
+                        imageUrl          = "",
+                        animation         = FALSE)
+                    
+                    plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
+                    text(1,1,my_message)
                 }
             }
-        }, priority = 2500, ignoreInit = TRUE
-        )
+        }, priority = 2500, ignoreInit = TRUE)
         # Reactive FUN Plot.Calibration
         Plot.Calibration     <- eventReactive({
             input$Reference.name
@@ -7100,6 +7165,7 @@ server <- function(input, output, session) {
                                                                 "exp_kK",
                                                                 "T_power",
                                                                 "K_power",
+                                                                "BeerLambert",
                                                                 "MultiLinear"))) Cal_Line(x             = x,
                                                                                           s_x           = NULL,
                                                                                           y             = y,
@@ -7596,12 +7662,13 @@ server <- function(input, output, session) {
                             options = list(ajax = list(url = action))
         )
         output$DataTable <- DT::renderDataTable({
-            DT::datatable( React.General.cal(),
+            DT::datatable( React.General.cal(), rownames = FALSE, extensions = 'Buttons', 
                            options = list(
-                               "filter"     = "top",
-                               "autoWidth"  = TRUE,
-                               "pageLength" = 19,                     # number of rows to plot by default
-                               "lengthMenu" = sort(unique(c(15, 19, 24, round(60/as.numeric(input$UserMins)),
+                               buttons    = I('colvis'),
+                               filter     = "bottom",
+                               autoWidth  = TRUE,
+                               pageLength = 19,                     # number of rows to plot by default
+                               lengthMenu = sort(unique(c(15, 19, 24, round(60/as.numeric(input$UserMins)),
                                                             round(1440/as.numeric(input$UserMins)),
                                                             round(7*1440/as.numeric(input$UserMins)),
                                                             round(14*1440/as.numeric(input$UserMins)))))
@@ -7635,38 +7702,6 @@ server <- function(input, output, session) {
             #            params = list('en-US', list(month  = 'numeric', day    = 'numeric', hour = 'numeric', minute = 'numeric', hour12 = FALSE)))
         })
         # # NavBar"Data Treatment", mainTabPanel Prediction ----
-        # if (input$UserMinsAvg == input$UserMins) {
-        #     if (!is.null(DF$General)) {
-        #         Init.DF.avg <- DF$General
-        #     }  else {
-        #         # to avoid error due to averaging DF$General which does not exist
-        #         updateSelectInput(session = session, inputId = "UserMinsAvg", selected = input$UserMins)
-        #         Init.DF.avg <- data.table()
-        #     }
-        # } else {
-        #     progress <- shiny::Progress$new()
-        #     on.exit(progress$close())
-        #     progress$set(message = "[shiny] INFO, averaging Summary table of calibration model", value = 0.2)
-        #     if (!is.null(DF$General)) {
-        #         # Selecting columns for averaging
-        #         Cols.for.Avg <- c(intersect(c("date","gpsTimestamp","altitude","latitude","longitude",
-        #                                       "Relative_humidity","Atmospheric_pressure","Temperature", "boardTimeStamp",
-        #                                       "Ref.Long","Ref.Lat","Absolute_humidity", "Td_deficit",
-        #                                       paste0("Out.",list.gas.sensor()), paste0("Out.",list.gas.sensor())), names(DF$General)),
-        #                           grep(pattern = paste(c("_volt", "_modelled"), collapse = "|"), x = names(DF$General), value = TRUE))
-        #         # removing nan if any
-        #         if (any(sapply(DF$General[,..Cols.for.Avg], function(i) any(is.nan(i))))) set(DF$General, j = Cols.for.Avg, value = lapply(DF$General[,..Cols.for.Avg], nan.to.na))
-        #         Init.DF.avg   <- DF_avg(DF$General[, ..Cols.for.Avg], width = as.numeric(input$UserMinsAvg))
-        #     }  else {
-        #         # to avoid error due to averaging DF$General which does not exist
-        #         updateSelectInput(session = session, inputId = "UserMinsAvg", selected = input$UserMins)
-        #         Init.DF.avg <- data.table()
-        #     }
-        #     progress$set(message = "[shiny] INFO, averaging Summary table of calibration model", value = 1.0)
-        # }
-        #if (exists("Init.DF.avg") && !is.null(Init.DF.avg))
-        # DF.aggregated <<- reactiveValues(Avg = Init.DF.avg)
-        # if (exists("Init.DF.avg")) rm(Init.DF.avg)
         DF.aggregated.Avg <- eventReactive({
             input$Selected
             input$merge
@@ -7945,7 +7980,7 @@ server <- function(input, output, session) {
                     showCancelButton  = FALSE,
                     confirmButtonText = "OK",
                     confirmButtonCol  = "#AEDEF4",
-                    timer             = 0,
+                    timer             = 5000,
                     imageUrl          = "",
                     animation         = FALSE)
             } else {
