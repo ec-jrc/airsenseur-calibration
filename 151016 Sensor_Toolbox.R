@@ -614,6 +614,19 @@ f_T_power <- function(x, a0, a1, a2, n, Temperature) {
     # C is the initial value
     return( a0 + a1 * x + a2 * Temperature^n)
 }
+f_BeerLambert <- function(x, a0, a1, a2, a3, n, Temperature, Atmospheric_pressure){
+    # log(I1/I0) = O3 (sigma na L/R) Temperature^n / pressure + a0
+    # a1 is a1 (sigma na L/R)
+    # y = a0 + a1 x * Tempe/ pressure 
+    return( a0 + a1 * x * (Temperature + a2)^n / (Atmospheric_pressure + a3))
+}
+f_BeerLambert2 <- function(x, a0, aT, n, Temperature, Atmospheric_pressure){
+    # log(I1/I0) = O3 (sigma na L/R) Temperature^n / pressure + a0
+    # a1 is a1 (sigma na L/R)
+    # y = a0 + a1 x * Tempe/ pressure
+    # browser() 
+    return( a0 + x * (Temperature/aT)^n / (Atmospheric_pressure))
+}
 f_normal <- function(x, mu, sigma) {
     #return the normal distribution in function of c, mu and sigma
     return( 1/(sqrt(2*pi * sigma^2)) * exp(-((x - mu)^2)/(2 * sigma^2)))
@@ -841,9 +854,10 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         DataXY[ wi := DataXY$s_y^-2/sum(DataXY$s_y^-2)]
         # colnames(DataXY) <- c("x","y","s_y","wi")
     }
-    # adding Covariates for multilinear model
+    # adding Covariates for multilinear model and multivariate models
     if (Mod_type == "MultiLinear")                                    DataXY <- cbind(DataXY, Matrice[, ..Covariates])
-    if (any(Mod_type %in% c("exp_kT", "exp_kK","T_power","K_power"))) DataXY[, Temperature := Matrice[["Temperature"]]]
+    if (any(Mod_type %in% c("exp_kT", "exp_kK","T_power","K_power", "BeerLambert"))) DataXY[, Temperature := Matrice[["Temperature"]]]
+    if (any(Mod_type %in% c("BeerLambert"))) DataXY[, Atmospheric_pressure := Matrice[["Atmospheric_pressure"]]]
     # removing NA of any variables in DATAXY
     DataXY <- DataXY[complete.cases(DataXY[, .SD])]
     # Creating weights from the standard deviations within lags
@@ -1026,6 +1040,31 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         } else if (Mod_type == 'K_power') Equation <- paste0(Sensor_name, "Power: y = ", f_coef1," + ",f_coef2," x + ",f_coef2," T_Kelvins^", f_coef2, ", RMSE=",f_coef1,", AIC= %.1f")
         Equation <- sprintf(Equation,
                             coef(Model)[1],coef(Model)[2],coef(Model)[3],coef(Model)[4],
+                            sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
+    } else if (any(Mod_type %in% c('BeerLambert'))) {
+        # Transforming Celsius in Kelvin
+        DataXY[, "Temperature"] <- 273.15 + DataXY[, "Temperature"]
+        # Setting Initial values
+        #Linear.Model <- lm(y ~ x, data = DataXY)
+        DataXY$X <- DataXY[["x"]] * DataXY[["Temperature"]] / DataXY[["Atmospheric_pressure"]]
+        Linear.Model <- rq(y ~ X, data = DataXY, tau = c(0.5))
+        A0 <- coef(Linear.Model)[1]
+        A1 <- coef(Linear.Model)[2]
+        # Fitting model
+        # browser()
+        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+            Model <- nlsLM(y ~ f_BeerLambert2(x = x, a0 = a0, aT = aT, n = n, Temperature = Temperature, Atmospheric_pressure = Atmospheric_pressure), data = DataXY,
+                           start = list(a0 = A0, aT = mean(DataXY[["Temperature"]], na.rm = T), n = 1),
+                           model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                           lower = c(-Inf,-Inf,-Inf), upper = c(+Inf, +Inf, +Inf))
+        } else Model <- nlsLM(y ~ f_BeerLambert(x, a0, a1, a2, n, Temperature, Atmospheric_pressure), data = DataXY,
+                              start = list(a0 = A0, a1 = A1, a2 = 0, a3 = 0, n = 1),
+                              weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                              lower = c(-Inf,-Inf,-Inf,-Inf,-Inf), upper = c(+Inf, +Inf, +Inf, +Inf, +Inf))
+        # display equations and R^2
+        Equation <- paste0(Sensor_name, "BeerLambert: y = ", f_coef1," + ",f_coef2," x Temperature^",f_coef1,"/pressure, RMSE=",f_coef1,", AIC= %.1f")
+        Equation <- sprintf(Equation,
+                            coef(Model)[1],coef(Model)[2],coef(Model)[3],
                             sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'MultiLinear') {
         if (!is.null(Multi.File)) {
@@ -1485,6 +1524,10 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
     } else if (Mod_type == 'K_power') {
         # model T_power: return( (y - (a0 + a2 T^n))/ a1)
         return(as.vector((y - (Model$Coef[1] + Model$Coef[3] * (273.15 + Matrice$Temperature)^Model$Coef[4])) / Model$Coef[2]))
+    } else if (Mod_type == 'BeerLambert') {
+        # model T_power: return( (y - a0)/ a1 * Pressure / Temperature^a2)
+        #return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]] + Model$Coef[4]) / (273.15 + Matrice[["Temperature"]])^Model$Coef[3]))
+        return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]]) / ((273.15 + Matrice[["Temperature"]])/Model$Coef[2])^Model$Coef[3]))
     } else if (Mod_type == 'Michelis') {
         # model f_Michelis: return(Vmax*x/(km +x) + intercept)
         if (any(!is.na(y) & y < Model$Coef[3] ) | any(!is.na(y) & y > Model$Coef[1])) { # in case value out of bound and value is not NA
@@ -2251,7 +2294,7 @@ get_Coord.Ref  <- function(Coordinates.chr, ShinyUpdate = False, session = NULL,
 DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60, keyDate = "date", SameClass = NULL) {
     # Use data.table to average a data frame
     # DF            : dataframe to be aggregated, shall include the PosixCT column "date" (default), or another name of POSIXct column on which to aggregate
-    # Cols.for.Avg  : vector of charaters, default NULL. If not NULL the returned columns Cols.for.Avg + "date" is returned
+    # Cols.for.Avg  : vector of charaters, default NULL. If not NULL the  columns Cols.for.Avg and "date" are returned
     # width         : numeric, default is 60. Size in minutes of the window used for averaging
     # keyDate       : chr, defalt "date, name of the column of DF which hold the POSIXct on which
     #
@@ -2266,7 +2309,7 @@ DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60, keyDate = "date", SameCl
             DF <- DF[,Columns, with = FALSE]
         }
         if (is.data.table(DF)) {
-            DF[, Agg := lubridate::ceiling_date(data.frame(DF)[, keyDate], unit = ifelse(width <= 60, paste0(width,"minute"), paste0(width/60, "hour")))]
+            DF[, Agg := lubridate::ceiling_date(DF[[keyDate]], unit = ifelse(width <= 60, paste0(width,"minute"), paste0(width/60, "hour")))]
             DF[, (keyDate) := NULL]
             data.table::setnames(DF, c("Agg"), keyDate)
             data.table::setkeyv(DF, keyDate)
