@@ -1709,16 +1709,18 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     }
     cat(paste0("[SQLite2df] INFO, looking for the names of all sensors and channel numbers from a list of sensor names"), sep = "\n")
     if (is.null(asc.File)) {
-        # In case of several sensor name on the same channel number
+        # In case of having more than one sensor name on the same channel number in Values_db and thus Channel.names
         for (i in Channel.names$channel) {
-            cat(paste0(i, "\n"))
+            cat(paste0("[SLite2df] info looking for different sensor models at channel ",i, "\n"))
             # Taking the last name if sensors have been replaced
-            if (anyDuplicated.array(Channel.names[Channel.names$channel == i - 1,c("channel","name")])) {
-                Channel.names$name[i + 1] <- paste0(unique(Values_db[Values_db$channel == i, "name"]),collapse = "!")
-                if (grepl(pattern = "!", x = Channel.names$Sensor.names[i + 1])) {
-                    Set(Channel.names, j = Sensor.names[i+1], value = tail(unlist(strsplit(Channel.names$name[i + 1], split = "!")), n = 1))
+            if (anyDuplicated(Channel.names$channel[Channel.names$channel == i])) {
+                cat(paste0("[SLite2df] WARNING There are different sensor names at channel",i,". Sensors ",c(Channel.names$name[Channel.names$channel == i]),".\n"))
+                data.table::set(Channel.names, i = i, j = "name", value = paste(Channel.names$name[Channel.names$channel == i], collapse = "!"))
+                # Setting the name of the sensor to the last one with same channel number
+                if (grepl(pattern = "!", x = Channel.names$Sensor.names[i])) {
+                    Set(Channel.names, j = Sensor.names[i], value = tail(unlist(strsplit(Channel.names$name[i], split = "!")), n = 1))
                     cat(paste0("[SLite2df] WARNING the name of the sensor of channel ", i, " has been changed. The script is assuming that the sensor model type was not changed during use and it is  ",
-                               Channel.names$Sensor.names[i+1], ", the last one."), sep = "\n")}}}
+                               Channel.names$Sensor.names[i], ", the last one."), sep = "\n")}}}
     } else {
         # Set Channel.names$name, Values_db$name and Values_db$Pollutants based on the shield config file of the chemical sensor board. Sensor shall be in channel 1, 2, 3 and 4!!!
         for (i in which(!is.na(asc.File$name.sensor))) {
