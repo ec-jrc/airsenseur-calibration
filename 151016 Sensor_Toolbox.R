@@ -127,32 +127,122 @@
 ### Estimated.y: Function Plot estimated function
 ### Cal_Line: Function calibration function and plot calibration line (VS 170428)
 #================================================================CR
-### Function Load.Packages (170420)
+### Function Load_Packages (170420)
 #================================================================CR
-Load.Packages <- function(list.Packages) {
+Load_Packages <- function(list.Packages, verbose = FALSE) {
+    # This function install packages if needed and load them
     # list.Packages                 vector of names of the packages to load
+    # verbose                       logical default FALSE, return info message about error and installed packages
+    if (verbose) cat("-----------------------------------------------------------------------------------\n")
+    if (verbose) cat("[Load_Packages] INFO CHECK Installed packages and Toolbox to run the script\n")
     #
-    cat("", sep = "\n")
-    cat("[Load.Packages] INFO CHECK Installed packages and Toolbox to run the script", sep = "\n")
-    #
+    # checking if internet is available and CRAN can be accessed
+    isInternet <- curl::has_internet()
+    if (verbose) if (isInternet) cat("[Load_Packages] Info: internet is available\n") else cat("[Load_Packages] Info: internet is not available\n")
     for (i in list.Packages) {
-        # Installing packages
         if (i %in% rownames(installed.packages()) == FALSE) {
-            cat(sprintf("[Load.Packages] INFO Installing %s", i), sep = "\n")
+            if (verbose) cat(sprintf("[Load_Packages] INFO Installing %s", i), sep = "\n")
             install.packages(i)
         } else {
-            cat(sprintf("[Load.Packages] INFO Package %s already installed",i), sep = "\n")
+            if (verbose) cat(sprintf("[Load_Packages] INFO Package %s already installed",i), sep = "\n")
         }
-        # cat(i,quote=FALSE)
         do.call("library", as.list(i))
-        #library(i, character.only = TRUE)
-        cat(sprintf("[Load.Packages] INFO Package %s loaded",i), sep = "\n")
+        if (verbose) cat(sprintf("[Load_Packages] INFO Package %s loaded",i), sep = "\n")
     }
-    #
     # List of loaded packages
-    cat("[Load.Packages] INFO List of installed packages", sep = "\n")
-    print(search(), quote = FALSE)
-    cat("", sep = "\n")
+    if (verbose) cat("[Load_Packages] INFO List of installed packages\n")
+    if (verbose) print(search(), quote = FALSE)
+    if (verbose) cat("-----------------------------------------------------------------------------------\n")
+}
+#=====================================================================================CR
+# 170609 MG : dirCurrent, returning the Current directory of a script
+#=====================================================================================CR
+CurrentDir <- function(Verbose = FALSE) {
+    # This function returns the directory from where the current R script is run.
+    # It uses two methods according if Rstudio is used or not.
+    # Checking if RStudio is used
+    isRStudio  <- Sys.getenv("RSTUDIO") == "1"
+    if (isRStudio && Verbose) cat("[CurrentDir] INFO: ASE_Script is run under Rstudio\n")
+    # Getting the current scritp
+    if (isRStudio) {
+        # checking if rstudioapi is loaded
+        Load_Packages("rstudioapi")
+        # get the direcctory of the ASE_Script using RStudio
+        # https://stackoverflow.com/questions/3452086/getting-path-of-an-r-script
+        #dirCurrent <- dirname(rstudioapi::getActiveDocumentContext()$path)
+        dirCurrent <- dirname(rstudioapi::callFun("getActiveDocumentContext")$path)
+    }  else {
+        # checking if envDocument is loaded
+        Load_Packages("envDocument")
+        dirCurrent <- envDocument::getScriptInfo()
+        if (!dir.exists(dirCurrent)) dirCurrent <- getSrcDirectory(function(x) {x})
+    }
+    if (Verbose) cat(paste0("[CurrentDir] INFO: the curent directory of execution of the script is ", dirCurrent), sep = "\n")
+    return(dirCurrent)
+}
+Script_Dir <- function(isRStudio, isInternet = TRUE) {
+    # isRStudio :  Logical, TRUE if Rstudio is used otherwise FALSE
+    # isInternet:  Logical, TRUE  if internet is available to access CRAN, ddefault is TRUE
+    # Return the path of current script
+    # trying function getScriptPath of package envDocument
+    if (!require(envDocument)) {
+        if (isInternet) {
+            install.packages("envDocument")
+        } else stop(cat("[shiny, Script_Dir()] ERROR, internet missing to install the package envDocument The script is stopped."))
+    }
+    require(envDocument)
+    env_doc <- env_doc(output = c("return", "print", "table"), system = TRUE,
+                       version = TRUE, packages = TRUE, script = FALSE, git = FALSE,
+                       domino = c("auto", "on", "off"))
+    print(env_doc)
+    DisqueFieldtest <- as.character(env_doc[env_doc$Name == "Directory", "Value"])
+    if (is.null(DisqueFieldtest)) DisqueFieldtest <- getSrcDirectory(function(x) {x})
+    if (is.null(DisqueFieldtest)) DisqueFieldtest <- sys.calls()[[1]] [[2]]
+    if (is.null(DisqueFieldtest) & isRStudio) {
+        IsRstudioapi <- require(rstudioapi)
+        if (!IsRstudioapi) { # kimisc needs to be installed ot use kimisc::thisfile(), checking if internet is available
+            if (isInternet) {
+                install.packages("rstudioapi");
+                require(rstudioapi);
+            } else stop(cat("[shiny, Script_Dir()] ERROR, internet missing to install the package rstudioapi The script is stopped."))
+        }
+        # Searching in the directory where the script is run
+        if (dirname(rstudioapi::getActiveDocumentContext()$path) != "") {
+            cat(paste0("[app.R] INFO, using rstudioapi::getActiveDocumentContext()$path, app.R is run from ", rstudioapi::getActiveDocumentContext()$path, "\n"))
+            DisqueFieldtest <- dirname(rstudioapi::getActiveDocumentContext()$path)
+        } else {
+            cat(paste0("[app.R] ERROR, rstudioapi::getActiveDocumentContext()$path unable to detect the directory of app.R. Returning NULL.\n"))
+            DisqueFieldtest <- NULL
+        }
+    }
+    if (is.null(DisqueFieldtest)) {
+        IsKmisc <- require(kimisc);
+        IsKnitr <- require(knitr)
+        if (!IsKmisc) { # kimisc needs to be installed ot use kimisc::thisfile(), checking if internet is available
+            if (isInternet) {
+                install.packages("kimisc");
+                require(kimisc);
+            } else stop(cat("[shiny, Script_Dir()] ERROR, internet missing to install the package kimisc. The script is stopped."))
+        }
+        if (!IsKnitr) {# knitr needs to be installed, checking if internet is available
+            if (isInternet) {
+                install.packages("knitr");
+                require(knitr);
+            } else stop(cat("[shiny, Script_Dir()] ERROR, internet missing to install the package knitr. The script is stopped."))
+        }
+        # Searching in the directory where the script is run
+        if (!is.null(kimisc::thisfile())) {
+            cat(paste0("[app.R] INFO, app.R is run from ", dirname(kimisc::thisfile()), "\n"))
+            DisqueFieldtest <- dirname(kimisc::thisfile())
+        } else {
+            cat(paste0("[app.R] ERROR, kimisc::thisfile() unable to detect the directory from where is run app.R. Returning NULL.\n"))
+            DisqueFieldtest <- NULL
+        }
+    }
+    # This work only if we never change of working directory.
+    # In fact we really change of working directory once an AirSensEUR is selected
+    if (is.null(DisqueFieldtest)) DisqueFieldtest <- setwd(".")
+    return(DisqueFieldtest)
 }
 #================================================================CR
 ### resetPar: Function reset graphical parameters
@@ -232,6 +322,7 @@ slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL,
     # checking if calib is alrady available in order not to redo the calculation
     if (is.null(calib)) {
         #checking that the mat dataFrame is not empty
+        nb <- nrow(Mat)
         if (exists("Mat") && !is.null(Mat) && nrow(Mat)>0) {
             Mat$Max.ubsRM <- sqrt(RSS/(nb-2) + Mat$bias^2)
             Mat$Max.RSD   <- sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis
@@ -444,7 +535,7 @@ U.orth.DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
             if (!is.null(ubss)) {
                 Mat$ubss   <- rep(ubss, nrow(Mat))
             } else {
-            if (!"ubs" %in% names(Mat)) return("[slope_orth] ERROR, value of u(ubs) not given. Stopping the function. \n")
+                if (!"ubs" %in% names(Mat)) return("[slope_orth] ERROR, value of u(ubs) not given. Stopping the function. \n")
             }
         }
         # Filtering for the validation data only
@@ -555,6 +646,15 @@ U.orth.DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
     return(calib)
 }
 #================================================================CR
+### f_Kohler: Function Fitting a Kohler model
+#================================================================CR
+f_Kohler <- function(x, a0, a1, K, RH) {
+    return(a0 + a1 * (x * (1 + (K/1.65)/((RH/100)^-1 - 1))))
+    # Sensors 2018, 18(9), 2790; https://doi.org/10.3390/s18092790
+    # is no information regarding the efflorescence point of the compound with ???? = 0.4, we have assumed it to be the same as Ammonium Sulphate (RH = 35%). Also shown are particle volumes as functions of particle size for
+    # is no information regarding the efflorescence point of the compound with ???? = 0.4, we have assumed it to be the same as Ammonium Sulphate (RH = 35%). Also shown are particle volumes as functions of particle size for
+}
+#================================================================CR
 ### f_log: Function Fitting a logarithmic model
 #================================================================CR
 f_log <- function(x, a, b) {
@@ -624,7 +724,6 @@ f_BeerLambert2 <- function(x, a0, aT, n, Temperature, Atmospheric_pressure){
     # log(I1/I0) = O3 (sigma na L/R) Temperature^n / pressure + a0
     # a1 is a1 (sigma na L/R)
     # y = a0 + a1 x * Tempe/ pressure
-    # browser() 
     return( a0 + x * (Temperature/aT)^n / (Atmospheric_pressure))
 }
 f_normal <- function(x, mu, sigma) {
@@ -668,7 +767,7 @@ f_ExpDI_Int <- function(x, C, k,intercept) {
     # Passes through (0,intercept)
     # C is the upper limit
     # Increasing, but bounded above by y = C
-        # C is the max asymtoptic value on y axis
+    # C is the max asymtoptic value on y axis
     # intercept is the min asymtoptic value on y axis
     return(C *(1-exp(-k*x)) + intercept)
 }
@@ -706,7 +805,7 @@ f_normal_density <- function(x, mu, sigma, Density = NULL, Diam_APS = NULL) {
         #Correction of optical diameter, diving the dimeter in micrometer by sqrt(density). x must be given in log10(Diameter) at the end
         if (length(Which.APS) > 0) x[Which.APS] <- log10(10^(x[Which.APS])/sqrt(Density)) else stop("ERROR there are no APS diameter to correct for density")
     }
-       # return(1/(sqrt(2*pi * sigma^2)  ) * exp(-((x - mu)^2) / (2 * sigma^2) ) )
+    # return(1/(sqrt(2*pi * sigma^2)  ) * exp(-((x - mu)^2) / (2 * sigma^2) ) )
     #Density, distribution function, quantile function and random generation for the normal distribution with mean equal to mean and standard deviation equal to sd.
     return(dnorm(x, mean = mu, sd = sigma))
 }
@@ -786,8 +885,9 @@ insertRow <- function(existingDF, newrow, r) {
     row.names(existingDF) <- 1:nrow(existingDF)
     return(existingDF)
 }
-Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL, line_position, Couleur, Sensor_name = NULL, f_coef1, f_coef2, f_R2,
-                     lim = NULL, marges = NULL, Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt((max(x, na.rm = T) - min(x, na.rm = T))),
+Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL, line_position = 0, Couleur = "red", Sensor_name = NULL, 
+                     f_coef1 = "%.3e", f_coef2 = "%.3e", f_R2 = "%.4f", lim = NULL, marges = NULL, 
+                     Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt((max(x, na.rm = T) - min(x, na.rm = T))),
                      Auto.Lag = FALSE, Plot_Line = TRUE, Verbose = TRUE) {
     # This Function estimates the calibration function, plots the calibration line and write the equation above the plot at line_position
     # The regression equation can be weithed (1/sy^2) or not if s_y = Null
@@ -810,26 +910,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     # Lag_interval  : numerical, double, default sqrt((max(x, na.rm = T) - min(x, na.rm = T)), width of each lag used for estimating laf interval
     # Auto.Lag      : logical, default is FaLSE If Auto.Lag is TRUE, y is changed using the lag at which cross correlation between x and y is maximum using ccf( )
     # Plot_Line     : logical, default is TRUE. If TRUE the calibration line is added using par(new=TRUE) to an existaing scatterplot
-    # Return: the estimated model , plot a calibration is Plot_Line is TRUE
-    # saving the original par() values
-    if (Plot_Line) {
-        op <- par(no.readonly = TRUE)
-        # resuming the par values
-        on.exit(par(op))
-        # settings the margins
-        if (is.null(marges)) {
-            Margin <- c(4,4,3,0.5)
-            par(mar = c(4,4,3,0.5))
-        } else {
-            Margin <- par("mar")
-        }
-        #Define the limits of the graphs
-        if (is.null(lim)) {
-            Xrange <- c(min(x, na.rm = T), max(x, na.rm = T))
-            Yrange <- c(min(y, na.rm = T), max(y, na.rm = T))
-            lim = cbind(Xrange, Yrange)
-        }
-    }
+    # Return        : the estimated model , plot a calibration is Plot_Line is TRUE
     # check autocorelation and Lag of y versus x, adding NAs at the begining or end of x, y, s_y and Matrice
     if (Auto.Lag) {
         Lag <- Find_Max_CCF(x,y)
@@ -858,6 +939,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     if (Mod_type == "MultiLinear")                                    DataXY <- cbind(DataXY, Matrice[, ..Covariates])
     if (any(Mod_type %in% c("exp_kT", "exp_kK","T_power","K_power", "BeerLambert"))) DataXY[, Temperature := Matrice[["Temperature"]]]
     if (any(Mod_type %in% c("BeerLambert"))) DataXY[, Atmospheric_pressure := Matrice[["Atmospheric_pressure"]]]
+    if (any(Mod_type %in% c("Kohler"))) DataXY[, Relative_humidity := Matrice[["Relative_humidity"]]]
     # removing NA of any variables in DATAXY
     DataXY <- DataXY[complete.cases(DataXY[, .SD])]
     # Creating weights from the standard deviations within lags
@@ -894,6 +976,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     if (!is.null(Sensor_name)) {
         Sensor_name <- paste0(Sensor_name, ", ")
     }
+    # Fitting Models
     if (Mod_type == 'GAM_GAUSS') {
         Model <- gam(y ~ s(x), family = gaussian(link = identity), data = DataXY)
     } else if (Mod_type == 'Linear') {
@@ -902,20 +985,9 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             Model <- lm(y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE)
         } else {
             Model <- lm(y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE, weights = wi)}
-        # plotting calibrationn lines without plotting axis
-        par(new = TRUE)
-        plot(DataXY$x, Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
-        if (Weighted) {
-            points(DataXY$x, DataXY$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
-            par(new = TRUE)
-            arrows(DataXY$x, DataXY$y - DataXY$SD, DataXY$x, DataXY$y + DataXY$SD, length = 0.05, angle = 90, code = 3, col = Couleur)}
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Linear: y= ", f_coef1,"+ ", f_coef2," x",", R2=", f_R2,", RMSE=", f_coef1,",AIC= %.1f"), # ", s(Res)=",f_coef1,
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            summary(Model)$r.squared,
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2], summary(Model)$r.squared, sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'Linear.Robust') {
         # MGV Robust Linear Model, (if s_y is not null calculate weights wi and use them in the regression
         # This models the median of y as a function of x, rather than modelling the mean of y as a function of x, in the case of least squares regression.
@@ -925,15 +997,8 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             Model <- rq(y ~ x, data = DataXY, tau = 0.5, model = TRUE)
         } else {
             Model <- rq(y ~ x, data = DataXY, weights = wi, tau = 0.5, model = TRUE)}
-        # plotting calibration lines without plotting axis
-        par(new = TRUE)
-        plot(DataXY$x,Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
-        # display equations and R^2
-        par(bg = "blue")
-        Equation <- sprintf(paste0("Quantile regression tau 0.5: y= ",f_coef1,"+ ",f_coef2," x", ", RMSE=",f_coef1),
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)))
+        Equation <- sprintf(paste0("Quantile regression tau 0.5: y= ",f_coef1,"+ ",f_coef2," x", ", RMSE=",f_coef1,",AIC= %.1f"),
+                            coef(Model)[1], coef(Model)[2], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'gam') {
         Estimated <- data.frame(x = x, y = y)
         if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) {
@@ -944,15 +1009,6 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             # Let gam89 decide for k and estimate the best alpha
             #Model <- gam(y~s(x, k=5), family=Gamma(link=log), weights = wi)
             Model <- gam(y~s(x), family = Gamma(link = log), data = Estimated, weights = wi)}
-        # plotting calibration lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        Estimated <- Estimated[order(Estimated$x),]
-        if (Plot_Line) {
-            par(new = TRUE)
-            #plot(x,Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "")
-            plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")}
-        # display equations and R^2
-        par(bg = "blue")
         Equation <- sprintf(paste0("General Additive model"))
     } else if (Mod_type == 'exp_kT' | Mod_type == 'exp_kK') {
         # Setting Initial values
@@ -1024,7 +1080,6 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         index.mdT <- which(DataXY$Temperature == max(DataXY$Temperature, na.rm = TRUE))[1]
         A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (DataXY[index.mdT, "Temperature"])^1.75
         # Fitting model
-        # browser()
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
             Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY,
                            start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75),
@@ -1051,7 +1106,6 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         A0 <- coef(Linear.Model)[1]
         A1 <- coef(Linear.Model)[2]
         # Fitting model
-        # browser()
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
             Model <- nlsLM(y ~ f_BeerLambert2(x = x, a0 = a0, aT = aT, n = n, Temperature = Temperature, Atmospheric_pressure = Atmospheric_pressure), data = DataXY,
                            start = list(a0 = A0, aT = mean(DataXY[["Temperature"]], na.rm = T), n = 1),
@@ -1063,9 +1117,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                               lower = c(-Inf,-Inf,-Inf,-Inf,-Inf), upper = c(+Inf, +Inf, +Inf, +Inf, +Inf))
         # display equations and R^2
         Equation <- paste0(Sensor_name, "BeerLambert: y = ", f_coef1," + ",f_coef2," x Temperature^",f_coef1,"/pressure, RMSE=",f_coef1,", AIC= %.1f")
-        Equation <- sprintf(Equation,
-                            coef(Model)[1],coef(Model)[2],coef(Model)[3],
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
+        Equation <- sprintf(Equation, coef(Model)[1],coef(Model)[2],coef(Model)[3], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'MultiLinear') {
         if (!is.null(Multi.File)) {
             if (file.exists(Multi.File)) {
@@ -1214,100 +1266,49 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             Model <- lm(y ~ poly(x, degree = 2, raw = TRUE), data = DataXY, model = TRUE, x = TRUE, y = TRUE)
         } else {
             Model <- lm(y ~ poly(x, degree = 2, raw = TRUE), data = DataXY , weights = wi, model = TRUE, x = TRUE, y = TRUE)}
-        # plotting calibrationn lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Quadr.: y= ",f_coef1,"+ ",f_coef2,"x+ ",f_coef2,"x2",", R2=",f_R2, ", RMSE=",f_coef1,",AIC= %.1f") # ", s(Res)=",f_coef1,
-                            ,coef(Model)[1],
-                            coef(Model)[2],
-                            coef(Model)[3] ,
-                            summary(Model)$r.squared,
-                            #sd(resid(Model)),
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)),
-                            AIC(Model))
+                            ,coef(Model)[1], coef(Model)[2], coef(Model)[3] , summary(Model)$r.squared, sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)), AIC(Model))
     } else if (Mod_type == 'Cubic') {
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- lm(y ~ poly(x, 3, raw =TRUE), data = DataXY, model = TRUE, x = TRUE, y = TRUE)
         } else {
             Model <- lm(y ~ poly(x, 3, raw=TRUE) , data = DataXY, weights = wi, model = TRUE, x = TRUE, y = TRUE)}
-        # plotting calibrationn lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l", xaxt = "n", yaxt = "n" , xlab= "", ylab = "")
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Cubic: y= ",f_coef1,"+",f_coef2,"x+",f_coef2,"x2+",f_coef2,"x3",",R2=",f_R2,",RMSE=", f_coef1,",AIC= %.1f"),
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            coef(Model)[3],
-                            coef(Model)[4],
-                            summary(Model)$r.squared,
-                            sqrt(sum(resid(Model)^2) / (length(resid(Model)) - 2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2], coef(Model)[3], coef(Model)[4], summary(Model)$r.squared, sqrt(sum(resid(Model)^2) / (length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'ExpDecayInc') {
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
             Model <- nlsLM(y~f_ExpDI(x,C,k), data = DataXY, start = list(C = max(y), k = 0.05), model = TRUE)
         } else {
             Model <- nlsLM(y~f_ExpDI(x,C,k), data = DataXY, start = list(C = max(y), k = 0.05), weights = wi, model = TRUE)}
-        # plotting calibrationn lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l", xaxt = "n", yaxt = "n" , xlab= "", ylab = "")
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Exp. decay inc.: ys = ",f_coef1,"(1-exp(-",f_coef2,"x))", ",RMSE=",f_coef1,",AIC= %.1f"),
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2], sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)), AIC(Model))
     } else if (Mod_type == 'ExpDecayInc_Int') {
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), model = TRUE)
         } else {
             Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), weights = wi, model = TRUE)}
-        # plotting calibrationn lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Exp. decay inc.: ys = ",f_coef2,"(1-exp(-",f_coef2,"x))+",f_coef1,",RMSE=", f_coef1,",AIC= %.1f"),
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            coef(Model)[3],
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2], coef(Model)[3], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'ExpDecayDec_Int') {
         if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) {
             Model <- nls(y~f_ExpDD_Int(x, C, k,intercept), data = DataXY, start=list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), model = TRUE)
         } else {
             Model <- nls(y~f_ExpDD_Int(x, C, k,intercept), data = DataXY, start=list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), weights = wi, model = TRUE)}
-        # plotting calibrationn lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Exp. decay dec: y = ",f_coef2,"exp(-",f_coef2,"x))+",f_coef1,",RMSE=", f_coef1,",AIC= %.1f"),
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            coef(Model)[3],
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2], coef(Model)[3], sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)), AIC(Model))
     } else if (Mod_type == 'Michelis') {
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- nlsLM(y ~ MIN + f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y, na.rm = T), km=mean(y)/4, MIN = min(y, na.rm = T)), model = TRUE)
         } else {
             Model <- nlsLM(y ~ f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y, na.rm = T), km=mean(y)/4, MIN = min(y, na.rm = T)), weights = wi, model = TRUE)}
-        # plotting calibrationn lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Michelis: y = ",f_coef2,"/(",f_coef2,"+x)+",f_coef1,",RMSE=",f_coef1,",AIC= %.1f"), # ", s(Res)=", f_coef1,
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            coef(Model)[3],
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2], coef(Model)[3], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'Logarithmic') {
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- nls(y ~ f_log(x,a,b), data = DataXY, start = list(a = min(y, na.rm = T), b = 10), model = TRUE)
@@ -1319,11 +1320,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Estimated.y(DataXY$x, Model)
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Log. model: y = ",f_coef1," + ",f_coef2," log(x)), ", ",RMSE=",f_coef1,",AIC= %.1f"), # " s(Res)=", f_coef1,
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            #sd(resid(Model)),
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'Sigmoid') {
         #nls.control(maxiter = 500, tol = 1e-05, minFactor = 1/4096, printEval = TRUE, warnOnly = TRUE)
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
@@ -1337,23 +1334,14 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             #Model <- nlsLM(y ~ MIN + SSlogis(x, Asym, xmid, scal) , data=DataXY, start=list(MIN=min(y),Asym=max(y),xmid=mean(x), scal = 3), weights = wi ,
             #               control = list(maxiter = 500, tol=1e-2, minFactor = 1/(1024*32), printEval = TRUE, warnOnly=FALSE), trace=TRUE, model = TRUE)
         }
-        # plotting calibrationn lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Sigmoid: y=",f_coef1,"+",f_coef2,"/(1+(",f_coef2,"/x)^",f_coef2,"), ", ",RMSE=",f_coef1,",AIC= %.1f"), # "s(Res)=", f_coef1,
-                            coef(Model)[1],
-                            coef(Model)[2] - coef(Model)[1],
-                            coef(Model)[3],
-                            coef(Model)[4],
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2] - coef(Model)[1], coef(Model)[3], coef(Model)[4], sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)), AIC(Model))
     } else if (Mod_type == 'Unitec') {
         #Put O3, sensor reponses and standard deviation of sensor responses in a matrix: Not done for now
-        a=-31.6
-        b=5330.9
-        c=-0.598
+        a <- -31.6
+        b <- 5330.9
+        c <- -0.598
         DataXY <- data.frame(cbind(x*2.05, ((y-a)/b)^(1/c), s_y))
         colnames(DataXY) <- c("x","y")
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
@@ -1361,18 +1349,9 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         } else {
             Model <- nls(y~f_Unitec(x,a,b,c),data=DataXY, start=list(a=-31.6,b=5330.9,-0.598), weights = wi, model = TRUE, x = TRUE, y = TRUEi)
         }
-        # plotting calibrationn lines without plotting axis
-        Estimated <- Estimated.y(DataXY$x, Model)
-        par(new = TRUE)#, mar=Margin)
-        plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type= "l",xaxt = "n", yaxt = "n" , xlab= "", ylab = "")
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Unitec: y = ((1.91x(293.15/T)-",f_coef1,")/",f_coef2,")^(1/",f_coef21,"), ", ",RMSE=",f_coef1,",AIC= %.1f"),  # "s(Res)=", f_coef1,
-                            coef(Model)[1],
-                            coef(Model)[2],
-                            coef(Model)[3],
-                            coef(Model)[4],
-                            sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)),
-                            AIC(Model))
+                            coef(Model)[1], coef(Model)[2], coef(Model)[3], coef(Model)[4], sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)), AIC(Model))
     } else if (Mod_type == 'PM_Normal_Dist') {
         # Setting Initial values
         #MU <- log(dimatro) che corrisponde al max dei counts
@@ -1386,13 +1365,62 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                        data    = DataXY,
                        start   = list(mu1 = MU1, sigma1 = 0.2, K1 = K1, mu2 = MU2, K2 = K2, sigma2 = 0.2, C = C),
                        model   = TRUE, trace = T)
+    } else if (Mod_type == 'Kohler') {
+        # Setting Initial values of Kohler Model
+        Start <- list(a0 = 0, a1 = 1, K = 0.41)
+        Lower <- c(-10, 0.75, 0.35)
+        Upper <- c(+10, 1.25, 0.45)
+        # Fitting model
+        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+            Model <- nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = DataXY, start = Start, model = TRUE,
+                           control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                           lower = Lower, upper = Upper)
+        } else Model <- nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = Start, model = TRUE, weights = wi,
+                              control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                              lower = Lower, upper = Upper)
+        # display equations and R^2
+        Equation <- paste0(Sensor_name, "Kohler: y = ", f_coef1," + ",f_coef2," x * (1+(",f_coef2,"/1.65)/(1/RH-1) ), RMSE=",f_coef1,", AIC= %.1f")
+        Equation <- sprintf(Equation,
+                            coef(Model)[1],coef(Model)[2],coef(Model)[3],
+                            sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Verbose) cat("[Cal_Line] unknown calibration model\n")
     # Adding printing summary of Model
     if (Verbose) print(summary(Model))
-    # Adding equation text
-    if (!is.null(Equation)) mtext(Equation, line = line_position, adj = 1, padj = 0, col = Couleur, cex = 0.875)
-    # resuming the par values
-    if(Plot_Line) on.exit(par(op))
+    # Plotting and resuming the par values
+    if (Plot_Line){
+        # saving the original par() values
+        op <- par(no.readonly = TRUE)
+        # resuming the par values
+        on.exit(par(op))
+        # settings the margins
+        if (is.null(marges)) {
+            Margin <- c(4,4,3,0.5)
+            par(mar = c(4,4,3,0.5))
+        } else {
+            Margin <- par("mar")
+        }
+        #Define the limits of the graphs
+        if (is.null(lim)) {
+            Xrange <- c(min(x, na.rm = T), max(x, na.rm = T))
+            Yrange <- c(min(y, na.rm = T), max(y, na.rm = T))
+            lim = cbind(Xrange, Yrange)
+        }
+        # plotting calibrationn lines without plotting axis
+        if (Mod_type %in% c("Linear","Linear.Robust")) {
+            par(new = TRUE)
+            plot(DataXY$x, Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
+            if (Weighted) {
+                points(DataXY$x, DataXY$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
+                par(new = TRUE)
+                arrows(DataXY$x, DataXY$y - DataXY$SD, DataXY$x, DataXY$y + DataXY$SD, length = 0.05, angle = 90, code = 3, col = Couleur)}
+        } else if (Mod_type %in% c('gam', 'Quadratic', 'Unitec', 'Sigmoid', 'Michelis', 'ExpDecayDec_Int', 'ExpDecayInc_Int', 'ExpDecayInc', 'Cubic')) {
+            Estimated <- Estimated.y(DataXY$x, Model)
+            Estimated <- Estimated[order(Estimated$x),]
+            par(new = TRUE)
+            plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")}
+        # Adding equation text
+        if (!is.null(Equation)) mtext(Equation, line = line_position, adj = 1, padj = 0, col = Couleur, cex = 0.875)
+        on.exit(par(op))} 
     # Adding the equation to the model
     if (!is.null(Equation)) Model$Equation <- Equation
     return(Model)
@@ -1493,7 +1521,7 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
             # Discarding complex number, and negative values
             Roots <- sapply(1:3, function(nRoots) if (Im(Roots[nRoots]) != 0 || Re(Roots[nRoots]) < 0) Roots[nRoots] <- NA else Roots[nRoots] <- as.numeric(Re(Roots[nRoots])) )
             # Returning only one root, if more than one, take the smallest one non negative, root in position 1
-                if (any(!is.na(Roots[1:3]))) {
+            if (any(!is.na(Roots[1:3]))) {
                 if (length(which(!is.na(Roots[1:3]))) == 1) Roots[1] <- Roots[which(!is.na(Roots[1:3]))] else Roots[1] <- min(Roots[ which(!is.na(Roots[1:3]))], na.rm = TRUE)
             }
             return(Roots[1])
@@ -1528,6 +1556,10 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
         # model T_power: return( (y - a0)/ a1 * Pressure / Temperature^a2)
         #return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]] + Model$Coef[4]) / (273.15 + Matrice[["Temperature"]])^Model$Coef[3]))
         return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]]) / ((273.15 + Matrice[["Temperature"]])/Model$Coef[2])^Model$Coef[3]))
+    } else if (Mod_type == 'Kohler') {
+        # model return (y - a0) / (a1 * (1 + (K/1.65)/(RH/100 - 1)))
+        #return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]] + Model$Coef[4]) / (273.15 + Matrice[["Temperature"]])^Model$Coef[3]))
+        return(as.vector((y - Model$Coef[1]) / (Model$Coef[2] * (1 + (Model$Coef[2]/1.65)/((Matrice[["Relative_humidity"]]/100)^-1 - 1) ))))
     } else if (Mod_type == 'Michelis') {
         # model f_Michelis: return(Vmax*x/(km +x) + intercept)
         if (any(!is.na(y) & y < Model$Coef[3] ) | any(!is.na(y) & y > Model$Coef[1])) { # in case value out of bound and value is not NA
