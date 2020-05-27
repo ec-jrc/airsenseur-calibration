@@ -1,6 +1,84 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
+# New release V0.19, 2020-05-27
+#             E82 - bug correction: In function SETTIME, General.TZ was wrongly estimated. Corrected using function lubridate::tz
+#            N120 - The ASE-App will can now be used to calibrate PM10 sensors from OPC-N3 and PMS5003, reported as OPCN3PM10 sensor by AirSensEUR in InfluxDB. 
+#                   The shiny App will automatically recognize if PM10 sensors are included into InfluxData and RefData includes Ref.PM10 data that yu shall upload in refrence). 
+#                   It will modify the config files as needed (files ASE.cfg, ASE_SETTIME.cfg and Covariates, CovMod and Valid files)
+#             E83 - bug correction: In function SQLite2df. When the 2 different sensor models were installed on the same channel of an ASE box the automatic recognition of sensor model 
+#                                   was producing a crash of the App. This bug appeared with the new wide shape of airsenseur.db. Now corrected. The names of sensors is the last one present on the channel.
+#            N121 - It is now possible to use the internal temperature and relative humidity (temperature_int and Relative_humidity_int) for calibration. These parameters give 
+#                   the temperature and relative humidity on the middle of the chemical shield. Temperature_int can be useful to correct chemical shield with thier internal temperature
+#                   rather than the sampled air temperature.
+#            N122 - when selecting a different sensor in the sideBar of the "Data treatment" navBar the tabs of Filter, Calib and SetTime are automatically adjusted.
+#             E84 - bug correction: when opening old format airsenseur.db (long table), containing tables without _cast and "ASE" in table name table, the App crashes. Corrected
+#            N123 - Now all plots using plotOutput in ui are plotted with all the availbe heigh in window.
+#             E85 - bug correction: the "TimeSeries" and "Matrix" plot under tabPnel "Covariates" of NavBarMenu "Data Treatment" are now updated every time a filtering update take place.
+#            N124 - All plotOutput and matrix plots fit to the widt and height of display-
+#             E86 - bug correction: "Residual matrix" in TabPanel "Prediction" of NavBarMenu "Data Treatment" became unresponsive when changing "List of covariates to plot". Corrected.
+#            N125 - sql2df, save 3 new files in ../Configuration: var.names.meteo.cfg (all columns about meteo downloaded fron the influx server), 
+#                                                                 var.names.Pollusens.cfg (all columns about pollution downloaded fron the influx server)
+#                                                                 var.names.sens.cfg (all columns downloaded fron the influx server) 
+#             E87 - bug correction: the label() function of the sensorweb4r function was drawn from another package. All label function are now replaced with
+#                                   sensorweb4r::label(). Corrected
+#             E88 - bug correction: Add the possibility to select which reference pollutants are downloaded using the SOS protocol. Several small bugs corrected
+#                                   within function Down_Ref for SOS download
+#            N126 - Under Navbar menu "data treamtent", there is a new radio button "Declare ready for SOS" that create or delete an empty file name Ready.SOS in the
+#                   the directory"Shiny/ASE-Boxes/ASEXXX/Configuration".
+#             E91 - bug correction. In MenuBar "Data Treatment", TabPanel Caliibration-Map, if the coordinates of the reference station (Ref.Lat and Ref.Long) are missing
+#                                   in DF.General the map is not printed. Corrected, the map use the coordinates of the reference station given in the SideBar of Navbar Menu "Getdata"
+#            N127 - New functionality to create an AirSensEUR using a zip file in NavBr menu "SelectASE"
+#             E92 - In all "Matrix plots", the font of R2 has been adjusted in order to allow reading very small R2 values.
+
+#  ----#TO BE DONE  : ----
+# BUG CORRECTIONS
+#              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user
+#              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA.
+#                   Change substraction to V or nA
+#             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers
+#                   and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
+#             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
+#             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instead of the data series ime zone ("UTC") when discarding values.
+#             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the startvalues
+#             E69 - there is a problem with the color scale of concentration levels of the Target Diagram
+#             E70 - In some cases when selecting a new minimum Valid date, the date for covariates, calibration, prediction and reference outlier is wrongly updated
+#             E75 - When selecting a 2nd AirSensEUR box, it seems that it is not possible to merge the new ASE data, please check
+#             E79 - The button to export the Rmardown report does not work
+#             E89 - The date interval to be selected for the download of SOS refernce data is hidden. By default the start date is the last available dates in RefData
+#                   and the end date is the current date.
+#             E90 - Time of DYGraph are given in local time
+# NEW FEATURES needed:----
+#              N2 - Calibration with linear.robust: add RMSE on statterplot ...
+#              N3 - Add model calibration: neural network model in the list of possible calibration method.
+#              N5 - Add model resulting of laboratory experiments for calibration.
+#              N6 - In NavBar menu "Help": add videos on how to use the shiny interface.
+#              N7 - Do Filtering and conversion only for the selected sensor, not for all sensors.
+#              N8 - add "Sensor" and "Reference" in front of covariates in the comboBox of SideBar "Calib"
+#             N11 - Add evaluation tools: Sensor Evaluation Toolbox (SET) (Barak Fishbain).
+#             N12 - For invalid data: allow to resume data to initial value if CheckBoxes "Enable Outlier discarding" set to FALSE.
+#             N13 - Detect nearest AQMS using GPS coodinates and and download with SOS
+#             N15 - Add support for OPC-N3-2 and MOx sensor
+#             N17 - In getData Time-shield add a 2nd time average to be applied after download, in order to avoid to modify the raw downloaded data if averaging time is changed
+#             N19 - When downloading the SOS data make a query average to download less data as for InfluxQL
+#             N20 - TabSet Calib, add unit for slope and intercept,
+#             N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
+#             N22 - Enter the width of rolling window for oulier detection in hours instead of numbers of data, e. g. 19 for a rolling window of 3 hours with 10 minutes average time
+#             N27 - automatic order of rows of files "ASE_name"_valid_"sensor.name".cfg" based on the "in" dates
+#             N28 - Add an observer to open the correct sideBar tabPanel according to the selected tabPanel in the mainPanel
+#             N29 - There may be an error when adding dataFrame with subsequent download if a delay has been implemented before or if the Delay is modified between two downloads
+#             N30 - add the log mainTabPanel in the GetData NavBar menu
+#             N31 - Upload concentration levels after calibration to Client SOS and Influx (Grafana) servers
+#             N51 - Every time a .png files for rawData, scatterPlots, time series, matrix, Uncertainty, drift and targetDiagram exists in Calibration, mModelled_gas,
+#                   General_Data should not create a new plot and rather uses the .png plot instead
+#             N52 - Add the possibility to invalidate humidity transient
+#             N53 - Create a button "Delete" of AirSensEUR in NavBar menu "SelectASE"
+#             N54 - Finish Shiny App Manual
+#             N88 - Add interactive selection of points in the matrix plots of covariates, calibration and prediction
+#             N89 - Add the possibility to set some of the coefficients of calibration models with plotty
+#            N106 - Add the possibility to use several calibration models at different date interval
+#            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
+#            N108 - Allow to select only data with GPStimestamp and GPS coordinates
 # New release V0.18, 2020-02-11
 #             E80 - bug correction: In function General, the merge of INfluxData and refData into General Data crashes when they are duplicated in these datasets. Corrected: duplicated are now discarded
 #                                   Still to find why duplicates appears. For security, when saving InfluxData.csv, RefData.csv and General.csv, duplicated are also discarded .
@@ -41,53 +119,6 @@
 #                   Consequently in SQLite2df, there were duplicated data of the same timestamps. When casting pollutants name with dcast, the number of the duplicates (count) was returned instead of the
 #                   actual data values. Corrected in Down_Influx (> instead of >=) and the options fun.aggregate is added to dcast() to solve the cases when data are duplicated.
 #            N116 - The file Global.R is now splitted into GLobal.R and Global4Shiny.R. The 1st loads packages related to computation and the 2nd one loads packages related to shiny and plotting.
-
-#  ----#TO BE DONE  : ----
-# BUG CORRECTIONS
-#              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user
-#              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA.
-#                   Change substraction to V or nA
-#             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers
-#                   and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
-#             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
-#             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instead of the data series ime zone ("UTC") when discarding values.
-#             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the startvalues
-#             E69 - there is a problem with the color scale of concetration levels of the Target Diagram
-#             E70 - In some cases when selecting a new minimum Valid date, the date for covariates, calibration, prediction and reference outlier is wrongly updated
-#             E75 - When selecting a 2nd AirSensEUR box, it seems that it is not possible to merge the new ASE data, please check
-#             E79 - The button to export the Rmardown report does not work
-# NEW FEATURES needed:----
-#              N2 - Calibration with linear.robust: add RMSE on statterplot ...
-#              N3 - Add model calibration: neural network model in the list of possible calibration method.
-#              N5 - Add model resulting of laboratory experiments for calibration.
-#              N6 - In NavBar menu "Help": add videos on how to use the shiny interface.
-#              N7 - Do Filtering and conversion only for the selected sensor, not for all sensors.
-#              N8 - add "Sensor" and "Reference" in front of covariates in the comboBox of SideBar "Calib"
-#             N11 - Add evaluation tools: Sensor Evaluation Toolbox (SET) (Barak Fishbain).
-#             N12 - For invalid data: allow to resume data to initial value if CheckBoxes "Enable Outlier discarding" set to FALSE.
-#             N13 - Detect nearest AQMS using GPS coodinates and and download with SOS
-#             N15 - Add support for OPC-N3-2 and MOx sensor
-#             N17 - In getData Time-shield add a 2nd time average to be applied after download, in order to avoid to modify the raw downloaded data if averaging time is changed
-#             N19 - When downloading the SOS data make a query average to download less data as for InfluxQL
-#             N20 - TabSet Calib, add unit for slope and intercept,
-#             N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
-#             N22 - Enter the width of rolling window for oulier detection in hours instead of numbers of data, e. g. 19 for a rolling window of 3 hours with 10 minutes average time
-#             N27 - automatic order of rows of files "ASE_name"_valid_"sensor.name".cfg" based on the "in" dates
-#             N28 - Add an observer to open the correct sideBar tabPanel according to the selected tabPanel in the mainPanel
-#             N29 - There may be an error when adding dataFrame with subsequent download if a delay has been implemented before or if the Delay is modified between two downloads
-#             N30 - add the log mainTabPanel in the GetData NavBar menu
-#             N31 - Upload concentration levels after calibration to Client SOS and Influx (Grafana) servers
-#             N51 - Every time a .png files for rawData, scatterPlots, time series, matrix, Uncertainty, drift and targetDiagram exists in Calibration, mModelled_gas,
-#                   General_Data should not create a new plot and rather uses the .png plot instead
-#             N52 - Add the possibility to invalidate humidity transient
-#             N53 - Create a button "Delete" of AirSensEUR in NavBar menu "SelectASE"
-#             N54 - Finish Shiny App Manual
-#             N88 - Add interactive selection of points in the matrix plots of covariates, calibration and prediction
-#             N89 - Add the possibility to set some of the coefficients of calibration models with plotty
-#            N106 - Add the possibility to use several calibration models at different date interval
-#            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
-#            N108 - Allow to select only data with GPStimestamp and GPS coordinates
-
 # New release V0.16
 # 2019-12-17   N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
 #              E15 - bug corection: If the firmware of the sensor shield is changed during the use of an AirSensEUR box, the sensor data are wrongly converted to V or nA , e.g. ASE JRC-01 for NO23E50
@@ -568,3 +599,4 @@
 #================================================================CR
 # Content ====
 #================================================================CR
+
