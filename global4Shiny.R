@@ -12,11 +12,11 @@
 #
 # Authors
 # - Michel Gerboles        , michel.gerboles@ec.europa.eu  - European Commission - Joint Research Centre
-# # - Laurent Spinelle       , laurent.spinelle@ec.europa.eu - European Commission - Joint Research Centre
+# - Federico Karagulian    , federico.karagulian@ec.europa.eu - European Commission - Joint Research Centre
+# - Laurent Spinelle       , laurent.spinelle@ec.europa.eu - European Commission - Joint Research Centre
 # - Maria Gabriella Villani, mariagabriella.villani@enea.it - ENEA
 # - Marco Signorini        , marco.signorini@liberaintentio.com - Liberatintentio srl
 # - Alex Kotsev            , alexander.kotsev@ec.europa.eu - European Commission - Joint Research Centre
-# - Federico Karagulian    , federico.karagulian@ec.europa.eu - European Commission - Joint Research Centre
 #================================================================CR
 #----------------------------------------------------------CR
 #  1.d Install packages (CRAN + Github) ----
@@ -32,6 +32,7 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # Add CSS Loading Animations to 'shiny' Outputs                         --> shinycssloaders
 # Modal message box                                                     --> shinyalert
 # Modal message box confirm Sweetalert                                  --> shinyWidgets
+# DashBoard                                                             --> shinydashboard
 # cross-platform dialog box to select file for uploading ref data       --> rChoiceDialogs uses rJava which does not install under linux rstudio-server,
 #                                                                           Anyhow this not important because it is not possible to upload local file to the shiny server,
 #                                                                           only server side files. Finally the functionality.
@@ -52,9 +53,13 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # path of AirSensEUR spatial analysis                                   --> rgeos
 # Automatic reporting                                                   --> rmarkdown, xtable, knitr
 # Rmarkdown report                                                      --> formattable, flextable, pandoc, captioner, kableExtra
+# unzip                                                                 --> utils
+#
+# Manca rgdal?
 #
 list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "shinyBS"         , "shinycssloaders" , "shinyWidgets"    ,
-                   "rChoiceDialogs"  , "R.utils"         ,
+                   "shinydashboard"  ,
+                   "rChoiceDialogs"  , "R.utils"         , "utils"           ,
                    "openair"         , "corrplot"        , "DT"              , 
                    "rhandsontable"   , "fields"          , "shape"           , 
                    "dygraphs"        , "leaflet"         , "htmltools"       , 
@@ -62,9 +67,9 @@ list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "
                    "GGally"          , "plotly"          , "maptools"        , "raster"          , "rgeos"           ,
                    "rmarkdown"       , "xtable"          , "knitr"           ,
                    "formattable"     , "flextable"       , "pander"          , "captioner"       , "kableExtra")
-Load.Packages(list.Packages)
+Load_Packages(list.Packages)
 # if error on plyr then type install.packages("plyr") at the console
-# Install PhatomJS Should be done only ONCE - add a tst for this, see https://groups.google.com/forum/#!topic/phantomjs/3IUqGG31imI
+# Install PhatomJS Should be done only ONCE - add a test for this, see https://groups.google.com/forum/#!topic/phantomjs/3IUqGG31imI
 # https://www.rdocumentation.org/packages/webshot/versions/0.5.1/topics/install_phantomjs
 #webshot::install_phantomjs(version = "2.1.1", baseURL = "https://github.com/wch/webshot/releases/download/v0.3.1/")
 # for linux see https://github.com/rstudio/shinyapps-package-dependencies/pull/180
