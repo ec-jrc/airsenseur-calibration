@@ -92,6 +92,7 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # parallel computing Linux or windows                                   --> doParallel
 # Rolling mad and median                                                --> caTools, stats
 # computation of dew points (humidity.to.dewpoint)                      --> weathermetrics
+# extension                                                             --> raster
 #
 list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broom"           , "stringi"         ,
                    "lubridate"       , "zoo"             , "xts"             ,
@@ -103,8 +104,9 @@ list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"d
                    "BMS"             , "rlist"           , "tools"           , "stringr"         ,
                    "OSMscale"        , "berryFunctions"  ,
                    "RcppRoll"        , "foreach"         , "doParallel"      ,
-                   "caTools"         , "weathermetrics"  , "colorspace"      , "backports"       )
-Load.Packages(list.Packages)
+                   "caTools"         , "weathermetrics"  , "colorspace"      , "backports"       , "raster")
+Load_Packages(list.Packages)
+rm(list.Packages)
 # if error on plyr then type install.packages("plyr") at the console
 # Install PhatomJS Should be done only ONCE - add a tst for this, see https://groups.google.com/forum/#!topic/phantomjs/3IUqGG31imI
 # https://www.rdocumentation.org/packages/webshot/versions/0.5.1/topics/install_phantomjs
@@ -122,4 +124,4 @@ for (i in list.packages.github) {
     do.call("library", as.list(lib.i))
     cat(sprintf("[Global] INFO, Package %s loaded",i), sep = "\n")
 }
-rm(i, lib.i)
+rm(i, lib.i, list.packages.github)
