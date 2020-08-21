@@ -59,7 +59,7 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # ggplot2, dplyr, tidyr, readr, purrr, tibble, stringr, forcats
 # stringr: function str_detect, like grepl but for several pattern
 # rsqlite query name of tables                                          --> dbplyr
-# function to tidy Models 												--> broom
+# function to tidy Models 												                      --> broom, broomExtra
 # To read sensor data, needed for senorweb4R, install before openair    --> stringi
 # Easier management of time interval                                    --> lubridate
 # When removing ouliers, using rollapply(), na.locf                     --> zoo
@@ -91,7 +91,7 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # computation of dew points (humidity.to.dewpoint)                      --> weathermetrics
 # extension()                                                           --> raster
 # package needed to install Github rundel/timezone                      --> proj4
-list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broom"           , "stringi"         ,
+list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broomExtra"           , "stringi"         ,
                    "lubridate"       , "zoo"             , "xts"             ,
                    "futile.options"  , "lambda.r"        , "futile.logger"   , "geosphere"       ,
                    "curl"            , "RCurl"           , "httr"            , "devtools"        , "processx"        , "sp"              ,

@@ -901,7 +901,7 @@ insertRow <- function(existingDF, newrow, r) {
 }
 Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL, line_position = 0, Couleur = "red", Sensor_name = NULL, 
                      f_coef1 = "%.3e", f_coef2 = "%.3e", f_R2 = "%.4f", lim = NULL, marges = NULL, 
-                     Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt((max(x, na.rm = T) - min(x, na.rm = T))),
+                     Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt(max(x, na.rm = T) - min(x, na.rm = T)),
                      Auto.Lag = FALSE, Plot_Line = TRUE, Verbose = TRUE) {
     # This Function estimates the calibration function, plots the calibration line and write the equation above the plot at line_position
     # The regression equation can be weithed (1/sy^2) or not if s_y = Null
@@ -948,7 +948,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         # colnames(DataXY) <- c("x","y","s_y","wi")
     }
     # adding Covariates for multilinear model and multivariate models
-    if (Mod_type == "MultiLinear")                                    DataXY <- cbind(DataXY, Matrice[, ..Covariates])
+    if (Mod_type == "MultiLinear") DataXY <- cbind(DataXY, Matrice[, ..Covariates])
     if (any(Mod_type %in% c("exp_kT_NoC","exp_kT", "exp_kK","T_power","K_power", "BeerLambert"))) {
         if (is.null(Covariates)) {
             if (nrow(DataXY != nrow(Matrice))) futile.logger::flog.error(pate0("[Cal_line] x, y an Covariates do not have the same length."))
@@ -961,33 +961,17 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     # Creating weights from the standard deviations within lags
     if (Weighted) {
         #lag_distance <- round((range(DataXY$x, na.rm = T)[2] - range(DataXY$x, na.rm = T)[1])/Lag_numbers)
-        # any co-variates?
+        DataXY[, ID := round(x/Lag_interval)*Lag_interval]
+        setkey(DataXY, ID)
+        DataXY[, c("x", "y", "SD", "Count") := list(mean(x, na.rm = T), mean(y, na.rm = T), sd(y, na.rm = T),.N), by= ID]
+        # any covariates?
         if (!is.null(Covariates)) {
-            covariates <- sym(Covariates)
-            # creating index, group by and take the mean of x and y
-            # https://stackoverflow.com/questions/26724124/standard-evaluation-in-dplyr-summarise-on-variable-given-as-a-character-string
-            DataXY <- DataXY %>%
-                dplyr::mutate(ID = round(x/Lag_interval)*Lag_interval) %>%
-                dplyr::group_by(ID) %>%
-                dplyr::summarise(SD = sd(y, na.rm = T), x = mean(x, na.rm = T), Count = n(), y = mean(y, na.rm = T), !!covariates := mean(!!covariates, na.rm = T)) %>%
-                dplyr::mutate(SumWI = sum(SD^2, na.rm = T)) %>%
-                dplyr::mutate(wi = SumWI/SD^2)  %>%
-                dplyr::select(-c(ID, SumWI))
-        } else {
-            # creating index, group by and take the mean of x and y
-            # https://stackoverflow.com/questions/26724124/standard-evaluation-in-dplyr-summarise-on-variable-given-as-a-character-string
-            DataXY <- DataXY %>%
-                dplyr::mutate(ID = round(x/Lag_interval)*Lag_interval) %>%
-                dplyr::group_by(ID) %>%
-                dplyr::summarise(SD = sd(y, na.rm = T), x = mean(x, na.rm = T), Count = n(), y = mean(y, na.rm = T)) %>%
-                dplyr::mutate(SumWI = sum(SD^2, na.rm = T)) %>%
-                dplyr::mutate(wi = SumWI/SD^2)  %>%
-                dplyr::select(-c(ID, Count, SumWI))
-        }
-    }
-    # # removing NA of any variables in DATAXY
-    # DataXY <- DataXY %>%
-    #     dplyr::filter(complete.cases(DataXY))
+            browser()
+            DataXY[, (Covariates) := mean(.SD, na.rm = T), .SDcols = Covariates, by = ID]} 
+        DataXY <- unique(DataXY[complete.cases(DataXY)])
+        DataXY[, SumWI := sum(SD^2/(Count - 1), na.rm = T)]
+        DataXY[, wi := 1/(SD^2/(Count - 1))]
+        DataXY[, c("ID", "Count","SumWI") := NULL]}
     # Add ", " at the end of Sensor_name to be print with the legend
     if (!is.null(Sensor_name)) Sensor_name <- paste0(Sensor_name, ", ")
     # Fitting Models
@@ -1030,6 +1014,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         A1 <- coef(Linear.Model)[2]
         # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
         if (Mod_type == 'exp_kT_NoC') {
+            # checking for positives values for the log((RNo - a1 x)/a0)
             Positives <- which((DataXY$y - A1 * DataXY$x)/A0 > 0)
             # Model in celsius degrees
             DataXY[Positives,"Init.Coeffs"] <- log((DataXY[Positives,"y"] - A1 * DataXY[Positives,"x"])/A0)
@@ -1037,14 +1022,11 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[Positives,], tau = c(0.5))
             k0 <- coef(Model.0)[1]
             # Fitting model
+            f <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a0, a1, k, ",name.Temperature,")"))
             if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-                Model <- nlsLM(y ~ f_exp_kT_NoC(DataXY$x, a0, a1, k, DataXY[[name.Temperature]]),
-                               start = list(a0 = A0, a1 = A1, k = k0),
-                               model = TRUE,
+                Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, k = k0), model = TRUE,
                                control = nls.lm.control(maxiter = 1024, maxfev = 10000))
-            } else Model <- nlsLM(y ~ f_exp_kT_NoC(DataXY$x,a0,a1,k,DataXY[[name.Temperature]], n),
-                                  start = list(a0 = A0, a1 = A1, k = 0.12, n = 1),
-                                  weights = wi, model = TRUE, lower = c(0, 0.0000000001, 0, 0.00000000001),
+            } else Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, k = k0), model = TRUE, weights = wi,
                                   control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
             # display equations and R^2
             Equation <- sprintf(paste0(Sensor_name, "exp_kT_NoC: y = ",f_coef1," exp(",f_coef2," T_Celsius)+ ",f_coef2," x, RMSE=",f_coef1,",AIC= %.1f"),
@@ -1060,14 +1042,11 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             C0 <- coef(Model.0)[1]
             k0 <- coef(Model.0)[2]
             # Fitting model
+            f <- as.formula(paste0("y ~ f_exp_kT(x, a0, a1, C, k, ",name.Temperature,")"))
             if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-                Model <- nlsLM(y ~ f_exp_kT(DataXY$x, a0, a1, C, k, DataXY[[name.Temperature]]),
-                               start = list(a0 = A0, a1 = A1, C = C0, k = k0),
-                               model = TRUE,
+                Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE,
                                control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001)
-            } else Model <- nlsLM(y ~ f_exp_kT(DataXY$x,a0,a1,C,k,DataXY[[name.Temperature]], n),
-                                  start = list(a0 = A0, a1 = A1, C = A0, k = 0.12, n = 1),
-                                  weights = wi, model = TRUE, lower = c(0, 0.0000000001, 0, 0.00000000001),
+            } else Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE, weights = wi, 
                                   control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
             # display equations and R^2
             Equation <- sprintf(paste0(Sensor_name, "Power: y = ",f_coef1,"+ ",f_coef2," x + exp(",f_coef2," T_Celsius + ", f_coef2,"), RMSE=",f_coef1,",AIC= %.1f"),
@@ -1078,22 +1057,15 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             # Values for which log(DataXY$y - (A0 + A1 * DataXY$x)) can be calculated
             Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 0)
             # Model in Kelvin
-            DataXY$Kelvin     <- (273.15 + DataXY$Temperature)
-            DataXY$Kelvin_inv <- DataXY$Kelvin^-1
+            DataXY$Kelvin     <- 273.15 + DataXY$Temperature
             Model.0 <- lm( log(y[Positives] - (A0 + A1 * x[Positives])) ~ Kelvin[Positives], data = DataXY)
             C0 <- coef(Model.0)[1]
             k0 <- coef(Model.0)[2]
+            f <- as.formula("y ~ f_exp_kT(x, a0, a1, C, k, Kelvin)")
             if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-                Model <- nlsLM(y ~ f_exp_kT(x, a0, a1, C, k, Kelvin),
-                               data = DataXY,
-                               start = list(a0 = A0, a1 = A1, C = C0, k = k0),
-                               model = TRUE,
+                Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE,
                                control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001)
-            } else Model <- nlsLM(y ~ y ~ f_exp_kT(x, a0, a1, C, k, Kelvin),
-                                  data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0),
-                                  weights = wi,
-                                  model = TRUE,
-                                  lower = c(0, 0.0000000001, 0, 0.00000000001),
+            } else Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE, model = TRUE, weights = wi,
                                   control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
             # display equations and R^2
             Equation <- sprintf(paste0(Sensor_name, "Power: y = ",f_coef1,"+ ",f_coef2," x + exp(",f_coef2," T_Kelvin + ", f_coef2,"), RMSE=",f_coef1,",AIC= %.1f"),
@@ -1113,14 +1085,14 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         index.mdT <- which(DataXY$Temperature == max(DataXY$Temperature, na.rm = TRUE))[1]
         A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (DataXY[index.mdT, "Temperature"])^1.75
         # Fitting model
+        browser()
+        f <- as.formula("y ~ f_T_power(x, a0, a1, a2, n, Temperature)")
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-            Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY,
-                           start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75),
-                           model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+            Model <- minpack.lm::nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY, start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75), model = TRUE, 
+                           control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                            lower = c(-Inf,-Inf,-Inf, 0.1), upper = c(+Inf, +Inf, +Inf, 5))
-        } else Model <- nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY,
-                              start = list(a0 = A0, a1 = A1,  a2 = A2, n = 1.75),
-                              weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+        } else Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1,  a2 = A2, n = 1.75), model = TRUE, weights = wi,
+                              control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                               lower = c(-Inf,-Inf,-Inf, 0.1), upper = c(+Inf, +Inf, +Inf, 5))
         # display equations and R^2
         if (Mod_type == 'T_power') {
@@ -1140,11 +1112,11 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         A1 <- coef(Linear.Model)[2]
         # Fitting model
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-            Model <- nlsLM(y ~ f_BeerLambert2(x = x, a0 = a0, aT = aT, n = n, Temperature = Temperature, Atmospheric_pressure = Atmospheric_pressure), data = DataXY,
+            Model <- minpack.lm::nlsLM(y ~ f_BeerLambert2(x = x, a0 = a0, aT = aT, n = n, Temperature = Temperature, Atmospheric_pressure = Atmospheric_pressure), data = DataXY,
                            start = list(a0 = A0, aT = mean(DataXY[["Temperature"]], na.rm = T), n = 1),
                            model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                            lower = c(-Inf,-Inf,-Inf), upper = c(+Inf, +Inf, +Inf))
-        } else Model <- nlsLM(y ~ f_BeerLambert(x, a0, a1, a2, n, Temperature, Atmospheric_pressure), data = DataXY,
+        } else Model <- minpack.lm::nlsLM(y ~ f_BeerLambert(x, a0, a1, a2, n, Temperature, Atmospheric_pressure), data = DataXY,
                               start = list(a0 = A0, a1 = A1, a2 = 0, a3 = 0, n = 1),
                               weights = wi, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                               lower = c(-Inf,-Inf,-Inf,-Inf,-Inf), upper = c(+Inf, +Inf, +Inf, +Inf, +Inf))
@@ -1258,7 +1230,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                         }
                     }
                     #fitting with Exponential growth
-                    Model <- nlsLM(Formula.Covariates, data = DataXY,
+                    Model <- minpack.lm::nlsLM(Formula.Covariates, data = DataXY,
                                    start = Start.Value,
                                    # start = list(a0 = A0, #coef(lm(y ~ x, data = DataXY))[1],
                                    #              a1 = A1, # coef(lm(y ~ x, data = DataXY))[2],
@@ -1275,7 +1247,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             if (is.MultiFile) {
                 if (any("ExpGrowth" %in% Degrees)) {
                     #fitting with Exponential growth
-                    nlsLM(Formula.Covariates, data = DataXY,
+                    minpack.lm::nlsLM(Formula.Covariates, data = DataXY,
                           start = Start.Value,
                           # start = list(a0 = A0, #coef(lm(y ~ x, data = DataXY))[1],
                           #              a1 = A1, # coef(lm(y ~ x, data = DataXY))[2],
@@ -1312,17 +1284,17 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                             coef(Model)[1], coef(Model)[2], coef(Model)[3], coef(Model)[4], summary(Model)$r.squared, sqrt(sum(resid(Model)^2) / (length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'ExpDecayInc') {
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-            Model <- nlsLM(y~f_ExpDI(x,C,k), data = DataXY, start = list(C = max(y), k = 0.05), model = TRUE)
+            Model <- minpack.lm::nlsLM(y~f_ExpDI(x,C,k), data = DataXY, start = list(C = max(y), k = 0.05), model = TRUE)
         } else {
-            Model <- nlsLM(y~f_ExpDI(x,C,k), data = DataXY, start = list(C = max(y), k = 0.05), weights = wi, model = TRUE)}
+            Model <- minpack.lm::nlsLM(y~f_ExpDI(x,C,k), data = DataXY, start = list(C = max(y), k = 0.05), weights = wi, model = TRUE)}
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Exp. decay inc.: ys = ",f_coef1,"(1-exp(-",f_coef2,"x))", ",RMSE=",f_coef1,",AIC= %.1f"),
                             coef(Model)[1], coef(Model)[2], sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)), AIC(Model))
     } else if (Mod_type == 'ExpDecayInc_Int') {
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
-            Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), model = TRUE)
+            Model <- minpack.lm::nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), model = TRUE)
         } else {
-            Model <- nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), weights = wi, model = TRUE)}
+            Model <- minpack.lm::nlsLM(y ~ f_ExpDI_Int(x, C, k,intercept), data = DataXY, start = list(C = max(y, na.rm = T), k = 0.05, intercept = min(y, na.rm = T)), weights = wi, model = TRUE)}
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Exp. decay inc.: ys = ",f_coef2,"(1-exp(-",f_coef2,"x))+",f_coef1,",RMSE=", f_coef1,",AIC= %.1f"),
                             coef(Model)[1], coef(Model)[2], coef(Model)[3], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
@@ -1336,9 +1308,9 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                             coef(Model)[1], coef(Model)[2], coef(Model)[3], sqrt(sum(resid(Model)^2)/(length(resid(Model))-2)), AIC(Model))
     } else if (Mod_type == 'Michelis') {
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
-            Model <- nlsLM(y ~ MIN + f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y, na.rm = T), km=mean(y)/4, MIN = min(y, na.rm = T)), model = TRUE)
+            Model <- minpack.lm::nlsLM(y ~ MIN + f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y, na.rm = T), km=mean(y)/4, MIN = min(y, na.rm = T)), model = TRUE)
         } else {
-            Model <- nlsLM(y ~ f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y, na.rm = T), km=mean(y)/4, MIN = min(y, na.rm = T)), weights = wi, model = TRUE)}
+            Model <- minpack.lm::nlsLM(y ~ f_Michelis(x, Vmax, km, MIN), data=DataXY, start=list(Vmax=max(y, na.rm = T), km=mean(y)/4, MIN = min(y, na.rm = T)), weights = wi, model = TRUE)}
         # display equations and R^2
         Equation <- sprintf(paste0(Sensor_name, "Michelis: y = ",f_coef2,"/(",f_coef2,"+x)+",f_coef1,",RMSE=",f_coef1,",AIC= %.1f"), # ", s(Res)=", f_coef1,
                             coef(Model)[1], coef(Model)[2], coef(Model)[3], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
@@ -1359,12 +1331,12 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             # Model <- nls(y~f_Sigmoid(x, MIN, MAX, X50, Hill), data=DataXY, start=list(MIN=min(y),MAX=max(y),X50=mean(x), Hill=3)
             #               , control = list(maxiter = 500, tol=1e-2, minFactor = 1/1024, printEval = TRUE, warnOnly=FALSE), trace=TRUE)
-            Model <- nlsLM(DataXY$y ~ f_Sigmoid(x, MIN, Asym, xmid, Hill), data = DataXY, start = list(MIN = min(y, na.rm = T), Asym = max(y), xmid = mean(x, na.rm = T), Hill = 3)
+            Model <- minpack.lm::nlsLM(DataXY$y ~ f_Sigmoid(x, MIN, Asym, xmid, Hill), data = DataXY, start = list(MIN = min(y, na.rm = T), Asym = max(y), xmid = mean(x, na.rm = T), Hill = 3)
                            , control = list(maxiter = 500, tol = 1e-2, minFactor = 1/1024, printEval = TRUE, warnOnly = FALSE), trace = FALSE, model = TRUE)
         } else {
-            Model <- nlsLM(y ~ f_Sigmoid(x, MIN, Asym, xmid, Hill), data = DataXY, start=list(MIN=min(y, na.rm = T),Asym=max(y),xmid=mean(x, na.rm = T), Hill = 3), weights = wi
+            Model <- minpack.lm::nlsLM(y ~ f_Sigmoid(x, MIN, Asym, xmid, Hill), data = DataXY, start=list(MIN=min(y, na.rm = T),Asym=max(y),xmid=mean(x, na.rm = T), Hill = 3), weights = wi
                            , control = list(maxiter = 500, tol = 1e-82, minFactor = 1/1024, printEval = TRUE, warnOnly = FALSE), trace = FALSE, model = TRUE)
-            #Model <- nlsLM(y ~ MIN + SSlogis(x, Asym, xmid, scal) , data=DataXY, start=list(MIN=min(y),Asym=max(y),xmid=mean(x), scal = 3), weights = wi ,
+            #Model <- minpack.lm::nlsLM(y ~ MIN + SSlogis(x, Asym, xmid, scal) , data=DataXY, start=list(MIN=min(y),Asym=max(y),xmid=mean(x), scal = 3), weights = wi ,
             #               control = list(maxiter = 500, tol=1e-2, minFactor = 1/(1024*32), printEval = TRUE, warnOnly=FALSE), trace=TRUE, model = TRUE)
         }
         # display equations and R^2
@@ -1391,10 +1363,10 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         #SIGMA <- coef(Linear.Model)[2]
         # Fitting model
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-            Model <- nlsLM(y ~ f_Normal(x, mu, sigma), data = DataXY, start = list(mu = MU, sigma = SIGMA), model = TRUE)
-        } else Model <- nlsLM(y ~ f_Normal(x, mu, sigma), data = DataXY, start = list(mu = MU, sigma = SIGMA), model = TRUE, weights = wi)
+            Model <- minpack.lm::nlsLM(y ~ f_Normal(x, mu, sigma), data = DataXY, start = list(mu = MU, sigma = SIGMA), model = TRUE)
+        } else Model <- minpack.lm::nlsLM(y ~ f_Normal(x, mu, sigma), data = DataXY, start = list(mu = MU, sigma = SIGMA), model = TRUE, weights = wi)
     } else if (Mod_type == 'bi_Normal') {
-        Model <- nlsLM(y ~  K1* dnorm(x, mu1, sigma1) + K2* dnorm(x, mu2, sigma2) + C ,
+        Model <- minpack.lm::nlsLM(y ~  K1* dnorm(x, mu1, sigma1) + K2* dnorm(x, mu2, sigma2) + C ,
                        data    = DataXY,
                        start   = list(mu1 = MU1, sigma1 = 0.2, K1 = K1, mu2 = MU2, K2 = K2, sigma2 = 0.2, C = C),
                        model   = TRUE, trace = T)
@@ -1405,10 +1377,10 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Upper <- c(+10, 1.25, 0.45)
         # Fitting model
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-            Model <- nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = DataXY, start = Start, model = TRUE,
+            Model <- minpack.lm::nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = DataXY, start = Start, model = TRUE,
                            control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                            lower = Lower, upper = Upper)
-        } else Model <- nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = Start, model = TRUE, weights = wi,
+        } else Model <- minpack.lm::nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = Start, model = TRUE, weights = wi,
                               control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                               lower = Lower, upper = Upper)
         # display equations and R^2

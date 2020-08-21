@@ -11,15 +11,18 @@ Possible.Dir <- c("S:\\Box Sync\\AirSensEUR\\Fieldtests\\Shiny",
 for (Dir in Possible.Dir) if (dir.exists(Dir)) {setwd(Dir); break()}
 rm(Possible.Dir)
 # Load packages
-source("global.R")
 # Installing package librarian to install and load packages from CRAN, github and bio conductor in 1 line
 # https://towardsdatascience.com/an-efficient-way-to-install-and-load-r-packages-bc53247f058d
 if (!"remotes"   %in% utils::installed.packages()) install.packages("remotes")
 if (!"librarian" %in% utils::installed.packages()) remotes::install_github("DesiQuintans/librarian")
-if (exists("list.Packages") && list.Packages != "") librarian::shelf(list.Packages)
-if (exists("list.Packages")) rm(list.Packages)
-if (exists("list.packages.github") && list.packages.github != "") librarian::shelf(list.packages.github)
-if (exists("list.packages.github")) rm(list.packages.github)
+source("global.R")
+if (exists("list.Packages") && list.Packages != "") {
+    librarian::shelf(list.Packages)
+    rm(list.Packages, envir = .GlobalEnv)} 
+if (exists("list.packages.github") && list.packages.github != "") {
+    librarian::shelf(list.packages.github)
+    rm(list.packages.github, envir = .GlobalEnv)} 
+librarian::shelf(gplots) # heatmap2
 
 futile.logger::flog.info("[Global] List of installed packages")
 print(search(), quote = FALSE)
@@ -35,7 +38,7 @@ List.ASE <- c("40458D","4047D0","406414","40641B","40642E","4065D0","4065E0","40
 # Downloading new data if available ####
 ##########################################C
 for (i in List.ASE) {
-    influx.downloadAndPredict(boxName = i, boxConfig = influx.getConfig(boxName = i), Add.Ref = TRUE)
+    General <- influx.downloadAndPredict(boxName = i, boxConfig = influx.getConfig(boxName = i), Add.Ref = TRUE)
     if (.Platform$OS.type == "windows") {
         gc(verbose = getOption("verbose"), reset = FALSE, full = TRUE)   
     } else gc(verbose = getOption("verbose"), reset = FALSE)} 

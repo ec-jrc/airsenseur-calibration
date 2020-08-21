@@ -16,6 +16,7 @@
 #                   Filter.Ref.Data. these functions are used for the automatic calibration but shall be integrated into App.R and influx.downloadAndPredict.
 #            N132 - Two new scripts were added: Compare model download_predict.R, the first one allow setting calibration models for a list of ASE boxes per type of sensors
 #                   and the second one allow the automatic downalod of sensor data applying the configured calibraion models.
+#             E95 - bug correction: when selecting a 2nd ASE box, the RHandSomeTable "FilteringMain", "CalibMain" and "SetTimeMain" in Menu "Data Treatment" are now updated.
 #  ----#TO BE DONE  : ----
 # BUG CORRECTIONS
 #              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user
@@ -30,8 +31,7 @@
 #             E70 - In some cases when selecting a new minimum Valid date, the date for covariates, calibration, prediction and reference outlier is wrongly updated
 #             E75 - When selecting a 2nd AirSensEUR box, it seems that it is not possible to merge the new ASE data, please check
 #             E79 - The button to export the Rmardown report does not work
-#             E89 - The date interval to be selected for the download of SOS refernce data is hidden. By default the start date is the last available dates in RefData
-#                   and the end date is the current date.
+#             E89 - The date interval to be selected for the download of SOS reference data is hidden. By default the start date is the last available dates in RefData and the end date is the current date.
 #             E90 - Time of DYGraph are given in local time
 # NEW FEATURES needed:----
 #              N2 - Calibration with linear.robust: add RMSE on statterplot ...

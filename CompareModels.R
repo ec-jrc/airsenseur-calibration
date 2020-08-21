@@ -11,17 +11,19 @@ Possible.Dir <- c("S:\\Box Sync\\AirSensEUR\\Fieldtests\\Shiny",
 for (Dir in Possible.Dir) if (dir.exists(Dir)) {setwd(Dir); break()}
 rm(Possible.Dir)
 # Load packages
-source("global.R")
 # Installing package librarian to install and load packages from CRAN, github and bio conductor in 1 line
 # https://towardsdatascience.com/an-efficient-way-to-install-and-load-r-packages-bc53247f058d
 if (!"remotes"   %in% utils::installed.packages()) install.packages("remotes")
 if (!"librarian" %in% utils::installed.packages()) remotes::install_github("DesiQuintans/librarian")
-if (exists("list.Packages") && list.Packages != "") librarian::shelf(list.Packages)
-if (exists("list.Packages")) rm(list.Packages)
-if (exists("list.packages.github") && list.packages.github != "") librarian::shelf(list.packages.github)
-if (exists("list.packages.github")) rm(list.packages.github)
+source("global.R")
+if (exists("list.Packages") && list.Packages != "") {
+    librarian::shelf(list.Packages)
+    rm(list.Packages, envir = .GlobalEnv)} 
+if (exists("list.packages.github") && list.packages.github != "") {
+    librarian::shelf(list.packages.github)
+    rm(list.packages.github, envir = .GlobalEnv)} 
 librarian::shelf(gplots) # heatmap2
-
+library(plyr)
 futile.logger::flog.info("[Global] List of installed packages")
 print(search(), quote = FALSE)
 cat("\n")
@@ -31,19 +33,24 @@ cat("\n")
 ##########################################C
 #list.dirs(file.path(getwd(), "ASE_Boxes"),full.names = FALSE, recursive = FALSE)
 List.ASE <- c("40458D","4047D0","406414","40641B","40642E","4065D0","4065E0","4065E3","4065ED","40816F")
-List.ASE <- c("40641B")
+List.ASE <- c("406414")
 
 ##########################################
 # checking if new data are available ####
 ##########################################C
 for (i in List.ASE) influx.downloadAndPredict(boxName = i, boxConfig = influx.getConfig(boxName = i), Add.Ref = TRUE)
 
+boxConfig <- influx.getConfig(boxName = List.ASE[1])
+ASE.ID <- Identify_ASE_Dir(file.path(getwd(), "ASE_Boxes", List.ASE))
+ASE.ID$General.DT <- Filter.Ref.Data(ASE.ID = ASE.ID, Save = TRUE)
+ASE.ID$General.DT <- Filter.Sensor.Data(ASE.ID = ASE.ID)
+
 ##########################################
 # Calibrating
 ##########################################C
 # CO_A4_P1 ----
 Ispra.CO  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "CO_A4_P1", 
-                                  Interval = 1, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
+                                  Interval = 3, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
                                   Add.Covariates = TRUE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = "NO2_B43F_P1_volt")
 # Comparing all calibration models
 List.models.Final <- sapply(List.ASE, function(i){
@@ -54,8 +61,9 @@ List.models.Final <- sapply(List.ASE, function(i){
 Compared.CO.Ispra <- Compare_Models(List.models =  List.models.Final, Verbose = T)
 # D300 ----
 Ispra.CO2 <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "D300",
-                                   Interval = 1, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-29"), 
-                                   DRIFT = TRUE, volt = TRUE, modelled = TRUE, Register = TRUE)
+                                  Interval = 3, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                  Add.Covariates = TRUE, DRIFT = FALSE, volt = TRUE, modelled = FALSE, Register = TRUE,
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "NO_B4_P1", "NO2_B43F_P1_volt","OX_A431_P1_volt"))
 # Comparing all calibration models
 List.models.Final <- sapply(List.ASE, function(i){
     ASEDir   <- file.path(Dir, "ASE_Boxes", i)
@@ -66,25 +74,41 @@ Compare_Models(List.models =  List.models.Final, Verbose = T)
 # NO_A4_P1 ----
 # exp of Temperature_int
 Ispra.NO  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "NO_B4_P1",
-                                  Interval = 1L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                  Interval = 3L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
                                   Relationships = c("Temperature_int"), degrees = "ExpGrowth", 
-                                  Treshold.VIF = 10, Conf.level = 0.10, 
-                                  Add.Covariates = TRUE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = "5310CAT_volt", Register = FALSE)
+                                  Treshold.VIF = 10, Conf.level = 0.05, 
+                                  Add.Covariates = TRUE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, 
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "Atmospheric_pressure"), Register = FALSE)
 # Multilinear
 Ispra.NO  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "NO_B4_P1",
-                                  Interval = 1, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
-                                  Treshold.VIF = 10, Conf.level = 0.30, 
-                                  Add.Covariates = TRUE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = "5310CAT_volt", Register = FALSE)
-# "exp_kT_NoC"  with temperature
+                                  Interval = 3L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                  Treshold.VIF = 10, Conf.level = 0.05, 
+                                  Add.Covariates = TRUE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, 
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "Atmospheric_pressure"))
+# "T_power" with temperature
 Ispra.NO  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "NO_B4_P1",
-                                  Interval = 1L, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
-                                  Treshold.VIF = 10, Conf.level = 0.10, Mod_type = "exp_kT_NoC", Relationships = "Temperature",
-                                  Add.Covariates = FALSE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = "5310CAT_volt")
+                                  Interval = 3L, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
+                                  Treshold.VIF = 10, Conf.level = 0.05, Mod_type = "T_power", Relationships = "Temperature",
+                                  Add.Covariates = FALSE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, 
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "Atmospheric_pressure"), Register = FALSE)
+# "exp_kT" with temperature_int
+Ispra.NO  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "NO_B4_P1",
+                                  Interval = 3L, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
+                                  Treshold.VIF = 10, Conf.level = 0.05, Mod_type = "exp_kT", Relationships = "Temperature",
+                                  Add.Covariates = FALSE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, 
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "Atmospheric_pressure"), Register = FALSE)
 # "exp_kT_NoC" with temperature_int
 Ispra.NO  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "NO_B4_P1",
-                                  Interval = 1, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
-                                  Treshold.VIF = 10, Conf.level = 0.10, Mod_type = "exp_kT_NoC", Relationships = "Temperature_int",
-                                  Add.Covariates = FALSE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = "5310CAT_volt")
+                                  Interval = 3L, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
+                                  Treshold.VIF = 10, Conf.level = 0.05, Mod_type = "exp_kT_NoC", Relationships = "Temperature_int",
+                                  Add.Covariates = FALSE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, 
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "Atmospheric_pressure"))
+# "exp_kT_NoC"  with temperature
+Ispra.NO  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "NO_B4_P1",
+                                  Interval = 3L, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
+                                  Treshold.VIF = 10, Conf.level = 0.05, Mod_type = "exp_kT_NoC", Relationships = "Temperature",
+                                  Add.Covariates = FALSE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, 
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "Atmospheric_pressure"))
 # Comparing all calibration models
 List.models.Final <- sapply(List.ASE, function(i){
     ASEDir   <- file.path(Dir, "ASE_Boxes", i)
@@ -92,11 +116,6 @@ List.models.Final <- sapply(List.ASE, function(i){
     return(file.path(ASEDir,"Models",Model$Final_median_Model$List.NewModels))
 })
 Compared.NO.Ispra <- Compare_Models(List.models =  List.models.Final, Verbose = T,Meas.DateIN = as.Date("2020-01-19"), Meas.DateEND = as.Date("2020-01-31"))
-# "T_power" with temperature
-Ispra.NO  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "NO_B4_P1",
-                                  Interval = 1, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
-                                  Treshold.VIF = 10, Conf.level = 0.10, Mod_type = "T_power", Relationships = "Temperature",
-                                  Add.Covariates = FALSE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = "5310CAT_volt")
 # Comparing all calibration models
 List.models.Final <- sapply(List.ASE, function(i){
     ASEDir   <- file.path(Dir, "ASE_Boxes", i)
@@ -106,165 +125,60 @@ List.models.Final <- sapply(List.ASE, function(i){
 Compared.NO.Ispra <- Compare_Models(List.models =  List.models.Final, Verbose = T)
 
 # NO2_B43F_P1 ----
+# Relative_humidity_int should not have an effect since water can only enter the sensor from the membrane
 Ispra.NO2 <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "NO2_B43F_P1",
-                                  Interval = 1, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
-                                  Mod_type = "Linear.Robust", Add.Covariates = TRUE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = "5310CAT_volt")
+                                  Interval = 5L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                  Mod_type = "MultiLinear", Add.Covariates = TRUE, Relationships = c("Temperature_int","Absolute_humidity"),
+                                  DRIFT = FALSE, volt = TRUE, modelled = FALSE, Treshold.VIF = 7.5, Conf.level = 0.05,
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "Atmospheric_pressure","Relative_humidity_int"))
 # Comparing all calibration models
 List.models.Final <- sapply(List.ASE, function(i){
     ASEDir   <- file.path(Dir, "ASE_Boxes", i)
     Model    <- load_obj(file.path(ASEDir,"Models", paste0("Auto.Cal","NO2_B43F_P1",".rdata")))
-    return(file.path(ASEDir,"Models",Model$Final_median_Model$List.NewModels))
-})
+    return(file.path(ASEDir,"Models",Model$Final_median_Model$List.NewModels))})
 Compare_Models(List.models =  List.models.Final, Verbose = T)
 # OX_A431_P1 ----
+# Thresh.R2 = -0.03: mainly for box 406414, becuase NO2 sensor and reference O3 are more correlated than NO2 sensor with the residuals
+# increase interval to 7 days in order to diminuish the standard error of estimate of coefficients of models
 Ispra.O3  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "OX_A431_P1",
-                                  Interval = 1, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
-                                  Mod_type = "Linear.Robust", Add.Covariates = TRUE, DRIFT = TRUE, volt = TRUE, modelled = FALSE, 
-                                  Discarded.covariates = "5310CAT_volt")
-# Updating configuration with new Calibration Model
-for (i in List.models.Final) Register.Model(i)
+                                  Interval = 5L, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
+                                  Treshold.VIF = 10, Conf.level = 0.10, # 0.25 otherwise probability for a1 does not pass
+                                  Mod_type = "Linear.Robust", Add.Covariates = TRUE, DRIFT = FALSE, volt = TRUE, modelled = FALSE, Relationships = "NO2_B43F_P1_volt",
+                                  Discarded.covariates = c("5310CAT_volt","OPCN3PM10_volt", "Atmospheric_pressure","Relative_humidity_int"),
+                                  Thresh.R2 = -0.03)
+# 5310CAT ----
+Ispra.PMS10  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "5310CAT",
+                                  Interval = 3L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                  Treshold.VIF = 10, Conf.level = 0.05, # 0.25 otherwise probability for a1 does not pass
+                                  Mod_type = "Linear.Robust", Add.Covariates = TRUE, DRIFT = FALSE, volt = TRUE, modelled = FALSE, 
+                                  Discarded.covariates = c("NO2_B43F_P1_volt","OX_A431_P1_volt"))
+# OPCN3PM10 ----
+Ispra.OPC10  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "OPCN3PM10",
+                                     Interval = 3L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                     Treshold.VIF = 10, Conf.level = 0.05, # 0.25 otherwise probability for a1 does not pass
+                                     Mod_type = "Linear.Robust", Add.Covariates = TRUE, DRIFT = FALSE, volt = TRUE, modelled = FALSE, 
+                                     Discarded.covariates = c("NO2_B43F_P1_volt","OX_A431_P1_volt"))# Updating configuration with new Calibration Model
+# BMP280 ----
+Ispra.AtmPres  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "BMP280",
+                                     Interval = 3L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                     Treshold.VIF = 10, Conf.level = 0.05, # 0.25 otherwise probability for a1 does not pass
+                                     Mod_type = "Linear.Robust", Add.Covariates = TRUE, DRIFT = FALSE, volt = TRUE, modelled = FALSE, 
+                                     Discarded.covariates = c("NO2_B43F_P1_volt","OX_A431_P1_volt","OPCN3PM10","5310CAT","NO_B4_P1","D300","CO_A4_P1"))# Updating configuration with new Calibration Model
+# RH_SHT31HE ----
+Ispra.RH  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "SHT31HE",
+                                       Interval = 3L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                       Treshold.VIF = 10, Conf.level = 0.05, # 0.25 otherwise probability for a1 does not pass
+                                       Mod_type = "Linear.Robust", Add.Covariates = TRUE, DRIFT = FALSE, volt = TRUE, modelled = FALSE, 
+                                       Discarded.covariates = c("NO2_B43F_P1_volt","OX_A431_P1_volt","OPCN3PM10","5310CAT","NO_B4_P1","D300","CO_A4_P1"))# Updating configuration with new Calibration Model
+# RH_SHT31TE ----
+Ispra.Temp  <- AutoCal.Boxes.Sensor(List.ASE = List.ASE, name.sensor = "SHT31TE",
+                                  Interval = 3L, DateIN = as.Date("2020-01-17"), DateEND = as.Date("2020-01-31"), 
+                                  Treshold.VIF = 3L, Conf.level = 0.05, # 0.25 otherwise probability for a1 does not pass
+                                  Mod_type = "Linear.Robust", Add.Covariates = TRUE, DRIFT = FALSE, volt = TRUE, modelled = FALSE, 
+                                  Discarded.covariates = c("NO2_B43F_P1_volt","OX_A431_P1_volt","OPCN3PM10","5310CAT","NO_B4_P1","D300","CO_A4_P1"))# Updating configuration with new Calibration Model
 
+#for (i in List.models.Final) Register.Model(i)
 
-##########################################
-# Box per box 40641B ####
-##########################################C
-# Init
-ASEDir   <- file.path(Dir, "ASE_Boxes", "40641B")
-#------------------------------------------C
-# CO  "CO_A4_P1"between 19 and 30 January ----
-#------------------------------------------C
-List.models <- List_models(ASEDir, "CO_A4_P1")
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1]))
-assign(paste0("Fit.CO_", "40641B"), 
-       Auto.Cal(ASEDir, ASE.ID = ASE.ID, name.sensor = "CO_A4_P1", Interval = 1, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), date = TRUE, volt = FALSE, modelled = FALSE))
-#------------------------------------------C
-# CO2  "D300"between 19 and 30 January ----
-#------------------------------------------C
-List.models    <- List_models(ASEDir, "D300")
-ASE.ID         <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1]))
-Fit.CO2  <- Auto.Cal(ASEDir, ASE.ID = ASE.ID, name.sensor = "D300", Interval = 1, DateIN = NULL, DateEND = as.Date("2020-01-29"), date = TRUE, volt = FALSE)
-#------------------------------------------C
-# NO "NO_B4_P1" between 17 and 30 January----
-#------------------------------------------C
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "NO_B4_P1")[1]))
-List.models <- List_models(ASEDir, "NO_B4_P1")
-Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE, 
-                        Mod_type = "Linear.Robust", Relationships = c("Temperature_int"), degrees = "ExpGrowth", Add.Covariates = TRUE)
-Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE, 
-                        Mod_type = "Linear.Robust", Add.Covariates = TRUE)
-#------------------------------------------C
-# NO2 "NO2_B43F_P1" between 17 and 30 January----
-#------------------------------------------C
-List.models    <- List_models(ASEDir, "NO2_B43F_P1")
-ASE.ID <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "NO2_B43F_P1")[1]))
-Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE,
-                    Mod_type = "Linear.Robust", Relationships = c("Temperature_int", "Td_deficit"), Add.Covariates = TRUE)
-#------------------------------------------C
-# O3 "OX_A431_P1" between 17 and 30 January----
-#------------------------------------------C
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "OX_A431_P1")[1]))
-List.models <- List_models(ASEDir, "OX_A431_P1")
-Fit.O3      <- Auto.Cal(ASEDir, name.sensor = "OX_A431_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-#------------------------------------------C
-# PM10 "5310CAT" between 17 and 30 January----
-#------------------------------------------C
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "5310CAT")[1]))
-List.models <- List_models(ASEDir, "5310CAT")
-Fit.PM10PMS <- Auto.Cal(ASEDir, name.sensor = "5310CAT", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-##########################################
-# Box per box 40458D ####
-##########################################C
-# Init
-ASEDir   <- file.path(Dir, "ASE_Boxes", List.ASE[1])
-#------------------------------------------C
-# CO  "CO_A4_P1"between 19 and 30 January ----
-#------------------------------------------C
-List.models <- List_models(ASEDir, "CO_A4_P1")
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1]))
-Fit.CO      <- Auto.Cal(ASEDir, name.sensor = "CO_A4_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = TRUE, volt = FALSE)
-#------------------------------------------C
-# CO2  "D300"between 19 and 30 January ----
-#------------------------------------------C
-List.models    <- List_models(ASEDir, "D300")
-ASE.ID         <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1]))
-Fit.CO2  <- Auto.Cal(ASEDir, name.sensor = "D300", Interval = 1, DateIN = NULL, DateEND = as.Date("2020-01-29"), date = TRUE, volt = FALSE)
-#------------------------------------------C
-# NO "NO_B4_P1" between 17 and 30 January----
-#------------------------------------------C
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "NO_B4_P1")[1]))
-List.models <- List_models(ASEDir, "NO_B4_P1")
-Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE, 
-                        Mod_type = "Linear.Robust", Relationships = c("Temperature_int"), degrees = "ExpGrowth", Add.Covariates = TRUE)
-Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE, 
-                        Mod_type = "Linear.Robust", Add.Covariates = TRUE)
-#------------------------------------------C
-# NO2 "NO2_B43F_P1" between 17 and 30 January----
-#------------------------------------------C
-List.models    <- List_models(ASEDir, "NO2_B43F_P1")
-ASE.ID <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "NO2_B43F_P1")[1]))
-Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE,
-                    Mod_type = "Linear.Robust", Relationships = c("Temperature_int", "Td_deficit"), Add.Covariates = TRUE)
-#------------------------------------------C
-# O3 "OX_A431_P1" between 17 and 30 January----
-#------------------------------------------C
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "OX_A431_P1")[1]))
-List.models <- List_models(ASEDir, "OX_A431_P1")
-Fit.O3      <- Auto.Cal(ASEDir, name.sensor = "OX_A431_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-#------------------------------------------C
-# PM10 "5310CAT" between 17 and 30 January----
-#------------------------------------------C
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "5310CAT")[1]))
-List.models <- List_models(ASEDir, "5310CAT")
-Fit.PM10PMS <- Auto.Cal(ASEDir, name.sensor = "5310CAT", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-
-##########################################
-# Box per box 40642E ####
-##########################################C
-# Init
-ASEDir   <- file.path(Dir, "ASE_Boxes", List.ASE[5])
-#------------------------------------------C
-# CO  "CO_A4_P1"between 19 and 30 January ----
-#------------------------------------------C
-List.models    <- List_models(ASEDir, "CO_A4_P1")
-ASE.ID         <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1]))
-Fit.CO  <- Auto.Cal(ASEDir = ASEDir, ASE.ID = ASE.ID, name.sensor = "CO_A4_P1", Interval = 1, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), date = TRUE, volt = FALSE)
-#------------------------------------------C
-# CO2  "D300"between 19 and 30 January ----
-#------------------------------------------C
-List.models    <- List_models(ASEDir, "D300")
-ASE.ID         <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1]))
-Fit.CO2  <- Auto.Cal(ASEDir, name.sensor = "D300", Interval = 1, DateIN = NULL, DateEND = as.Date("2020-01-29"), date = TRUE, volt = FALSE)
-#------------------------------------------C
-# NO "NO_B4_P1" between 17 and 30 January----
-#------------------------------------------C
-List.models <- List_models(ASEDir, "NO_B4_P1")
-ASE.ID      <- Identify_ASE_Dir(ASEDir = ASEDir, name.sensor = "NO_B4_P1")
-Fit.NO      <- Auto.Cal(ASEDir, ASE.ID = ASE.ID, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = as.Date("2020-01-31"), 
-                        date = FALSE, volt = TRUE, modelled = FALSE, Mod_type = "Linear.Robust", Relationships = c("Temperature_int"), degrees = "ExpGrowth", Add.Covariates = TRUE)
-Fit.NO      <- Auto.Cal(ASEDir, ASE.ID = ASE.ID, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = as.Date("2020-01-31"), 
-                        date = FALSE, volt = TRUE, modelled = FALSE, Mod_type = "Linear.Robust", Add.Covariates = TRUE)
-#------------------------------------------C
-# NO2 "NO2_B43F_P1" between 17 and 30 January----
-#------------------------------------------C
-List.models    <- List_models(ASEDir, "NO2_B43F_P1")
-ASE.ID <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "NO2_B43F_P1")[1]))
-Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE,
-                    Mod_type = "Linear.Robust", Relationships = c("Temperature_int", "Td_deficit"), Add.Covariates = TRUE)
-#------------------------------------------C
-# O3 "OX_A431_P1" between 17 and 30 January----
-#------------------------------------------C
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "OX_A431_P1")[1]))
-List.models <- List_models(ASEDir, "OX_A431_P1")
-Fit.O3      <- Auto.Cal(ASEDir, name.sensor = "OX_A431_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-#------------------------------------------C
-# PM10 "5310CAT" between 17 and 30 January----
-#------------------------------------------C
-ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "5310CAT")[1]))
-List.models <- List_models(ASEDir, "5310CAT")
-Fit.PM10PMS <- Auto.Cal(ASEDir, name.sensor = "5310CAT", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
 
 
 ##########################################C
@@ -450,42 +364,42 @@ ASEDir   <- file.path(Dir, "ASE_Boxes", "4065E3")
 #------------------------------------------C
 List.models    <- List_models(ASEDir, "CO_A4_P1")
 ASE.ID         <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1]))
-Fit.CO  <- Auto.Cal(ASEDir, ASE.ID = ASE.ID, name.sensor = "CO_A4_P1", Interval = 1, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-30"), date = TRUE, volt = TRUE, )
+Fit.CO  <- Auto.Cal(ASEDir, ASE.ID = ASE.ID, name.sensor = "CO_A4_P1", Interval = 3, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-30"), date = TRUE, volt = TRUE, )
 #------------------------------------------C
 # CO2  "D300"between 19 and 30 January ----
 #------------------------------------------C
 List.models    <- List_models(ASEDir, "D300")
 ASE.ID         <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1]))
-Fit.CO2  <- Auto.Cal(ASEDir, name.sensor = "D300", Interval = 1, DateIN = NULL, DateEND = as.Date("2020-01-29"), date = TRUE, volt = FALSE)
+Fit.CO2  <- Auto.Cal(ASEDir, name.sensor = "D300", Interval = 3, DateIN = NULL, DateEND = as.Date("2020-01-29"), date = TRUE, volt = FALSE)
 #------------------------------------------C
 # NO "NO_B4_P1" between 17 and 30 January----
 #------------------------------------------C
 ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "NO_B4_P1")[1]))
 List.models <- List_models(ASEDir, "NO_B4_P1")
-Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE, 
+Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 3, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE, 
                         Mod_type = "Linear.Robust", Relationships = c("Temperature_int"), degrees = "ExpGrowth", Add.Covariates = TRUE)
-Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE, 
+Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 3, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE, 
                         Mod_type = "Linear.Robust", Add.Covariates = TRUE)
 #------------------------------------------C
 # NO2 "NO2_B43F_P1" between 17 and 30 January----
 #------------------------------------------C
 List.models    <- List_models(ASEDir, "NO2_B43F_P1")
 ASE.ID <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "NO2_B43F_P1")[1]))
-Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
-Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE,
+Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 3, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
+Fit.NO2 <- Auto.Cal(ASEDir, name.sensor = "NO2_B43F_P1", Interval = 3, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE,
                     Mod_type = "Linear.Robust", Relationships = c("Temperature_int", "Td_deficit"), Add.Covariates = TRUE)
 #------------------------------------------C
 # O3 "OX_A431_P1" between 17 and 30 January----
 #------------------------------------------C
 ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "OX_A431_P1")[1]))
 List.models <- List_models(ASEDir, "OX_A431_P1")
-Fit.O3      <- Auto.Cal(ASEDir, name.sensor = "OX_A431_P1", Interval = 1, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
+Fit.O3      <- Auto.Cal(ASEDir, name.sensor = "OX_A431_P1", Interval = 3, DateIN = NULL, DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
 #------------------------------------------C
 # PM10 "5310CAT" between 17 and 30 January----
 #------------------------------------------C
 ASE.ID      <- Identify_ASE(Model = file.path(ASEDir,"Models", List_models(ASEDir = ASEDir, name.sensor = "5310CAT")[1]))
 List.models <- List_models(ASEDir, "5310CAT")
-Fit.PM10PMS <- Auto.Cal(ASEDir, name.sensor = "5310CAT", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
+Fit.PM10PMS <- Auto.Cal(ASEDir, name.sensor = "5310CAT", Interval = 3, DateIN = as.Date("2020-01-21"), DateEND = NULL, date = FALSE, volt = TRUE, modelled = FALSE)
 
 ####################################################################################
 # Box per box 40641B ####

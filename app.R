@@ -29,9 +29,11 @@
 #================================================================CR
 cat("-----------------------------------------------------------------------------------\n")
 # Clear memory and restart R-session
-remove(list = ls()[-which(ls() %in% c("DisqueFieldtest"))])
+remove(list = ls()) # [-which(ls() %in% c("DisqueFieldtest"))]
 # detectiong the OS
 isOS <- .Platform$OS.type
+if (!"librarian" %in% utils::installed.packages()) remotes::install_github("DesiQuintans/librarian")
+librarian::shelf(futile.logger)
 futile.logger::flog.info(paste0("[ASE_App] the OS platform is : ", isOS))
 # Checking if RStudio is used
 isRStudio  <- Sys.getenv("RSTUDIO") == "1"
@@ -76,8 +78,6 @@ if (isInternet) futile.logger::flog.info("[ASE_App] internet is available") else
 # Installing package librarian to install and load packages from CRAN, github and bio conductor in 1 line
 # https://towardsdatascience.com/an-efficient-way-to-install-and-load-r-packages-bc53247f058d
 if (!"remotes"   %in% utils::installed.packages()) install.packages("remotes")
-if (!"librarian" %in% utils::installed.packages()) remotes::install_github("DesiQuintans/librarian")
-librarian::shelf(futile.logger)
 cat("-----------------------------------------------------------------------------------\n")
 futile.logger::flog.info("[ASE_App] setting working directory")
 # Searching in the directory from where app.R is run
@@ -94,7 +94,6 @@ DirShiny        <- DisqueFieldtest
 futile.logger::flog.info(paste0("[ASE_App] directory from where the script is run: ", DisqueFieldtest))
 # Set working directory to directory where is App.R
 futile.logger::flog.info(paste0("[ASE_App] setting working directory to ", DisqueFieldtest))
-browser()
 if (getwd() != DisqueFieldtest) setwd(DisqueFieldtest)
 cat("-----------------------------------------------------------------------------------\n")
 cat("\n")
@@ -102,15 +101,19 @@ cat("\n")
 #   1.d Sourcing Functions4AES.R and SensorToolBox, Loading packages (global.R and global4Shiny.R)
 #----------------------------------------------------------------CR
 source("global.R")
-if (exists("list.Packages") && list.Packages != "") librarian::shelf(list.Packages)
-if (exists("list.Packages")) rm(list.Packages)
-if (exists("list.packages.github") && list.packages.github != "") librarian::shelf(list.packages.github)
-if (exists("list.packages.github")) rm(list.packages.github)
+if (exists("list.Packages") && list.Packages != "") {
+    librarian::shelf(list.Packages)
+    rm(list.Packages, envir = .GlobalEnv)} 
+if (exists("list.packages.github") && list.packages.github != "") {
+    librarian::shelf(list.packages.github)
+    rm(list.packages.github, envir = .GlobalEnv)} 
 source("global4Shiny.R")
-if (exists("list.Packages") && list.Packages != "") librarian::shelf(list.Packages)
-if (exists("list.Packages")) rm(list.Packages)
-if (exists("list.packages.github") && list.packages.github != "") librarian::shelf(list.packages.github)
-if (exists("list.packages.github")) rm(list.packages.github)
+if (exists("list.Packages") && list.Packages != "") {
+    librarian::shelf(list.Packages)
+    rm(list.Packages, envir = .GlobalEnv)} 
+if (exists("list.packages.github") && list.packages.github != "") {
+    librarian::shelf(list.packages.github)
+    rm(list.packages.github, envir = .GlobalEnv)} 
 futile.logger::flog.info("[ASE_App] List of installed packages")
 print(search(), quote = FALSE)
 cat("\n")
@@ -377,10 +380,10 @@ ui <- navbarPage(title = "ASE_App v0.20", id = "ASE", theme = shinytheme("cerule
                                                                             br(),
                                                                             helpText("Edit the table.\n",
                                                                                      "Double-click on a cell to edit data.\n",
-                                                                                     "The button \"Update Config of Sensors\" only saves the file of invalid datetime periods\n",
-                                                                                     "Be sure to select the ASE box in order to implement changes.\n"),
+                                                                                     "The button \"Save Config of Sensors\" saves all configuration files of the ASE box\n",
+                                                                                     "The App will stop and shalle be run again in order to read the Config files again.\n"),
                                                                             br(),
-                                                                            actionButton(inputId = "Update.Config", label = "Update Config of sensors",icon = icon("Save")),
+                                                                            actionButton(inputId = "Update.Config", label = "Save Config of Sensors",icon = icon("Save")),
                                                                             br(),
                                                                             rHandsontableOutput("DT_Filtering"),
                                                                             br(),
@@ -4101,7 +4104,7 @@ server <- function(input, output, session) {
             return(Downloaded)
         })
         # NavBar"Data Treatment", mainTabPanel "FilteringMain" - "Config"  ----
-        Input_Config        <- reactive({
+        Input_Config <- reactive({
             Input_Config <- data.table::data.table(
                 name.gas            = isolate(list.name.gas()),
                 name.sensor         = isolate(list.name.sensor()),
@@ -4178,13 +4181,13 @@ server <- function(input, output, session) {
             return(Input_Config)})
         if (is.null(Config$all[["Table_Config"]])) Config$all[["Table_Config"]] <- Input_Config()
         output$DT_Filtering <- renderRHandsontable({
-            rhandsontable(Config$all[["Table_Config"]][,c("name.gas", "name.sensor", "gas.sensor", "hoursWarming", "temp.thres.min", "temp.thres.max", "rh.thres.min", "rh.thres.max", "Sens.Inval.Out", "Sens.rm.Out", 
-                                                          "Sens.window", "Sens.threshold", "Sens.Ymin", "Sens.Ymax", "Sens.ThresholdMin", "Sens.iterations", "remove.neg", 
-                                                          "Ref.rm.Out", "Ref.window", "Ref.threshold", "Ref.Ymin", "Ref.Ymax", "Ref.ThresholdMin", "Ref.iterations")], stretchH = "all") %>%
+            rhandsontable(Input_Config()[,c("name.gas", "name.sensor", "gas.sensor", "hoursWarming", "temp.thres.min", "temp.thres.max", "rh.thres.min", "rh.thres.max", 
+                                                          "Sens.Inval.Out", "Sens.rm.Out", "Sens.window", "Sens.threshold", "Sens.Ymin", "Sens.Ymax", "Sens.ThresholdMin", "Sens.iterations",
+                                                          "remove.neg", "Ref.rm.Out", "Ref.window", "Ref.threshold", "Ref.Ymin", "Ref.Ymax", "Ref.ThresholdMin", "Ref.iterations")], stretchH = "all") %>%
                 hot_context_menu(allowRowEdit = FALSE, allowColEdit = FALSE) %>%
                 hot_col(col = "name.gas"   , type = "dropdown", source = c("CO", "NO", "NO2", "O3", "CO2", "PM10", "PM2.5", "PM1", "Temp", "RH", "Patm")) %>%
                 hot_col(col = "name.sensor", type = "dropdown", source = unique(Sensors.cfg()[,name]))  %>%
-                hot_col(col = "gas.sensor" , type = "dropdown", source = INFLUX()[[4]]) })
+                hot_col(col = "gas.sensor" , type = "dropdown", source = INFLUX()[[4]])})
         output$ui_New_name.gas          <- renderUI({selectInput(inputId = "New_name.gas"         , label = "Pollutant symbol (name.gas)", 
                                                                  choices = c("CO", "NO", "NO2", "O3", "CO2", "PM10", "PM2.5", "PM1", "Temp"       , "RH", "Patm"))}) 
         output$ui_New_gas.sensor        <- renderUI({selectInput(inputId = "New_gas.sensor"       , label = "Pollutant name (gas.sensor)"         , choices = INFLUX()[[4]])}) 
@@ -4267,7 +4270,7 @@ server <- function(input, output, session) {
                                      "Cal.Line", "Cal.func", "mod.eta.model.type", "Neg.mod", "Slope", "Intercept", "ubsRM", "ubss", "Sync.Cal", "Sync.Pred", "eta.model.type")])
         })
         output$DT_Calib.cfg <- renderRHandsontable({
-            rhandsontable(Config$all[["Table_Config"]][,c("name.gas", "name.sensor", "gas.reference", "gas.reference2use", "gas.sensor", "Sens.raw.unit", "Sens.unit", "ref.unitgas", 
+            rhandsontable(Input_Config()[,c("name.gas", "name.sensor", "gas.reference", "gas.reference2use", "gas.sensor", "Sens.raw.unit", "Sens.unit", "ref.unitgas", 
                                                           "Cal.Line", "Cal.func", "mod.eta.model.type", "Neg.mod", "Slope", "Intercept", "ubsRM", "ubss", "Sync.Cal", "Sync.Pred", "eta.model.type")], 
                           stretchH = "all") %>% 
                 hot_context_menu(allowRowEdit = FALSE, allowColEdit = FALSE) %>%
@@ -4282,13 +4285,13 @@ server <- function(input, output, session) {
                 hot_col(col = "ref.unitgas"      , type = "dropdown", source = c("ppb", "ppm", "ug/m3", "mg/m3", "counts", "Celsius", "K", "percent", "hPa", "m/s", "degrees", "W/m2","mm"))
         })
         # NavBar"Data Treatment", mainTabPanel "SetTimeMain" - "Config" ----
-        CalTime                  <- reactive({
-            return(Input_Config()[,c("name.gas","name.sensor", "Out.Ref.IN", "Out.Ref.END", "Out.Sens.IN", "Out.Sens.END",
-                                     "Valid.IN", "Valid.END", "Cov.Date.IN", "Cov.Date.END",
-                                     "DateCal.IN", "DateCal.END", "DatePlotCal.IN", "DatePlotCal.END", "DateMeas.IN", "DateMeas.END", "DatePlotMeas.IN", "DatePlotMeas.END")])
-        })
+        # CalTime                  <- reactive({
+        #     return(Input_Config()[,c("name.gas","name.sensor", "Out.Ref.IN", "Out.Ref.END", "Out.Sens.IN", "Out.Sens.END",
+        #                              "Valid.IN", "Valid.END", "Cov.Date.IN", "Cov.Date.END",
+        #                              "DateCal.IN", "DateCal.END", "DatePlotCal.IN", "DatePlotCal.END", "DateMeas.IN", "DateMeas.END", "DatePlotMeas.IN", "DatePlotMeas.END")])
+        # })
         output$DT_CalTime <- renderRHandsontable({
-            rhandsontable(Config$all[["Table_Config"]][,c("name.gas","name.sensor", "Out.Ref.IN", "Out.Ref.END", "Out.Sens.IN", "Out.Sens.END",
+            rhandsontable(Input_Config()[,c("name.gas","name.sensor", "Out.Ref.IN", "Out.Ref.END", "Out.Sens.IN", "Out.Sens.END",
                                                           "Valid.IN", "Valid.END", "Cov.Date.IN", "Cov.Date.END",
                                                           "DateCal.IN", "DateCal.END", "DatePlotCal.IN", "DatePlotCal.END", "DateMeas.IN", "DateMeas.END", "DatePlotMeas.IN", "DatePlotMeas.END")], 
                           stretchH = "all") %>% hot_context_menu(allowRowEdit = FALSE, allowColEdit = FALSE)})
@@ -6053,31 +6056,32 @@ server <- function(input, output, session) {
                                 # reading file
                                 name.Model.i <- file.path(CalSet()$WDoutputMod, CalSet()$Cal)
                                 if (file.exists(name.Model.i)) {
-                                    futile.logger::flog.info(paste0("[ASE_App, General.cal] Calibrating raw values of sensor ", isolate(list.name.sensor())[k],
+                                    futile.logger::flog.info(paste0("[ASE_App, General.cal] Applying calibrating model of sensor ", isolate(list.name.sensor())[k],
                                                " using model ", CalSet()$Cal, " to unit ", CalSet()$unit.sensor,""))
                                     # Loading Model.i either as Rdata list or as a RDS file
-                                    if (extension(name.Model.i) == ".rdata") Model.i <- load_obj(name.Model.i) else if (extension(name.Model.i) == ".rds") {
-                                        if (file.exists(name.Model.i)) {
-                                            # Read model object as a RDS object
-                                            Model.i <- readRDS(file = name.Model.i)
-                                            #Convert to a broom oject to tidy model
-                                            Model.i <- list(Tidy = tidy(Model.i), Augment = augment(Model.i), Glance = glance(Model.i), Call = Model.i$call, Coef = coef(Model.i))
-                                            # save as a Rdata list
-                                            list.save(x    = Model.i,
-                                                      file = sub(pattern = ".rds", replacement = ".rdata", x = name.Model.i))
-                                            file.remove(name.Model.i)
-                                            # Updating the selected model
-                                            Newchoices <- substr(list.files(path    = CalSet()$WDoutputMod,
-                                                                            pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*"))),
-                                                                 start = nchar(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__")) + 1,
-                                                                 stop  = nchar(list.files(path    = CalSet()$WDoutputMod,
-                                                                                          pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",CalSet()$name.sensor,"*")))))
-                                            # Current model
-                                            NewModel  <-  name.Model.i %>%
-                                                basename(.) %>%
-                                                sub(pattern = ".rds", replacement = ".rdata", x = .) %>%
-                                                sub(pattern = paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__"), replacement = "", x = .)
-                                            updateSelectInput(session, inputId = paste0("Cal", CalSet()$k), choices = Newchoices, selected = NewModel[1])}}
+                                    if (extension(name.Model.i) == ".rdata") {
+                                        Model.i <- load_obj(name.Model.i)
+                                    } else if (extension(name.Model.i) == ".rds") {
+                                        # Read model object as a RDS object
+                                        Model.i <- readRDS(file = name.Model.i)
+                                        #Convert to a broom oject to tidy model
+                                        Model.i <- list(Tidy = tidy(Model.i), Augment = augment(Model.i), Glance = glance(Model.i), Call = Model.i$call, Coef = coef(Model.i))
+                                        # save as a Rdata list
+                                        list.save(x    = Model.i,
+                                                  file = sub(pattern = ".rds", replacement = ".rdata", x = name.Model.i))
+                                        file.remove(name.Model.i)
+                                        # Updating the selected model
+                                        Newchoices <- substr(list.files(path    = CalSet()$WDoutputMod,
+                                                                        pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*"))),
+                                                             start = nchar(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__")) + 1,
+                                                             stop  = nchar(list.files(path    = CalSet()$WDoutputMod,
+                                                                                      pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",CalSet()$name.sensor,"*")))))
+                                        # Current model
+                                        NewModel  <-  name.Model.i %>%
+                                            basename(.) %>%
+                                            sub(pattern = ".rds", replacement = ".rdata", x = .) %>%
+                                            sub(pattern = paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__"), replacement = "", x = .)
+                                        updateSelectInput(session, inputId = paste0("Cal", CalSet()$k), choices = Newchoices, selected = NewModel[1])}
                                     # sensor gas in volt or nA or Count
                                     nameGasVolt <- CalSet()$nameGasVolt
                                     # modelled sensor gas
@@ -6089,7 +6093,7 @@ server <- function(input, output, session) {
                                     CovMod  <- strsplit(
                                         strsplit(x = tools::file_path_sans_ext(CalSet()$Cal), split = "__")[[1]][7],
                                         split = "&", fixed = T)[[1]]
-                                    if (length(CovMod) > 0) {
+                                    if (!is.na(CovMod) && length(CovMod) > 0) {
                                         # Checking if there are "-" in the CovMod, deleting degrees of polynomial
                                         if (any(grepl(pattern = "-", x = CovMod[1]))) {
                                             Model.CovMod  <- unlist(strsplit(x = CovMod , split = "-"))
@@ -6145,9 +6149,7 @@ server <- function(input, output, session) {
                                                               row.names = row.names(DF$General[is.not.NA.y,]),
                                                               stringsAsFactors = FALSE)
                                         names(Matrice) <- c("Relative_humidity")
-                                    } else {
-                                        Matrice <- NULL
-                                    }
+                                    } else Matrice <- NULL
                                     # Using the reverse calibration function (measuring function) to extrapolate calibration
                                     if (Mod_type != "MultiLinear" || (Mod_type == "MultiLinear" && all(CovMod %in% names(DF$General)))) {
                                         data.table::set(DF$General, i = is.not.NA.y, j = nameGasMod,
