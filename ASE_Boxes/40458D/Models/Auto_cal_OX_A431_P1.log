@@ -1,0 +1,211 @@
+#######################
+INFO [2020-08-21 12:32:39] [Auto.Cal] 40458D, sensor OX_A431_P1 fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-21 12:32:41] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-21 12:32:41] Model : 40458D__OX_A431_P1__nA__Linear.Robust__20200119__20200124____.rdata
+WARN [2020-08-21 12:32:41] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:41] Model : 40458D__OX_A431_P1__nA__Linear.Robust__20200120__20200125____.rdata
+WARN [2020-08-21 12:32:41] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:41] Model : 40458D__OX_A431_P1__nA__Linear.Robust__20200121__20200126____.rdata
+WARN [2020-08-21 12:32:41] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:42] Model : 40458D__OX_A431_P1__nA__Linear.Robust__20200122__20200127____.rdata
+WARN [2020-08-21 12:32:42] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:42] Model : 40458D__OX_A431_P1__nA__Linear.Robust__20200123__20200128____.rdata
+WARN [2020-08-21 12:32:42] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:43] Model : 40458D__OX_A431_P1__nA__Linear.Robust__20200124__20200129____.rdata
+WARN [2020-08-21 12:32:43] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:43] Model : 40458D__OX_A431_P1__nA__Linear.Robust__20200125__20200130____.rdata
+WARN [2020-08-21 12:32:43] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:43] Model : 40458D__OX_A431_P1__nA__Linear.Robust__20200126__20200131____.rdata
+WARN [2020-08-21 12:32:43] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:32:44] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-21 12:32:44] [Median_Model] ASE box 40458D, sensor  OX_A431_P1, creating rolling Linear.Robust models between 2020-01-19
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                             MAD conf.low conf.high `t value`  `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                                         <dbl>    <dbl>     <dbl>     <dbl>       <dbl>
+1 (Intercept)  -12.2      0.433     -187.        0 Median of coefficients of rolling calibration models with interval of 5 days 0.214   -12.6     -11.9      -28.3  0.000000129
+2 x             -0.277    0.0411     -94.2       0 Median of coefficients of rolling calibration models with interval of 5 days 0.0224   -0.310    -0.243     -6.73 0.000525   
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -44376. 88759. 88782.     0.314         0.314  3.79
+-----------------------
+INFO [2020-08-21 12:32:44] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-21 12:32:46] [List_Covariates] ASE box 40458D, sensor  OX_A431_P1, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 12:32:46] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of OX_A431_P1 is:
+              row.names OX_A431_P1_volt Ozone_modelled  Out.Ref.O3  Residuals
+1:     NO2_B43F_P1_volt      0.68913836     0.68913836 0.066173863 0.58746543
+2:    Absolute_humidity      0.13936712     0.13936712 0.018229080 0.10166487
+3:                DRIFT      0.05104375     0.05104375 0.009792658 0.03010231
+4:        NO_B4_P1_volt      0.05787674     0.05787674 0.023995268 0.02301421
+5: Atmospheric_pressure      0.04819160     0.04819160 0.024839488 0.01282920
+-----------------------
+INFO [2020-08-21 12:32:47] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-21 12:32:47] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 12:32:47] [Auto.Cal] Adding the requested Relationships on top of the new First.covariates
+INFO [2020-08-21 12:32:47] [Auto.Cal] request to drop parameter "DRIFT" from possible significant covariates
+INFO [2020-08-21 12:32:47] [Auto.Cal] request to drop parameters 5310CAT_volt, OPCN3PM10_volt, Atmospheric_pressure, Relative_humidity_int from possible significant covariates
+INFO [2020-08-21 12:32:47] [Auto.Cal] Possible ordered covariates: NO2_B43F_P1_volt, Absolute_humidity, NO_B4_P1_volt
+-----------------------
+INFO [2020-08-21 12:32:47] [Auto.Cal] Covariate "NO2_B43F_P1_volt" has a Variance Inflation factor of 1.07086315193282, lower than threshold: 10,
+"NO2_B43F_P1_volt" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 12:32:47] [Auto.Cal] Fitting calibration model with 1 covariate(s): NO2_B43F_P1_volt
+ASE box 40458D, sensor  OX_A431_P1, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40458D/Models/40458D__OX_A431_P1__nA__MultiLinear__20200125__20200130__NO2_B43F_P1_volt-1__.rdata exists
+-----------------------
+INFO [2020-08-21 12:32:48] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 12:32:48] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200119__20200124__NO2_B43F_P1_volt-1__.rdata
+WARN [2020-08-21 12:32:48] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:49] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200120__20200125__NO2_B43F_P1_volt-1__.rdata
+WARN [2020-08-21 12:32:49] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:49] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200121__20200126__NO2_B43F_P1_volt-1__.rdata
+WARN [2020-08-21 12:32:49] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:50] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200122__20200127__NO2_B43F_P1_volt-1__.rdata
+WARN [2020-08-21 12:32:50] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:50] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200123__20200128__NO2_B43F_P1_volt-1__.rdata
+WARN [2020-08-21 12:32:50] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:51] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200124__20200129__NO2_B43F_P1_volt-1__.rdata
+WARN [2020-08-21 12:32:51] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:51] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200125__20200130__NO2_B43F_P1_volt-1__.rdata
+WARN [2020-08-21 12:32:51] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:52] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200126__20200131__NO2_B43F_P1_volt-1__.rdata
+WARN [2020-08-21 12:32:52] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:32:53] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 12:32:53] [Median_Model] ASE box 40458D, sensor  OX_A431_P1, creating rolling MultiLinear models between 2020-01-19
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term             estimate std.error statistic p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                                         
+  <chr>               <dbl>     <dbl>     <dbl>   <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                                       
+1 (Intercept)         7.36     1.17        70.3       0 1.16      5.64     9.08        6.32 0.000734   Median of coefficients of rolling calibration models with interval of 5 days
+2 x                  -0.129    0.0579    -122.        0 0.0663   -0.228   -0.0309     -2.23 0.0670     Median of coefficients of rolling calibration models with interval of 5 days
+3 NO2_B43F_P1_volt    0.761    0.0540     222.        0 0.0602    0.672    0.850      14.1  0.00000795 Median of coefficients of rolling calibration models with interval of 5 days
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.827         0.827 -33286. 66580. 66610. 16121  1.91
+-----------------------
+INFO [2020-08-21 12:32:53] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 66579.6752950929. It is lower than the AIC of the precedent model 88758.7614588188.
+INFO [2020-08-21 12:32:53] [Auto.Cal] Adding of covariate NO2_B43F_P1_volt improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-21 12:32:53] [Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept
+INFO [2020-08-21 12:32:53] [Auto.Cal] All coefficients of the calibration model with covariate(s) NO2_B43F_P1_volt are significantly different from 0
+INFO [2020-08-21 12:32:53] [Auto.Cal] covariate: NO2_B43F_P1_volt is included into the model.
+INFO [2020-08-21 12:32:55] [List_Covariates] ASE box 40458D, sensor  OX_A431_P1, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 12:32:55] [Auto.Cal] ordered list of covariates that are correlated with residuals of the current calibration model for OX_A431_P1
+              row.names OX_A431_P1_volt Ozone_modelled  Out.Ref.O3   Residuals
+1:    Absolute_humidity      0.13936712    0.016771809 0.018229080 0.088447581
+2:                DRIFT      0.05104375    0.006994493 0.009792658 0.040526411
+3: Atmospheric_pressure      0.04819160    0.005329087 0.024839488 0.055074136
+4:        NO_B4_P1_volt      0.05787674    0.005024311 0.023995268 0.002584755
+-----------------------
+INFO [2020-08-21 12:32:55] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-21 12:32:55] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 12:32:55] [Auto.Cal] Adding the requested Relationships on top of the new First.covariates
+INFO [2020-08-21 12:32:55] [Auto.Cal] request to drop parameter "DRIFT" from possible significant covariates
+INFO [2020-08-21 12:32:55] [Auto.Cal] request to drop parameters 5310CAT_volt, OPCN3PM10_volt, Atmospheric_pressure, Relative_humidity_int from possible significant covariates
+INFO [2020-08-21 12:32:55] [Auto.Cal] Possible ordered covariates: NO2_B43F_P1_volt, Absolute_humidity, NO_B4_P1_volt
+-----------------------
+INFO [2020-08-21 12:32:56] [Auto.Cal] Covariate "Absolute_humidity" has a Variance Inflation factor of 1.5004775808146, lower than threshold: 10,
+"Absolute_humidity" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 12:32:56] [Auto.Cal] Fitting calibration model with 2 covariate(s): NO2_B43F_P1_volt, Absolute_humidity
+-----------------------
+INFO [2020-08-21 12:32:57] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 12:32:57] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200119__20200124__NO2_B43F_P1_volt-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:32:57] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:57] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200120__20200125__NO2_B43F_P1_volt-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:32:57] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:58] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200121__20200126__NO2_B43F_P1_volt-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:32:58] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:58] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200122__20200127__NO2_B43F_P1_volt-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:32:58] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:32:59] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200123__20200128__NO2_B43F_P1_volt-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:32:59] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:00] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200124__20200129__NO2_B43F_P1_volt-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:33:00] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:00] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200125__20200130__NO2_B43F_P1_volt-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:33:00] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:01] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200126__20200131__NO2_B43F_P1_volt-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:33:01] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:33:01] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 12:33:01] [Median_Model] ASE box 40458D, sensor  OX_A431_P1, creating rolling MultiLinear models between 2020-01-19
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 4 x 11
+  term              estimate std.error statistic p.value    MAD conf.low  conf.high `t value` `Pr(>|t|)` tau                                                                       
+  <chr>                <dbl>     <dbl>     <dbl>   <dbl>  <dbl>    <dbl>      <dbl>     <dbl>      <dbl> <chr>                                                                     
+1 (Intercept)          6.06     1.46        63.4       0 0.451    5.39    6.73           4.14   0.00608  Median of coefficients of rolling calibration models with interval of 5 d~
+2 x                   -0.124    0.0572    -129.        0 0.0837  -0.248  -0.0000241     -2.17   0.0729   Median of coefficients of rolling calibration models with interval of 5 d~
+3 NO2_B43F_P1_volt     0.873    0.0961     219.        0 0.115    0.702   1.04           9.08   0.000100 Median of coefficients of rolling calibration models with interval of 5 d~
+4 Absolute_humidity    1.14     0.649       43.9       0 0.828   -0.0914  2.36           1.75   0.131    Median of coefficients of rolling calibration models with interval of 5 d~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.776         0.776 -35240. 70490. 70528. 16073  2.17
+WARN [2020-08-21 12:33:02] [Auto.Cal] The Akaike information criterion (AIC) of the current model 70489.846780285 is not lower that the AIC of the precedent model 66579.6752950929.
+WARN [2020-08-21 12:33:02] [Auto.Cal] Adding of covariate Absolute_humidity does not improve the fitting of calibration model. Looking for other covariates.
+WARN [2020-08-21 12:33:02] [Auto.Cal] Absolute_humidity is discarded from the list of possible covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-21 12:33:02] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-21 12:33:02] [Auto.Cal] Possible ordered covariates: NO2_B43F_P1_volt, NO_B4_P1_volt
+-----------------------
+INFO [2020-08-21 12:33:02] [Auto.Cal] Covariate "NO_B4_P1_volt" has a Variance Inflation factor of 1.09069157923191, lower than threshold: 10,
+"NO_B4_P1_volt" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 12:33:02] [Auto.Cal] Fitting calibration model with 2 covariate(s): NO2_B43F_P1_volt, NO_B4_P1_volt
+-----------------------
+INFO [2020-08-21 12:33:03] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 12:33:03] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200119__20200124__NO2_B43F_P1_volt-1&NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 12:33:03] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:04] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200120__20200125__NO2_B43F_P1_volt-1&NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 12:33:04] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:04] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200121__20200126__NO2_B43F_P1_volt-1&NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 12:33:04] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:05] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200122__20200127__NO2_B43F_P1_volt-1&NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 12:33:05] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:05] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200123__20200128__NO2_B43F_P1_volt-1&NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 12:33:05] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:06] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200124__20200129__NO2_B43F_P1_volt-1&NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 12:33:06] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:06] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200125__20200130__NO2_B43F_P1_volt-1&NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 12:33:06] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:33:07] Model : 40458D__OX_A431_P1__nA__MultiLinear__20200126__20200131__NO2_B43F_P1_volt-1&NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 12:33:07] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:33:07] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 12:33:07] [Median_Model] ASE box 40458D, sensor  OX_A431_P1, creating rolling MultiLinear models between 2020-01-19
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 4 x 11
+  term             estimate std.error statistic      p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                                    
+  <chr>               <dbl>     <dbl>     <dbl>        <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                                  
+1 (Intercept)       7.54       1.82       66.2       0.      2.24     4.22     10.9        4.14  0.00610    Median of coefficients of rolling calibration models with interval of ~
+2 x                -0.130      0.0614   -123.        0.      0.0655  -0.227    -0.0329    -2.12  0.0787     Median of coefficients of rolling calibration models with interval of ~
+3 NO2_B43F_P1_volt  0.764      0.0444    217.        0.      0.0501   0.690     0.838     17.2   0.00000245 Median of coefficients of rolling calibration models with interval of ~
+4 NO_B4_P1_volt    -0.00781    0.0414      6.10      1.11e-9 0.0464  -0.0766    0.0610    -0.188 0.857      Median of coefficients of rolling calibration models with interval of ~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.831         0.831 -33094. 66198. 66236. 16121  1.88
+-----------------------
+INFO [2020-08-21 12:33:08] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 66197.906898603. It is lower than the AIC of the precedent model 66579.6752950929.
+INFO [2020-08-21 12:33:08] [Auto.Cal] Adding of covariate NO_B4_P1_volt improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-21 12:33:08] [Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept
+WARN [2020-08-21 12:33:08] [Auto.Cal] The coefficient of parameter(s) NO_B4_P1_volt of the current model is(are) not significantly different from 0.
+WARN [2020-08-21 12:33:08] [Auto.Cal] The calibration model resulting from adding covariate NO_B4_P1_volt is not valid.
+WARN [2020-08-21 12:33:08] [Auto.Cal] Either parameters are unstable when rolling the calibration models or it/they does not influence significantly the sensor responses. Looking for other covariates.
+
+WARN [2020-08-21 12:33:08] [Auto.Cal] NO_B4_P1_volt is discarded from the list of possible covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-21 12:33:08] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-21 12:33:08] [Auto.Cal] Possible ordered covariates: NO2_B43F_P1_volt
+INFO [2020-08-21 12:33:08] [Auto.Cal] There are no more covariates to be added to the calibration model.

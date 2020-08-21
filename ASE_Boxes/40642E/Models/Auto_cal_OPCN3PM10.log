@@ -1,0 +1,46 @@
+#######################
+INFO [2020-08-17 16:56:43] [Auto.Cal] 40642E, sensor OPCN3PM10 fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-17 16:56:45] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-17 16:56:45] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-17 16:56:45] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:45] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-17 16:56:45] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:45] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-17 16:56:45] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:46] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-17 16:56:46] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:46] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-17 16:56:46] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:46] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-17 16:56:46] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:47] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-17 16:56:47] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:47] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-17 16:56:47] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:47] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-17 16:56:47] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:48] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-17 16:56:48] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:48] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-17 16:56:48] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:56:48] Model : 40642E__OPCN3PM10__ug.m-3__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-17 16:56:48] [Compare_Models] General.csv for 40642E not loaded.
+-----------------------
+INFO [2020-08-17 16:56:49] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-17 16:56:49] [Median_Model] ASE box 40642E, sensor   OPCN3PM10, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                   MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                               <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)   -5.85     10.7       -9.23       0 Median of coefficients of rolling calibration models with interval~ 9.34   -19.7        8.00    -0.547     0.597 
+2 x              0.779     0.294    111.         0 Median of coefficients of rolling calibration models with interval~ 0.317    0.310      1.25     2.65      0.0242
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -35847. 71700. 71721.    0.0839        0.0838  9.07
+-----------------------
+INFO [2020-08-17 16:56:49] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-17 16:56:51] [List_Covariates] ASE box 40642E, sensor   OPCN3PM10, matrix of correlation between 2020-01-17 and 2020-01-24
+INFO [2020-08-17 16:56:51] [Auto.Cal] there are no covariates to add to the calibration mode for sensor OPCN3PM10.
+INFO [2020-08-17 16:56:51] [Auto.Cal] It is not necessary or not requested to add other covariates to the calibration model.

@@ -1,0 +1,258 @@
+#######################
+INFO [2020-08-21 12:22:33] [Auto.Cal] 40458D, sensor NO2_B43F_P1 fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-21 12:22:35] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-21 12:22:35] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200117__20200122____.rdata
+WARN [2020-08-21 12:22:35] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:35] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200118__20200123____.rdata
+WARN [2020-08-21 12:22:35] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:35] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200119__20200124____.rdata
+WARN [2020-08-21 12:22:35] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:36] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200120__20200125____.rdata
+WARN [2020-08-21 12:22:36] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:36] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200121__20200126____.rdata
+WARN [2020-08-21 12:22:36] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:36] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200122__20200127____.rdata
+WARN [2020-08-21 12:22:36] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:37] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200123__20200128____.rdata
+WARN [2020-08-21 12:22:37] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:38] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200124__20200129____.rdata
+WARN [2020-08-21 12:22:38] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:38] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200125__20200130____.rdata
+WARN [2020-08-21 12:22:38] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:38] Model : 40458D__NO2_B43F_P1__nA__Linear.Robust__20200126__20200131____.rdata
+WARN [2020-08-21 12:22:38] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:22:39] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-21 12:22:39] [Median_Model] ASE box 40458D, sensor NO2_B43F_P1, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                            MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                                        <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)  -22.1       3.15     -211.        0 Median of coefficients of rolling calibration models with interval of 5 days 4.28   -28.4     -15.7       -7.01   0.000112
+2 x             -0.333     0.101     -51.9       0 Median of coefficients of rolling calibration models with interval of 5 days 0.103   -0.486    -0.179     -3.30   0.0108  
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -49249. 98505. 98528.    0.0715        0.0715  4.42
+-----------------------
+INFO [2020-08-21 12:22:39] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-21 12:22:41] [List_Covariates] ASE box 40458D, sensor NO2_B43F_P1, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 12:22:41] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of NO2_B43F_P1 is:
+                row.names NO2_B43F_P1_volt Nitrogen_dioxide_modelled  Out.Ref.NO2  Residuals
+ 1:       Temperature_int       0.62144467                0.62144467 0.0206474283 0.86605160
+ 2:           Temperature       0.58264357                0.58264357 0.0312333492 0.84995862
+ 3:       OX_A431_P1_volt       0.68552846                0.68552846 0.0189055092 0.67470888
+ 4:             D300_volt       0.39542748                0.39542748 0.0684691223 0.68149218
+ 5:     Absolute_humidity       0.36895252                0.36895252 0.0004470269 0.41189744
+ 6:     Relative_humidity       0.15840121                0.15840121 0.0406741306 0.29343673
+ 7:            Td_deficit       0.15214690                0.15214690 0.0601714915 0.31051979
+ 8: Relative_humidity_int       0.16204572                0.16204572 0.0123373281 0.24707201
+ 9:  Atmospheric_pressure       0.11727461                0.11727461 0.0277388406 0.21097585
+10:         CO_A4_P1_volt       0.08583354                0.08583354 0.1534435858 0.29128128
+11:          5310CAT_volt       0.06939559                0.06939559 0.1445389334 0.24769456
+12:                 DRIFT       0.03797716                0.03797716 0.0110906273 0.07464886
+13:         NO_B4_P1_volt       0.07142923                0.07142923 0.0331479214 0.04072150
+-----------------------
+INFO [2020-08-21 12:22:41] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-21 12:22:41] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 12:22:41] [Auto.Cal] Adding the requested Relationships on top of the new First.covariates
+INFO [2020-08-21 12:22:41] [Auto.Cal] request to drop parameter "DRIFT" from possible significant covariates
+INFO [2020-08-21 12:22:41] [Auto.Cal] request to drop parameters 5310CAT_volt, OPCN3PM10_volt, Atmospheric_pressure, Relative_humidity_int from possible significant covariates
+INFO [2020-08-21 12:22:41] [Auto.Cal] Possible ordered covariates: Temperature_int, Absolute_humidity, Temperature, OX_A431_P1_volt, D300_volt, Relative_humidity, Td_deficit, CO_A4_P1_volt, NO_B4_P1_volt
+-----------------------
+INFO [2020-08-21 12:22:41] [Auto.Cal] Covariate "Temperature_int" has a Variance Inflation factor of 1.02011983883851, lower than threshold: 7.5,
+"Temperature_int" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 12:22:41] [Auto.Cal] Fitting calibration model with 1 covariate(s): Temperature_int
+-----------------------
+INFO [2020-08-21 12:22:43] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 12:22:43] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200117__20200122__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:43] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:43] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200118__20200123__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:43] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:44] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200119__20200124__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:44] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:44] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200120__20200125__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:44] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:45] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200121__20200126__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:45] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:45] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200122__20200127__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:45] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:46] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200123__20200128__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:46] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:46] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200124__20200129__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:46] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:47] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200125__20200130__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:47] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:47] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200126__20200131__Temperature_int-1__.rdata
+WARN [2020-08-21 12:22:47] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:22:48] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 12:22:48] [Median_Model] ASE box 40458D, sensor NO2_B43F_P1, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term            estimate std.error statistic p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                                         
+  <chr>              <dbl>     <dbl>     <dbl>   <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                                       
+1 (Intercept)      -16.1      0.402      -461.       0 0.423   -16.8     -15.5       -40.2   1.62e-10 Median of coefficients of rolling calibration models with interval of 5 days
+2 x                 -0.346    0.0239     -200.       0 0.0199   -0.376    -0.317     -14.5   5.10e- 7 Median of coefficients of rolling calibration models with interval of 5 days
+3 Temperature_int   -0.840    0.0368     -328.       0 0.0361   -0.894    -0.787     -22.8   1.44e- 8 Median of coefficients of rolling calibration models with interval of 5 days
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.885         0.885 -31434. 62876. 62907. 16904  1.55
+-----------------------
+INFO [2020-08-21 12:22:48] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 62876.1768089135. It is lower than the AIC of the precedent model 98504.8223595388.
+INFO [2020-08-21 12:22:48] [Auto.Cal] Adding of covariate Temperature_int improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-21 12:22:48] [Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept
+INFO [2020-08-21 12:22:48] [Auto.Cal] All coefficients of the calibration model with covariate(s) Temperature_int are significantly different from 0
+INFO [2020-08-21 12:22:48] [Auto.Cal] covariate: Temperature_int is included into the model.
+INFO [2020-08-21 12:22:50] [List_Covariates] ASE box 40458D, sensor NO2_B43F_P1, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 12:22:50] [Auto.Cal] ordered list of covariates that are correlated with residuals of the current calibration model for NO2_B43F_P1
+               row.names NO2_B43F_P1_volt Nitrogen_dioxide_modelled  Out.Ref.NO2  Residuals
+1:     Absolute_humidity       0.36895252              0.0790297470 0.0004470269 0.22415873
+2:  Atmospheric_pressure       0.11727461              0.0034829324 0.0277388406 0.13486025
+3: Relative_humidity_int       0.16204572              0.0604096462 0.0123373281 0.07914151
+4:       OX_A431_P1_volt       0.68552846              0.0773644173 0.0189055092 0.08437781
+5:     Relative_humidity       0.15840121              0.1139547322 0.0406741306 0.09392400
+6:                 DRIFT       0.03797716              0.0004044366 0.0110906273 0.04793185
+7:            Td_deficit       0.15214690              0.1397626606 0.0601714915 0.09220005
+8:         NO_B4_P1_volt       0.07142923              0.0016348488 0.0331479214 0.04840725
+-----------------------
+INFO [2020-08-21 12:22:51] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-21 12:22:51] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 12:22:51] [Auto.Cal] Adding the requested Relationships on top of the new First.covariates
+INFO [2020-08-21 12:22:51] [Auto.Cal] request to drop parameter "DRIFT" from possible significant covariates
+INFO [2020-08-21 12:22:51] [Auto.Cal] request to drop parameters 5310CAT_volt, OPCN3PM10_volt, Atmospheric_pressure, Relative_humidity_int from possible significant covariates
+INFO [2020-08-21 12:22:51] [Auto.Cal] Possible ordered covariates: Temperature_int, Absolute_humidity, OX_A431_P1_volt, Relative_humidity, Td_deficit, NO_B4_P1_volt
+-----------------------
+INFO [2020-08-21 12:22:51] [Auto.Cal] Covariate "Absolute_humidity" has a Variance Inflation factor of 1.37487977023159, lower than threshold: 7.5,
+"Absolute_humidity" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 12:22:51] [Auto.Cal] Fitting calibration model with 2 covariate(s): Temperature_int, Absolute_humidity
+-----------------------
+INFO [2020-08-21 12:22:52] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 12:22:52] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200117__20200122__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:52] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:53] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200118__20200123__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:53] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:53] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200119__20200124__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:53] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:54] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200120__20200125__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:54] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:54] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200121__20200126__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:54] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:55] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200122__20200127__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:55] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:55] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200123__20200128__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:55] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:56] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200124__20200129__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:56] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:56] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200125__20200130__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:56] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:22:57] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200126__20200131__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-21 12:22:57] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:22:58] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 12:22:58] [Median_Model] ASE box 40458D, sensor NO2_B43F_P1, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 4 x 11
+  term              estimate std.error statistic p.value     MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                                       
+  <chr>                <dbl>     <dbl>     <dbl>   <dbl>   <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                                     
+1 (Intercept)        -12.4     1.19       -256.        0 0.863    -13.7     -11.2      -10.4    6.20e- 6 Median of coefficients of rolling calibration models with interval of 5 d~
+2 x                   -0.335   0.00930    -225.        0 0.00809   -0.347    -0.323    -36.0    3.88e-10 Median of coefficients of rolling calibration models with interval of 5 d~
+3 Temperature_int     -0.749   0.0376     -287.        0 0.0108    -0.765    -0.733    -19.9    4.17e- 8 Median of coefficients of rolling calibration models with interval of 5 d~
+4 Absolute_humidity   -0.994   0.320       -80.2       0 0.217     -1.31     -0.672     -3.10   1.47e- 2 Median of coefficients of rolling calibration models with interval of 5 d~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.917         0.917 -28704. 57418. 57457. 16904  1.32
+-----------------------
+INFO [2020-08-21 12:22:58] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 57417.8630856014. It is lower than the AIC of the precedent model 62876.1768089135.
+INFO [2020-08-21 12:22:58] [Auto.Cal] Adding of covariate Absolute_humidity improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-21 12:22:58] [Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept
+INFO [2020-08-21 12:22:58] [Auto.Cal] All coefficients of the calibration model with covariate(s) Temperature_int, Absolute_humidity are significantly different from 0
+INFO [2020-08-21 12:22:58] [Auto.Cal] covariate: Absolute_humidity is included into the model.
+INFO [2020-08-21 12:23:00] [List_Covariates] ASE box 40458D, sensor NO2_B43F_P1, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 12:23:00] [Auto.Cal] ordered list of covariates that are correlated with residuals of the current calibration model for NO2_B43F_P1
+           row.names NO2_B43F_P1_volt Nitrogen_dioxide_modelled  Out.Ref.NO2   Residuals
+1:   OX_A431_P1_volt        0.6855285              0.0797701453 0.0189055092 0.101370313
+2: Absolute_humidity        0.3689525              0.0000484002 0.0004470269 0.001010225
+-----------------------
+INFO [2020-08-21 12:23:00] [Auto.Cal] Looking for covariate 3 to be added to the calibration function.
+INFO [2020-08-21 12:23:00] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 12:23:00] [Auto.Cal] Adding the requested Relationships on top of the new First.covariates
+INFO [2020-08-21 12:23:00] [Auto.Cal] request to drop parameters 5310CAT_volt, OPCN3PM10_volt, Atmospheric_pressure, Relative_humidity_int from possible significant covariates
+INFO [2020-08-21 12:23:00] [Auto.Cal] Possible ordered covariates: Temperature_int, Absolute_humidity, OX_A431_P1_volt
+-----------------------
+INFO [2020-08-21 12:23:00] [Auto.Cal] Covariate "OX_A431_P1_volt" has a Variance Inflation factor of 3.08464647128614, lower than threshold: 7.5,
+"OX_A431_P1_volt" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 12:23:00] [Auto.Cal] Fitting calibration model with 3 covariate(s): Temperature_int, Absolute_humidity, OX_A431_P1_volt
+-----------------------
+INFO [2020-08-21 12:23:02] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 12:23:02] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200117__20200122__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:02] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:02] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200118__20200123__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:03] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:03] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200119__20200124__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:03] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:03] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200120__20200125__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:04] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:04] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200121__20200126__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:04] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:04] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200122__20200127__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:05] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:05] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200123__20200128__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:05] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:06] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200124__20200129__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:06] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:06] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200125__20200130__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:06] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:23:07] Model : 40458D__NO2_B43F_P1__nA__MultiLinear__20200126__20200131__Temperature_int-1&Absolute_humidity-1&OX_A431_P1_volt-1__.rdata
+WARN [2020-08-21 12:23:07] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:23:07] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 12:23:07] [Median_Model] ASE box 40458D, sensor NO2_B43F_P1, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 5 x 11
+  term              estimate std.error statistic p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                                        
+  <chr>                <dbl>     <dbl>     <dbl>   <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                                      
+1 (Intercept)         -9.83     1.17      -224.        0 1.44    -12.0      -7.69      -8.39  0.0000309 Median of coefficients of rolling calibration models with interval of 5 da~
+2 x                   -0.256    0.0519    -216.        0 0.0337   -0.306    -0.206     -4.93  0.00114   Median of coefficients of rolling calibration models with interval of 5 da~
+3 Temperature_int     -0.466    0.0777    -145.        0 0.0320   -0.513    -0.418     -5.99  0.000326  Median of coefficients of rolling calibration models with interval of 5 da~
+4 Absolute_humidity   -1.16     0.257     -110.        0 0.221    -1.49     -0.837     -4.53  0.00194   Median of coefficients of rolling calibration models with interval of 5 da~
+5 OX_A431_P1_volt      0.349    0.0882      95.9       0 0.0837    0.225     0.473      3.95  0.00421   Median of coefficients of rolling calibration models with interval of 5 da~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.944         0.944 -25354. 50720. 50766. 16904  1.08
+-----------------------
+INFO [2020-08-21 12:23:07] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 50719.7064134343. It is lower than the AIC of the precedent model 57417.8630856014.
+INFO [2020-08-21 12:23:07] [Auto.Cal] Adding of covariate OX_A431_P1_volt improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-21 12:23:07] [Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept
+INFO [2020-08-21 12:23:07] [Auto.Cal] All coefficients of the calibration model with covariate(s) Temperature_int, Absolute_humidity, OX_A431_P1_volt are significantly different from 0
+INFO [2020-08-21 12:23:07] [Auto.Cal] covariate: OX_A431_P1_volt is included into the model.
+INFO [2020-08-21 12:23:09] [List_Covariates] ASE box 40458D, sensor NO2_B43F_P1, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 12:23:10] [Auto.Cal] ordered list of covariates that are correlated with residuals of the current calibration model for NO2_B43F_P1
+              row.names NO2_B43F_P1_volt Nitrogen_dioxide_modelled  Out.Ref.NO2  Residuals
+1:    Absolute_humidity       0.36895252               0.001150215 0.0004470269 0.01313408
+2: Atmospheric_pressure       0.11727461               0.050149245 0.0277388406 0.03259876
+3:                DRIFT       0.03797716               0.024347523 0.0110906273 0.01578514
+-----------------------
+INFO [2020-08-21 12:23:10] [Auto.Cal] Looking for covariate 4 to be added to the calibration function.
+INFO [2020-08-21 12:23:10] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 12:23:10] [Auto.Cal] Adding the requested Relationships on top of the new First.covariates
+INFO [2020-08-21 12:23:10] [Auto.Cal] request to drop parameter "DRIFT" from possible significant covariates
+INFO [2020-08-21 12:23:10] [Auto.Cal] request to drop parameters 5310CAT_volt, OPCN3PM10_volt, Atmospheric_pressure, Relative_humidity_int from possible significant covariates
+INFO [2020-08-21 12:23:10] [Auto.Cal] Possible ordered covariates: Temperature_int, Absolute_humidity, OX_A431_P1_volt
+INFO [2020-08-21 12:23:10] [Auto.Cal] There are no more covariates to be added to the calibration model.

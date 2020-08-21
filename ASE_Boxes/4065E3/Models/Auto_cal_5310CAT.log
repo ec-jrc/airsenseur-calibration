@@ -1,0 +1,181 @@
+#######################
+INFO [2020-08-17 16:43:02] [Auto.Cal] 4065E3, sensor 5310CAT fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-17 16:43:03] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-17 16:43:03] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-17 16:43:03] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:04] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-17 16:43:04] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:04] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-17 16:43:04] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:04] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-17 16:43:04] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:05] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-17 16:43:05] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:05] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-17 16:43:05] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:06] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-17 16:43:06] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:06] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-17 16:43:06] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:06] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-17 16:43:06] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:07] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-17 16:43:07] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:07] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-17 16:43:07] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:08] Model : 4065E3__5310CAT__ug.m-3__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-17 16:43:08] [Compare_Models] General.csv for 4065E3 not loaded.
+-----------------------
+INFO [2020-08-17 16:43:08] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-17 16:43:08] [Median_Model] ASE box 4065E3, sensor     5310CAT, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic  p.value tau                                                                  MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>    <dbl> <chr>                                                              <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)   -0.781     3.65       7.96 1.78e-15 Median of coefficients of rolling calibration models with interva~ 1.65     -3.23      1.67    -0.214 0.835     
+2 x              1.62      0.167    284.   0.       Median of coefficients of rolling calibration models with interva~ 0.111     1.45      1.78     9.67  0.00000216
+# A tibble: 1 x 7
+  tau                                            logLik     AIC     BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>   <dbl>   <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -61710. 123425. 123448.     0.866         0.866  11.6
+-----------------------
+INFO [2020-08-17 16:43:09] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-17 16:43:11] [List_Covariates] ASE box 4065E3, sensor     5310CAT, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-17 16:43:11] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of 5310CAT is:
+           row.names 5310CAT_volt PM10_PMSCal_modelled Out.Ref.PM10  Residuals
+1:   Temperature_int 2.847446e-01         2.847446e-01   0.12226532 0.25937578
+2:       Temperature 2.924498e-01         2.924498e-01   0.12778200 0.25621580
+3: Absolute_humidity 3.802491e-06         3.802491e-06   0.02828024 0.06979588
+4:     NO_B4_P1_volt 2.748927e-03         2.748927e-03   0.02305234 0.02555357
+-----------------------
+INFO [2020-08-17 16:43:11] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-17 16:43:11] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:43:11] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:43:11] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+-----------------------
+INFO [2020-08-17 16:43:11] [Auto.Cal] Covariate "Temperature_int" has a Variance Inflation factor of 1.12454925996255, lower than threshold: 10,
+"Temperature_int" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-17 16:43:11] [Auto.Cal] Fitting calibration model with 1 covariate(s): Temperature_int
+-----------------------
+INFO [2020-08-17 16:43:13] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-17 16:43:13] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:13] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:14] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:14] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:14] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:14] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:15] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:15] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:15] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:15] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:16] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:16] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:17] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:17] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:17] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:17] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:18] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:18] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:19] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:19] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:19] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:19] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:20] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Temperature_int-1__.rdata
+WARN [2020-08-17 16:43:20] [Compare_Models] General.csv for 4065E3 not loaded.
+-----------------------
+INFO [2020-08-17 16:43:21] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-17 16:43:21] [Median_Model] ASE box 4065E3, sensor     5310CAT, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term           estimate std.error statistic p.value   MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                             
+  <chr>             <dbl>     <dbl>     <dbl>   <dbl> <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                           
+1 (Intercept)       29.9      9.17       96.7       0 7.01     19.5      40.3       3.25  0.00865   Median of coefficients of rolling calibration models with inter~
+2 x                  1.36     0.171     363.        0 0.164     1.12      1.60      7.95  0.0000125 Median of coefficients of rolling calibration models with inter~
+3 Temperature_i~    -1.74     0.659     -92.9       0 0.372    -2.29     -1.19     -2.64  0.0246    Median of coefficients of rolling calibration models with inter~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik     AIC     BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>   <dbl>   <dbl> <int> <dbl>
+1     0.911         0.911 -56236. 112480. 112510. 15306  9.54
+-----------------------
+INFO [2020-08-17 16:43:21] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 112479.615818768. It is lower than the AIC of the precedent model 123425.032300482.
+INFO [2020-08-17 16:43:21] [Auto.Cal] Adding of covariate Temperature_int improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-17 16:43:21] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+INFO [2020-08-17 16:43:21] [Auto.Cal] All parameters of the calibration model with covariate(s) Temperature_int are significantly different from 0
+INFO [2020-08-17 16:43:27] [List_Covariates] ASE box 4065E3, sensor     5310CAT, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-17 16:43:27] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of 5310CAT is:
+           row.names 5310CAT_volt PM10_PMSCal_modelled Out.Ref.PM10  Residuals
+1: Absolute_humidity 3.802491e-06            0.0173055   0.02828024 0.04475517
+-----------------------
+INFO [2020-08-17 16:43:27] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-17 16:43:27] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:43:27] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:43:27] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+-----------------------
+INFO [2020-08-17 16:43:27] [Auto.Cal] Covariate "Absolute_humidity" has a Variance Inflation factor of 1.74602128963538, lower than threshold: 10,
+"Absolute_humidity" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-17 16:43:27] [Auto.Cal] Fitting calibration model with 2 covariate(s): Temperature_int, Absolute_humidity
+-----------------------
+INFO [2020-08-17 16:43:29] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-17 16:43:29] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:29] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:29] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:29] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:30] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:30] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:31] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:31] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:31] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:31] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:32] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:32] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:32] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:32] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:33] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:33] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:34] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:34] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:34] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:34] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:35] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:35] [Compare_Models] General.csv for 4065E3 not loaded.
+INFO [2020-08-17 16:43:35] Model : 4065E3__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Temperature_int-1&Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:43:35] [Compare_Models] General.csv for 4065E3 not loaded.
+-----------------------
+INFO [2020-08-17 16:43:36] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-17 16:43:36] [Median_Model] ASE box 4065E3, sensor     5310CAT, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 4 x 11
+  term            estimate std.error statistic   p.value     MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                        
+  <chr>              <dbl>     <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                      
+1 (Intercept)        23.6     22.6        58.9 0.        25.0      -13.4      60.6      1.04   0.321     Median of coefficients of rolling calibration models with ~
+2 x                   1.35     0.211     320.  0.         0.0768     1.24      1.46     6.40   0.0000783 Median of coefficients of rolling calibration models with ~
+3 Temperature_int    -2.01     1.84      -91.9 0.         0.527     -2.79     -1.23    -1.09   0.301     Median of coefficients of rolling calibration models with ~
+4 Absolute_humid~     1.69     7.85       28.9 5.34e-179  5.04      -5.79      9.16     0.215  0.834     Median of coefficients of rolling calibration models with ~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik     AIC     BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>   <dbl>   <dbl> <int> <dbl>
+1     0.923         0.923 -55146. 110302. 110340. 15306  8.88
+-----------------------
+INFO [2020-08-17 16:43:36] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 110301.637289747. It is lower than the AIC of the precedent model 112479.615818768.
+INFO [2020-08-17 16:43:36] [Auto.Cal] Adding of covariate Absolute_humidity improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-17 16:43:36] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+WARN [2020-08-17 16:43:36] [Auto.Cal] The coefficient of parameter(s) (Intercept) and Temperature_int and Absolute_humidity of the current model is(are) not significantly different from 0.
+WARN [2020-08-17 16:43:36] [Auto.Cal] The calibration model resulting from adding covariate Absolute_humidity is not valid.
+WARN [2020-08-17 16:43:36] [Auto.Cal] Either parameters are unstable when rolling the calibration models or it/they does not influence significantly the sensor responses. Looking for other covariates.
+
+WARN [2020-08-17 16:43:37] [Auto.Cal] Absolute_humidity is discarded from the significant covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-17 16:43:37] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-17 16:43:37] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:43:37] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:43:37] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+INFO [2020-08-17 16:43:37] [Auto.Cal] There are no more covariates to be added to the calibration model.

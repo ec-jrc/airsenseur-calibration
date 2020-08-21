@@ -1,0 +1,46 @@
+#######################
+INFO [2020-08-21 14:52:25] [Auto.Cal] 40816F, sensor SHT31TE fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-21 14:52:27] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-21 14:52:27] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-21 14:52:27] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:27] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-21 14:52:28] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:28] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-21 14:52:28] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:29] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-21 14:52:29] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:29] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-21 14:52:29] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:30] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-21 14:52:30] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:30] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-21 14:52:30] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:31] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-21 14:52:31] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:32] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-21 14:52:32] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:32] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-21 14:52:32] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:33] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-21 14:52:33] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-21 14:52:33] Model : 40816F__SHT31TE__Celsius__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-21 14:52:33] [Compare_Models] General.csv for 40816F not loaded.
+-----------------------
+INFO [2020-08-21 14:52:34] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-21 14:52:34] [Median_Model] ASE box 40816F, sensor     SHT31TE, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                             MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                                         <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)     2.65    0.228       751.       0 Median of coefficients of rolling calibration models with interval of 3 days 0.110      2.49      2.81      11.6   3.91e- 7
+2 x               1.08    0.0246     1062.       0 Median of coefficients of rolling calibration models with interval of 3 days 0.0266     1.04      1.12      44.1   8.73e-13
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -29885. 59776. 59799.     0.943         0.943  1.19
+-----------------------
+INFO [2020-08-21 14:52:35] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-21 14:52:39] [List_Covariates] ASE box 40816F, sensor     SHT31TE, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 14:52:39] [Auto.Cal] there are no covariates to add to the calibration mode for sensor SHT31TE.
+INFO [2020-08-21 14:52:40] [Auto.Cal] It is not necessary or not requested to add other covariates to the calibration model.

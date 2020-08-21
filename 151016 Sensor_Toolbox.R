@@ -285,8 +285,7 @@ stopWhenError <- function(FUN) {
 slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL,
                        DQO.1 = NA, LV = NA, Units = NULL, Disk = NA, WD = NA, Dir = NA,
                        Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, variable.ubss = FALSE,
-                       lim = NULL, f_coef1 = NULL, f_coef2 = NULL, f_R2 = NULL, nameModel = NULL, SavePlot = TRUE,
-                       calib = NULL) {
+                       lim = NULL, f_coef1 = NULL, f_coef2 = NULL, f_R2 = NULL, nameModel = NULL, SavePlot = TRUE, calib = NULL) {
     # Save graphic file of the orthogonal regression, square of residuals and uncertainty:
     #                 "mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD",
     #                 and "Mat": "case", "Date", "xis", "yis","ubsRM", "ubss", "RS", "Ur", "U", "Rel.bias", "Rel.RSS"
@@ -323,9 +322,9 @@ slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL,
     if (is.null(calib)) {
         #checking that the mat dataFrame is not empty
         nb <- nrow(Mat)
-        if (exists("Mat") && !is.null(Mat) && nrow(Mat)>0) {
-            Mat$Max.ubsRM <- sqrt(RSS/(nb-2) + Mat$bias^2)
-            Mat$Max.RSD   <- sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis
+        if (exists("Mat") && !is.null(Mat) && nrow(Mat) > 0) {
+            Mat$Max.ubsRM <- sqrt(RSS/(nb - 2) + Mat$bias^2)
+            Mat$Max.RSD   <- sqrt(RSS/(nb - 2) + Mat$bias^2)/Mat$xis
             # Printing
             cat("\n")
             cat("--------------------------------\n")
@@ -561,30 +560,36 @@ U.orth.DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
         NMSD  <- (sd(Mat[["yis"]]) - sd(Mat$xis)) / sd(Mat[["xis"]])
         Correlation <- cor(Mat[["xis"]],Mat[["yis"]])
         # Squares of Residuals and bias (vector of values)
-        Mat[,   RS := (Mat[["yis"]] - (b0 + b1 * Mat[["xis"]]))^2]
-        Mat[, bias := (b0 + (b1 - 1) * Mat[["xis"]])]
-        # Squares of Residuals and bias (vector of values)
-        Mat$RS   <- (Mat$yis - (b0 + b1 * Mat$xis))^2
-        Mat$bias <- (b0+(b1-1)*Mat$xis)
+        Mat[, fitted := (b0 + b1 * Mat[["xis"]])]
+        Mat[,   bias := (b0 + (b1 - 1) * Mat[["xis"]])] # Bias for x
+        Mat[,     RS := (Mat[["yis"]] - Mat[["fitted"]])^2]
         # Sum of squares of Residuals (one constant value)
         RSS     <- sum(Mat$RS)
-        # Checking if RS - Mat$ubsRM^2 < 0 that make an error using sqrt(RS - Mat$ubsRM^2) of the ree.RSS. Replacing with 0
-        neg.RSS <- which(RSS/(nb-2) - Mat[["ubsRM"]]^2 <= 0)
-        if (length(neg.RSS) > 0) {
-            # adding 0.1 % of min(xis) to avoid problem of 0 with gam fitting
-            Mat[neg.RSS, RS := Mat[neg.RSS, ubsRM]^2 + 0.001 * min(Mat[["xis"]])]
-            # Recalculating RSS when Mat$RS are changed
-            RSS     <- sum(Mat[["xis"]])
-        }  else {
+        # Checking if ubs^2 + RSS^2 - Mat$ubsRM^2 < 0 that results in an error using sqrt(ubs^2 + RSS^2 - Mat$ubsRM^2) of the ree.RSS. Replacing with 0
+        neg.RSS <- which(Mat$ubss^2 + RSS/(nb - 2) - Mat[["ubsRM"]]^2 + Mat$bias^2 <= 0)
+        if (length(neg.RSS)) {
             # mat$RS are not changed and they are already calculated
-            cat("The \"Sum of Squares of Residuals - u(ubsRM)^2\" is always negative \"sqrt(RSS/(n-2) - u(ubsRM)^2\" can be calculated, check in df Mat: x and max(ubsRM).\n")
+            cat("The \"ubss^2 + RSS/(nb - 2) - ubsRM^2 + bias^2\" is always negative and its square root cannot be calculated, check in df Mat: x and max(ubsRM).\n")
+            cat("ubsRM is too high and should be modified.\n")
+        } else {
+            if (length(neg.RSS) > 0) {
+                cat("Some \"ubss^2 + RSS/(nb - 2) - ubsRM^2 + bias^2\" are negative.\n")
+                cat("The RS values that give negative uncertainty will be changed to give uncertainties of 0.001 Mat$xis.\n")
+                # adding 0.1 % of min(xis) to avoid problem of 0 with gam fitting
+                Mat$RS[neg.RSS] <- Mat$ubsRM[neg.RSS]^2 + 0.001 * min(Mat$xis[neg.RSS]) - Mat$ubss[neg.RSS]^2 - Mat$bias[neg.RSS]^2
+                # Recalculating RSS when Mat$RS are changed
+                RSS     <- sum(Mat[["xis"]])
+            }  else {
+                # mat$RS are not changed and they are already calculated
+                cat("All uncertainties \"ubss^2 + RSS/(nb - 2) - ubsRM^2 + bias^2\" are postive. ubsRM makes sence.\n")
+            }
         }
         # tesing significance of correlation between s and square of absolute reisduals - The calculation does not work only possibility the constrant RSS
         rtest <- cor.test(Mat$xis, Mat$RS)
         print(rtest, quote = FALSE)
         cat(sprintf("probability of H0 (r=0): %f, if <0.05, correlation is demonstrated, if > 0.95 there is no correlation",rtest$p.value), "\n")
         # if fitting the square of residuals is needed
-        if (Fitted.RS && rtest$p.value < 0.01) {
+        if (!is.na(rtest$statistic) && Fitted.RS && rtest$p.value < 0.01) {
             RS.Fitted <- TRUE
             cat("The residuals are not constant. RSS is calculated after applying a gam fitting .\n")
             #z <- lm((Mat$yis - (b0 + b1 * Mat$xis))^2 ~ Mat$xis)
@@ -600,7 +605,7 @@ U.orth.DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
             Mat$Rel.RSS  <- 2 * (sqrt(Mat$ubss^2 + Mat$RS - ubsRM^2) / Mat$xis)
         } else {
             RS.Fitted <- FALSE
-            cat("The residuals are constant. RSS is calculated with equation for constant residuals.\n")
+            cat("The constant residuals are estimated. RSS is calculated with equation for constant residuals.\n")
             cat(sprintf("RSS is the square root of sum of squares of Residuals divided by n - 2: %f", sqrt(sum((Mat$yis/(b0+b1*Mat$xis)-1)^2))/nb^2), "\n")
             # No need to lot a fitted line in this case
             #### Calculating uncertainty
@@ -698,12 +703,21 @@ f_ExpGrowth <- function(x, C, k) {
 }
 f_exp_kT <- function(x, a0, a1, C, k, Temperature) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
-    # y = a0 + a1 x + C ekT, k > 0
+    # y = a0 + a1 x + e(kT + C), k > 0
     # Features
     # Asymptotic to y = 0 to left
     # Passes through (0,C)
     # C is the initial value
     return(a0 + a1 * x + exp(k * Temperature + C) )
+}
+f_exp_kT_NoC <- function(x, a0, a1, k, Temperature) {
+    # https://people.richland.edu/james/lecture/m116/logs/models.html
+    # y = a0 + a1 x + e(kT + C), k > 0
+    # Features
+    # Asymptotic to y = 0 to left
+    # Passes through (0,C)
+    # C is the initial value
+    return(a0 * exp(k * Temperature) + a1 * x )
 }
 f_T_power <- function(x, a0, a1, a2, n, Temperature) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
@@ -925,9 +939,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                 x <- c(rep(NA, Lag$lag, x))
                 y <- c(y, rep(NA, Lag$lag))
                 if (!is.null(s_y)) s_y <- c(s_y, rep(NA, Lag$lag))
-                if (!is.null(Matrice)) Matrice <- berryFunctions::insertRows(Matrice, seq(from = nrow(Matrice) - Lag$lag, to = nrow(Matrice)))
-            }
-        }
+                if (!is.null(Matrice)) Matrice <- berryFunctions::insertRows(Matrice, seq(from = nrow(Matrice) - Lag$lag, to = nrow(Matrice)))}}
     } else Lag <- "Lag correction not requested"
     # Put reference and sensor reponses and standard deviation of sensor responses in a matrix remove NA of x and y
     if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) DataXY <- data.table(x = x, y = y) else {
@@ -937,7 +949,11 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     }
     # adding Covariates for multilinear model and multivariate models
     if (Mod_type == "MultiLinear")                                    DataXY <- cbind(DataXY, Matrice[, ..Covariates])
-    if (any(Mod_type %in% c("exp_kT", "exp_kK","T_power","K_power", "BeerLambert"))) DataXY[, Temperature := Matrice[["Temperature"]]]
+    if (any(Mod_type %in% c("exp_kT_NoC","exp_kT", "exp_kK","T_power","K_power", "BeerLambert"))) {
+        if (is.null(Covariates)) {
+            if (nrow(DataXY != nrow(Matrice))) futile.logger::flog.error(pate0("[Cal_line] x, y an Covariates do not have the same length."))
+            if (is.data.table(DataXY)) DataXY[, Temperature := Matrice[["Temperature"]]] else if (is.data.frame(DataXY)) DataXY$Temperature <- Matrice[["Temperature"]]
+        } else if (is.data.table(DataXY)) DataXY[, (Covariates) := Matrice[,..Covariates]] else if (is.data.frame(DataXY)) DataXY[, Covariates] <- Matrice[,..Covariates]}
     if (any(Mod_type %in% c("BeerLambert"))) DataXY[, Atmospheric_pressure := Matrice[["Atmospheric_pressure"]]]
     if (any(Mod_type %in% c("Kohler"))) DataXY[, Relative_humidity := Matrice[["Relative_humidity"]]]
     # removing NA of any variables in DATAXY
@@ -969,13 +985,11 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                 dplyr::select(-c(ID, Count, SumWI))
         }
     }
-    # removing NA of any variables in DATAXY
-    DataXY <- DataXY %>%
-        dplyr::filter(complete.cases(DataXY))
+    # # removing NA of any variables in DATAXY
+    # DataXY <- DataXY %>%
+    #     dplyr::filter(complete.cases(DataXY))
     # Add ", " at the end of Sensor_name to be print with the legend
-    if (!is.null(Sensor_name)) {
-        Sensor_name <- paste0(Sensor_name, ", ")
-    }
+    if (!is.null(Sensor_name)) Sensor_name <- paste0(Sensor_name, ", ")
     # Fitting Models
     if (Mod_type == 'GAM_GAUSS') {
         Model <- gam(y ~ s(x), family = gaussian(link = identity), data = DataXY)
@@ -991,8 +1005,6 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     } else if (Mod_type == 'Linear.Robust') {
         # MGV Robust Linear Model, (if s_y is not null calculate weights wi and use them in the regression
         # This models the median of y as a function of x, rather than modelling the mean of y as a function of x, in the case of least squares regression.
-        if ("quantreg" %in% rownames(installed.packages()) == FALSE) {install.packages("quantreg")}
-        library("quantreg")
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- rq(y ~ x, data = DataXY, tau = 0.5, model = TRUE)
         } else {
@@ -1010,33 +1022,52 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             #Model <- gam(y~s(x, k=5), family=Gamma(link=log), weights = wi)
             Model <- gam(y~s(x), family = Gamma(link = log), data = Estimated, weights = wi)}
         Equation <- sprintf(paste0("General Additive model"))
-    } else if (Mod_type == 'exp_kT' | Mod_type == 'exp_kK') {
+    } else if (Mod_type %in% c('exp_kT_NoC','exp_kT','exp_kK')) {
+        name.Temperature <- ifelse(is.null(Covariates), "Temperature", Covariates)
         # Setting Initial values
-        Linear.Model <- lm(y ~ x, data = DataXY)
+        Linear.Model <- rq(y ~ x, data = DataXY, tau = c(0.5))
         A0 <- coef(Linear.Model)[1]
         A1 <- coef(Linear.Model)[2]
         # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
-        # Values for which log(DataXY$y - (A0 + A1 * DataXY$x)) can be calculated
-        Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 0)
-        if (Mod_type == 'exp_kT') {
+        if (Mod_type == 'exp_kT_NoC') {
+            Positives <- which((DataXY$y - A1 * DataXY$x)/A0 > 0)
             # Model in celsius degrees
-            DataXY$Temperature_inv <- DataXY$Temperature^-1
-            Model.0 <- lm( log(y[Positives] - (A0 + A1 * x[Positives])) ~ Temperature[Positives], data = DataXY)
+            DataXY[Positives,"Init.Coeffs"] <- log((DataXY[Positives,"y"] - A1 * DataXY[Positives,"x"])/A0)
+            # Fit without intercept, only the slope k
+            Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[Positives,], tau = c(0.5))
+            k0 <- coef(Model.0)[1]
+            # Fitting model
+            if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+                Model <- nlsLM(y ~ f_exp_kT_NoC(DataXY$x, a0, a1, k, DataXY[[name.Temperature]]),
+                               start = list(a0 = A0, a1 = A1, k = k0),
+                               model = TRUE,
+                               control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            } else Model <- nlsLM(y ~ f_exp_kT_NoC(DataXY$x,a0,a1,k,DataXY[[name.Temperature]], n),
+                                  start = list(a0 = A0, a1 = A1, k = 0.12, n = 1),
+                                  weights = wi, model = TRUE, lower = c(0, 0.0000000001, 0, 0.00000000001),
+                                  control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
+            # display equations and R^2
+            Equation <- sprintf(paste0(Sensor_name, "exp_kT_NoC: y = ",f_coef1," exp(",f_coef2," T_Celsius)+ ",f_coef2," x, RMSE=",f_coef1,",AIC= %.1f"),
+                                coef(Model)[1],coef(Model)[3],coef(Model)[2],
+                                sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
+                                AIC(Model))
+        } else  if (Mod_type == 'exp_kT') {
+            # Values for which log(DataXY$y - (A0 + A1 * DataXY$x)) can be calculated
+            Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 0)
+            # Model in celsius degrees
+            DataXY[Positives,"Init.Coeffs"] <- log(DataXY[Positives,"y"] - (A0 + A1 * DataXY[Positives,"x"]))
+            Model.0 <- rq(Init.Coeffs ~ get(name.Temperature), data = DataXY[Positives,], tau = c(0.5))
             C0 <- coef(Model.0)[1]
             k0 <- coef(Model.0)[2]
             # Fitting model
             if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-                Model <- nlsLM(y ~ f_exp_kT(x, a0, a1, C, k, Temperature),
-                               data = DataXY,
+                Model <- nlsLM(y ~ f_exp_kT(DataXY$x, a0, a1, C, k, DataXY[[name.Temperature]]),
                                start = list(a0 = A0, a1 = A1, C = C0, k = k0),
                                model = TRUE,
                                control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001)
-                #Model <- nlsLM(y ~ f_exp_kT(x, a1, C, k, Temperature), data = DataXY, start = list(a1 = A1/A0, C = A0, k = 0.12), model = TRUE, lower = c(0.0000000001/A0, 0/A0, 0.00000000001/A0))
-            } else Model <- nlsLM(y ~ f_exp_kT(x,a0,a1,C,k,Temperature, n),
-                                  data = DataXY, start = list(a0 = A0, a1 = A1, C = A0, k = 0.12, n = 1),
-                                  weights = wi,
-                                  model = TRUE,
-                                  lower = c(0, 0.0000000001, 0, 0.00000000001),
+            } else Model <- nlsLM(y ~ f_exp_kT(DataXY$x,a0,a1,C,k,DataXY[[name.Temperature]], n),
+                                  start = list(a0 = A0, a1 = A1, C = A0, k = 0.12, n = 1),
+                                  weights = wi, model = TRUE, lower = c(0, 0.0000000001, 0, 0.00000000001),
                                   control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
             # display equations and R^2
             Equation <- sprintf(paste0(Sensor_name, "Power: y = ",f_coef1,"+ ",f_coef2," x + exp(",f_coef2," T_Celsius + ", f_coef2,"), RMSE=",f_coef1,",AIC= %.1f"),
@@ -1044,6 +1075,8 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                                 sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                                 AIC(Model))
         } else  if (Mod_type == 'exp_kK') {
+            # Values for which log(DataXY$y - (A0 + A1 * DataXY$x)) can be calculated
+            Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 0)
             # Model in Kelvin
             DataXY$Kelvin     <- (273.15 + DataXY$Temperature)
             DataXY$Kelvin_inv <- DataXY$Kelvin^-1
@@ -1441,8 +1474,8 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
     } else if (Mod_type == 'MultiLinear') {
         # convert any column of Matrice that is not numeric (Date) to numeric
         if (!all(grepl(pattern = "numeric", x = sapply(lapply(Matrice, class), "[", 1)))) {
-            cat("[Meas_Function] INFO, some covariates are not numeric. Converting to numeric.\n")
             Col.no.numeric <- grep(pattern = "numeric", x = sapply(lapply(Matrice, class), "[", 1), invert = TRUE)
+            futile.logger::flog.warn(paste0("[Meas_Function] \"",paste(names(Matrice)[Col.no.numeric], collapse = ", "), "\" is(are) not numeric. Converting to numeric."))
             Matrice[,Col.no.numeric] <- sapply(Matrice[,Col.no.numeric],as.numeric)
         }
         # matrix of covariates
@@ -1538,9 +1571,15 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
         x <- log(1 - ((y - Model$Coef[3])/Model$Coef[1]))/-Model$Coef[2]
         #  yy <- Model$Coef[1] * (1-exp(-Model$Coef[2] * xx)) + Model$Coef[3]
         return(x)
+    } else if (Mod_type == 'exp_kT_NoC') {
+        CovMod <- ifelse(is.null(covariates), "Temperature", covariates)
+        # model f_exp_kT: return( (y - (a0 + exp(k * Temperature)))/ a1) )
+        Estimated <- as.vector( (y - (Model$Coef[1] * exp(Model$Coef[3] * Matrice[, CovMod]))) / Model$Coef[2] )
+        return(Estimated)
     } else if (Mod_type == 'exp_kT') {
-        # model f_exp_kT: return( (y - (a0 + C.exp(k * Temperature)))/ a1) )
-        Estimated <- as.vector( (y - (Model$Coef[1] + exp(Model$Coef[4] * Matrice$Temperature +  Model$Coef[3])) ) / Model$Coef[2])
+        CovMod <- ifelse(is.null(covariates), "Temperature", covariates)
+        # model f_exp_kT: return( (y - (a0 + exp(k * Temperature + C)))/ a1) )
+        Estimated <- as.vector( (y - (Model$Coef[1] + exp(Model$Coef[4] * Matrice[, CovMod] +  Model$Coef[3]))) / Model$Coef[2] )
         return(Estimated)
     } else if (Mod_type == 'exp_kK') {
         # model f_exp_kT: return( (y - (a0 + C.exp(k * Temperature)))/ a1) )

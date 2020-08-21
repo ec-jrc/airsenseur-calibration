@@ -24,40 +24,34 @@
 #----------------------------------------------------------------CR
 # Checking if Functions4ASE.R is available
 cat("-----------------------------------------------------------------------------------\n")
-cat("[Global] INFO, checking presence of necessary files (151016 Sensor_Toolbox.R, Functions4ASE.R).\n")
+if (!"remotes"   %in% utils::installed.packages()) install.packages("remotes")
+if (!"librarian" %in% utils::installed.packages()) remotes::install_github("DesiQuintans/librarian")
+librarian::shelf(futile.logger)
+futile.logger::flog.info("[Global] checking presence of necessary files Functions4ASE.R.")
 Functions4ASE  <- file.path(getwd(), "Functions4ASE.R")
 if (!file.exists(c(Functions4ASE))) {
-    cat(paste0("[Global] ERROR, file ", Functions4ASE, " not found, stopping the process\n"))
-    stop(cat(paste0("[Global] ERROR, file ", Functions4ASE), " not found, stopping the process\n"))
-} else cat(paste0("[Global] INFO, file ", Functions4ASE, " found and ready to be sourced\n"))
-cat("-----------------------------------------------------------------------------------\n")
+    stop(futile.logger::flog.error(paste0("[Global] ERROR, file ", Functions4ASE), " not found, stopping the process."))
+} else futile.logger::flog.info(paste0("[Global] file ", Functions4ASE, " found and ready to be sourced."))
 # Checking if "151016 Sensor_Toolbox.R" is available
-cat("\n")
-cat("-----------------------------------------------------------------------------------\n")
 DisqueSensToolBox  <- file.path(getwd(),"151016 Sensor_Toolbox.R")
-cat("[Global] INFO, checking presence of necessary file 151016 Sensor_Toolbox.R.\n")
+futile.logger::flog.info("[Global] checking presence of necessary file 151016 Sensor_Toolbox.R.")
 if (!file.exists(c(DisqueSensToolBox))) {
-    cat(paste0("[Global] ERROR, file ", DisqueSensToolBox, " not found, stopping the process\n"))
-    stop(cat(paste0("[Global] ERROR, file ", DisqueSensToolBox), " not found, stopping the process\n"))
-} else cat(paste0("[Global] INFO, file ", DisqueSensToolBox , " found and ready to be sourced\n"))
-cat("-----------------------------------------------------------------------------------\n")
+    stop(futile.logger::flog.error(paste0("[Global] ERROR, file ", DisqueSensToolBox), " not found, stopping the process."))
+} else futile.logger::flog.info(paste0("[Global] file ", DisqueSensToolBox , " found and ready to be sourced."))
 #----------------------------------------------------------------CR
 # 1.c Sourcing SensorToolBox and Functions4AES.R----
 #----------------------------------------------------------------CR
-cat(paste0("[Global] INFO, sourcing 151016 Sensor_Toolbox.R and Funtions4ASE.R"), sep = "\n")
+futile.logger::flog.info(paste0("[Global] sourcing 151016 Sensor_Toolbox.R and Funtions4ASE.R"), sep = ".")
 # Loading SensorToolBox
 source(DisqueSensToolBox)
 remove(DisqueSensToolBox)
 # Source Functions4ASE.R after SensorToolBox in order to update the last version of functions in Functions4ASE.R
 source(Functions4ASE)
 remove(Functions4ASE)
-cat("-----------------------------------------------------------------------------------\n")
-cat("\n")
 #----------------------------------------------------------CR
 #  1.d Install packages (CRAN + Github) ----
 #----------------------------------------------------------CR
-cat("-----------------------------------------------------------------------------------\n")
-cat("[Global] INFO, Check or install packages needed to run the script\n")
+futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # Packages to be loaded
 # transpose dataFrame, and rbindlist (faster than rbindfill)            --> data.table
 # Clean and consistent tools to split-apply-combine pattern in R        --> plyr # use the function plyr::rbind.fill to add dataframes together
@@ -68,7 +62,7 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # function to tidy Models 												--> broom
 # To read sensor data, needed for senorweb4R, install before openair    --> stringi
 # Easier management of time interval                                    --> lubridate
-# When removing ouliers, using rollapply()                              --> zoo
+# When removing ouliers, using rollapply(), na.locf                     --> zoo
 # Date format for Influxdbr and other times series                      --> xts
 # Packages needed for github sensorweb4R if you have a proxy            --> futile.logger, futile.options, lambda.r, geosphere
 # Package needed for devtools::install_github("52North/sensorweb4R")    --> curl
@@ -80,8 +74,11 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # To solve system of linear equation                                    --> limSolve
 # For general additive models, function gam()                           --> mgcv
 # crating polynomial for solving the cubic equation                     --> polynom
+# correlation matrix                                                    --> Hmisc
+# Variance Inflation Factors vif()                                      --> HH
 # To read the airsenseur.db SQLite database                             --> RSQLite, sqldf, RODBC, jsonlite
-# To get the time zone using the ggogle API in Down_Influx              --> RJSONIO,  XML
+# To get the time zone using the ggogle API in Down_Influx and for later
+# github package threadr                                                --> RJSONIO,  XML
 # load packages for alphanumeric operations (shield config file)        --> BMS
 # package for saving loading list (index for warming , outliers...)     --> rlist
 # file extension file_ext                                               --> tools
@@ -92,36 +89,21 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # parallel computing Linux or windows                                   --> doParallel
 # Rolling mad and median                                                --> caTools, stats
 # computation of dew points (humidity.to.dewpoint)                      --> weathermetrics
-# extension                                                             --> raster
-#
+# extension()                                                           --> raster
+# package needed to install Github rundel/timezone                      --> proj4
 list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broom"           , "stringi"         ,
                    "lubridate"       , "zoo"             , "xts"             ,
                    "futile.options"  , "lambda.r"        , "futile.logger"   , "geosphere"       ,
                    "curl"            , "RCurl"           , "httr"            , "devtools"        , "processx"        , "sp"              ,
-                   "quantreg"        , "minpack.lm"      , "limSolve"        , "mgcv"            , "polynom"         ,
-                   "RSQLite"         , "sqldf"           , "RODBC"           , "jsonlite"        ,
+                   "quantreg"        , "minpack.lm"      , "limSolve"        , "mgcv"            , "polynom"         , "Hmisc"           , "HH"               ,
+                   "RSQLite"         , "sqldf"           , "jsonlite"        , #"RODBC"           ,
                    "RJSONIO"         , "XML"             ,
                    "BMS"             , "rlist"           , "tools"           , "stringr"         ,
                    "OSMscale"        , "berryFunctions"  ,
                    "RcppRoll"        , "foreach"         , "doParallel"      ,
-                   "caTools"         , "weathermetrics"  , "colorspace"      , "backports"       , "raster")
-Load_Packages(list.Packages)
-rm(list.Packages)
+                   "caTools"         , "weathermetrics"  , "colorspace"      , "backports"       , "raster"          ,
+                   "proj4")
 # if error on plyr then type install.packages("plyr") at the console
-# Install PhatomJS Should be done only ONCE - add a tst for this, see https://groups.google.com/forum/#!topic/phantomjs/3IUqGG31imI
-# https://www.rdocumentation.org/packages/webshot/versions/0.5.1/topics/install_phantomjs
-# GitHub, this can crash the code if you have a PROXY, the lines can be commented
 list.packages.github <- c("52North/sensorweb4R", "rundel/timezone")
-for (i in list.packages.github) {
-    # removing author name and version number
-    lib.i <- tail(unlist(strsplit(i, split = "/")), n = 1)
-    lib.i <- head(unlist(strsplit(lib.i, split = "@")), n = 1)
-    if (!(lib.i %in% rownames(installed.packages()))) {
-        cat(sprintf("[Global] INFO, installing package %s", lib.i), sep = "\n")
-        devtools::install_github(i)
-        cat(sprintf("Package %s installed", lib.i), sep = "\n")
-    } else cat(paste0("[Global] INFO, package ", i, " already installed"), sep = "\n")
-    do.call("library", as.list(lib.i))
-    cat(sprintf("[Global] INFO, Package %s loaded",i), sep = "\n")
-}
-rm(i, lib.i, list.packages.github)
+cat("-----------------------------------------------------------------------------------\n")
+cat("\n")

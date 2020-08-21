@@ -1,0 +1,45 @@
+#######################
+INFO [2020-08-21 12:40:29] [Auto.Cal] 40458D, sensor BMP280 fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-21 12:40:30] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-21 12:40:30] Model : 40458D__BMP280__hPa__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-21 12:40:30] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:31] Model : 40458D__BMP280__hPa__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-21 12:40:31] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:31] Model : 40458D__BMP280__hPa__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-21 12:40:31] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:31] Model : 40458D__BMP280__hPa__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-21 12:40:31] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:32] Model : 40458D__BMP280__hPa__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-21 12:40:32] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:32] Model : 40458D__BMP280__hPa__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-21 12:40:32] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:32] Model : 40458D__BMP280__hPa__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-21 12:40:32] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:33] Model : 40458D__BMP280__hPa__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-21 12:40:33] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:33] Model : 40458D__BMP280__hPa__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-21 12:40:33] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:33] Model : 40458D__BMP280__hPa__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-21 12:40:33] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:34] Model : 40458D__BMP280__hPa__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-21 12:40:34] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 12:40:34] Model : 40458D__BMP280__hPa__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-21 12:40:34] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 12:40:34] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-21 12:40:34] [Median_Model] ASE box 40458D, sensor      BMP280, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                              MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                                          <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)    -2.64   9.87         1.22   0.221 Median of coefficients of rolling calibration models with interval of 3 days 10.6     -18.4       13.1     -0.268   7.94e- 1
+2 x               1.00   0.00987   4572.     0     Median of coefficients of rolling calibration models with interval of 3 days  0.0107    0.988      1.02   102.      2.07e-16
+# A tibble: 1 x 7
+  tau                                           logLik     AIC     BIC r.squared adj.r.squared  RMSE
+  <chr>                                          <dbl>   <dbl>   <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration  5025. -10044. -10020.      1.00          1.00 0.185
+-----------------------
+INFO [2020-08-21 12:40:35] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-21 12:40:37] [List_Covariates] ASE box 40458D, sensor      BMP280, matrix of correlation between 2020-01-17 and 2020-01-30
+[1] "Number of sink channels opened: 1. Closing opened channels"

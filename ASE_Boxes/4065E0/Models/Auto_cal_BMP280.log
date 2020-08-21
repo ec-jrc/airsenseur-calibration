@@ -1,0 +1,125 @@
+#######################
+INFO [2020-08-18 13:10:06] [Auto.Cal] 4065E0, sensor BMP280 fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-18 13:10:08] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-18 13:10:08] Model : 4065E0__BMP280__hPa__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-18 13:10:08] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:08] Model : 4065E0__BMP280__hPa__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-18 13:10:08] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:08] Model : 4065E0__BMP280__hPa__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-18 13:10:08] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:09] Model : 4065E0__BMP280__hPa__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-18 13:10:09] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:09] Model : 4065E0__BMP280__hPa__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-18 13:10:09] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:10] Model : 4065E0__BMP280__hPa__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-18 13:10:10] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:10] Model : 4065E0__BMP280__hPa__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-18 13:10:10] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:10] Model : 4065E0__BMP280__hPa__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-18 13:10:10] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:11] Model : 4065E0__BMP280__hPa__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-18 13:10:11] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:11] Model : 4065E0__BMP280__hPa__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-18 13:10:11] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:12] Model : 4065E0__BMP280__hPa__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-18 13:10:12] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:12] Model : 4065E0__BMP280__hPa__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-18 13:10:12] [Compare_Models] General.csv for 4065E0 not loaded.
+-----------------------
+INFO [2020-08-18 13:10:12] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-18 13:10:12] [Median_Model] ASE box 4065E0, sensor      BMP280, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term       estimate std.error statistic  p.value tau                                                           MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>         <dbl>     <dbl>     <dbl>    <dbl> <chr>                                                       <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercep~    -2.63   10.5         7.25 4.32e-13 Median of coefficients of rolling calibration models wit~ 12.4     -21.1       15.8     -0.250   8.07e- 1
+2 x              1.00    0.0105   5351.   0.       Median of coefficients of rolling calibration models wit~  0.0125    0.986      1.02    95.2     4.00e-16
+# A tibble: 1 x 7
+  tau                                           logLik     AIC     BIC r.squared adj.r.squared  RMSE
+  <chr>                                          <dbl>   <dbl>   <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration  5450. -10895. -10872.      1.00          1.00 0.171
+-----------------------
+INFO [2020-08-18 13:10:13] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-18 13:10:15] [List_Covariates] ASE box 4065E0, sensor      BMP280, matrix of correlation between 2020-01-17 and 2020-01-28
+INFO [2020-08-18 13:10:15] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of BMP280 is:
+                row.names BMP280_volt Atmospheric_pressure_modelled Out.Ref.Press  Residuals
+ 1:            Td_deficit 0.135808306                   0.135808306   0.133888193 0.64641551
+ 2:     Relative_humidity 0.167425096                   0.167425096   0.166100083 0.66322519
+ 3: Relative_humidity_int 0.198478436                   0.198478436   0.198627454 0.67928056
+ 4:       OX_A431_P1_volt 0.012384864                   0.012384864   0.009888192 0.38482242
+ 5:         CO_A4_P1_volt 0.006174212                   0.006174212   0.007838098 0.33080131
+ 6:             D300_volt 0.068562557                   0.068562557   0.062264043 0.35817229
+ 7:       Temperature_int 0.111720182                   0.111720182   0.109673572 0.38825490
+ 8:           Temperature 0.107925304                   0.107925304   0.106533473 0.35848252
+ 9:          5310CAT_volt 0.159065081                   0.159065081   0.167150009 0.37234608
+10:         NO_B4_P1_volt 0.001434191                   0.001434191   0.001238841 0.01360294
+-----------------------
+INFO [2020-08-18 13:10:16] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-18 13:10:16] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:10:16] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:10:16] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+-----------------------
+INFO [2020-08-18 13:10:16] [Auto.Cal] Covariate "Td_deficit" has a Variance Inflation factor of 1.17128039869898, lower than threshold: 10,
+"Td_deficit" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-18 13:10:16] [Auto.Cal] Fitting calibration model with 1 covariate(s): Td_deficit
+-----------------------
+INFO [2020-08-18 13:10:17] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-18 13:10:17] Model : 4065E0__BMP280__hPa__MultiLinear__20200117__20200120__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:17] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:18] Model : 4065E0__BMP280__hPa__MultiLinear__20200118__20200121__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:18] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:18] Model : 4065E0__BMP280__hPa__MultiLinear__20200119__20200122__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:18] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:19] Model : 4065E0__BMP280__hPa__MultiLinear__20200120__20200123__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:19] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:20] Model : 4065E0__BMP280__hPa__MultiLinear__20200121__20200124__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:20] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:20] Model : 4065E0__BMP280__hPa__MultiLinear__20200122__20200125__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:20] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:21] Model : 4065E0__BMP280__hPa__MultiLinear__20200123__20200126__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:21] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:21] Model : 4065E0__BMP280__hPa__MultiLinear__20200124__20200127__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:21] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:22] Model : 4065E0__BMP280__hPa__MultiLinear__20200125__20200128__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:22] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:23] Model : 4065E0__BMP280__hPa__MultiLinear__20200126__20200129__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:23] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:23] Model : 4065E0__BMP280__hPa__MultiLinear__20200127__20200130__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:23] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:10:24] Model : 4065E0__BMP280__hPa__MultiLinear__20200128__20200131__Td_deficit-1__.rdata
+WARN [2020-08-18 13:10:24] [Compare_Models] General.csv for 4065E0 not loaded.
+-----------------------
+INFO [2020-08-18 13:10:24] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-18 13:10:24] [Median_Model] ASE box 4065E0, sensor      BMP280, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term       estimate std.error statistic p.value     MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                       
+  <chr>         <dbl>     <dbl>     <dbl>   <dbl>   <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                     
+1 (Intercep~  -4.32     4.49        -51.9       0 2.91     -8.63    -0.00435    -0.962   3.59e- 1 Median of coefficients of rolling calibration models with~
+2 x            1.01     0.00449   10467.        0 0.00292   1.00     1.01      224.      7.70e-20 Median of coefficients of rolling calibration models with~
+3 Td_deficit  -0.0398   0.0126     -170.        0 0.00380  -0.0454  -0.0342     -3.17    1.00e- 2 Median of coefficients of rolling calibration models with~
+# A tibble: 1 x 7
+  r.squared adj.r.squared logLik     AIC     BIC  nobs   RMSE
+      <dbl>         <dbl>  <dbl>   <dbl>   <dbl> <int>  <dbl>
+1      1.00          1.00 14404. -28799. -28768. 15709 0.0967
+-----------------------
+INFO [2020-08-18 13:10:25] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is -28799.0977702729. It is lower than the AIC of the precedent model -10894.761945121.
+INFO [2020-08-18 13:10:25] [Auto.Cal] Adding of covariate Td_deficit improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-18 13:10:25] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+INFO [2020-08-18 13:10:25] [Auto.Cal] All parameters of the calibration model with covariate(s) Td_deficit are significantly different from 0
+INFO [2020-08-18 13:10:30] [List_Covariates] ASE box 4065E0, sensor      BMP280, matrix of correlation between 2020-01-17 and 2020-01-28
+INFO [2020-08-18 13:10:31] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of BMP280 is:
+         row.names BMP280_volt Atmospheric_pressure_modelled Out.Ref.Press   Residuals
+1: OX_A431_P1_volt 0.012384864                   0.010239910   0.009888192 0.039563762
+2:   NO_B4_P1_volt 0.001434191                   0.001196066   0.001238841 0.007471512
+-----------------------
+INFO [2020-08-18 13:10:31] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-18 13:10:31] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:10:31] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:10:31] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+INFO [2020-08-18 13:10:31] [Auto.Cal] There are no more covariates to be added to the calibration model.

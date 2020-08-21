@@ -1,0 +1,123 @@
+#######################
+INFO [2020-08-17 16:41:04] [Auto.Cal] 40642E, sensor 5310CAT fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-17 16:41:05] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-17 16:41:05] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-17 16:41:05] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:06] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-17 16:41:06] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:06] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-17 16:41:06] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:07] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-17 16:41:07] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:07] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-17 16:41:07] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:07] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-17 16:41:07] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:08] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-17 16:41:08] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:08] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-17 16:41:08] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:08] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-17 16:41:08] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:09] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-17 16:41:09] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:09] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-17 16:41:09] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:10] Model : 40642E__5310CAT__ug.m-3__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-17 16:41:10] [Compare_Models] General.csv for 40642E not loaded.
+-----------------------
+INFO [2020-08-17 16:41:10] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-17 16:41:10] [Median_Model] ASE box 40642E, sensor     5310CAT, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                   MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                               <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)    -2.18     2.17      0.645   0.519 Median of coefficients of rolling calibration models with interval~ 1.59     -4.54     0.179     -1.00 0.339     
+2 x               1.61     0.174   261.      0     Median of coefficients of rolling calibration models with interval~ 0.109     1.45     1.78       9.26 0.00000321
+# A tibble: 1 x 7
+  tau                                            logLik     AIC     BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>   <dbl>   <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -52652. 105310. 105333.     0.846         0.846  12.7
+-----------------------
+INFO [2020-08-17 16:41:10] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-17 16:41:12] [List_Covariates] ASE box 40642E, sensor     5310CAT, matrix of correlation between 2020-01-17 and 2020-01-24
+INFO [2020-08-17 16:41:13] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of 5310CAT is:
+           row.names 5310CAT_volt PM10_PMSCal_modelled Out.Ref.PM10  Residuals
+1:   Temperature_int  0.270186701          0.270186701   0.13132908 0.26655060
+2:       Temperature  0.275690730          0.275690730   0.13457640 0.26493120
+3: Absolute_humidity  0.000379283          0.000379283   0.03020257 0.08493736
+4:   OX_A431_P1_volt  0.300789417          0.300789417   0.18368294 0.20046386
+-----------------------
+INFO [2020-08-17 16:41:13] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-17 16:41:13] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:41:13] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:41:13] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+-----------------------
+INFO [2020-08-17 16:41:13] [Auto.Cal] Covariate "Temperature_int" has a Variance Inflation factor of 1.1071562255253, lower than threshold: 10,
+"Temperature_int" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-17 16:41:13] [Auto.Cal] Fitting calibration model with 1 covariate(s): Temperature_int
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Temperature_int-1__.rdata exists
+ASE box 40642E, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40642E/Models/40642E__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Temperature_int-1__.rdata exists
+-----------------------
+INFO [2020-08-17 16:41:13] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-17 16:41:13] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:13] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:14] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:14] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:14] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:14] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:15] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:15] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:15] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:15] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:16] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:16] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:16] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:16] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:17] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:17] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:17] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:17] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:18] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:18] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:18] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:18] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-17 16:41:19] Model : 40642E__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Temperature_int-1__.rdata
+WARN [2020-08-17 16:41:19] [Compare_Models] General.csv for 40642E not loaded.
+-----------------------
+INFO [2020-08-17 16:41:19] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-17 16:41:19] [Median_Model] ASE box 40642E, sensor     5310CAT, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term           estimate std.error statistic p.value   MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                             
+  <chr>             <dbl>     <dbl>     <dbl>   <dbl> <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                           
+1 (Intercept)       17.2      5.37       78.9       0 4.35     10.8      23.7       3.20 0.00943    Median of coefficients of rolling calibration models with inter~
+2 x                  1.44     0.175     310.        0 0.191     1.15      1.72      8.23 0.00000913 Median of coefficients of rolling calibration models with inter~
+3 Temperature_i~    -1.50     0.218     -83.3       0 0.174    -1.76     -1.25     -6.91 0.0000417  Median of coefficients of rolling calibration models with inter~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.900         0.900 -49741. 99491. 99521. 13304  10.2
+-----------------------
+INFO [2020-08-17 16:41:19] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 99490.9392088875. It is lower than the AIC of the precedent model 105310.091676351.
+INFO [2020-08-17 16:41:19] [Auto.Cal] Adding of covariate Temperature_int improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-17 16:41:19] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+INFO [2020-08-17 16:41:19] [Auto.Cal] All parameters of the calibration model with covariate(s) Temperature_int are significantly different from 0
+INFO [2020-08-17 16:41:21] [List_Covariates] ASE box 40642E, sensor     5310CAT, matrix of correlation between 2020-01-17 and 2020-01-24
+WARN [2020-08-17 16:41:22] [Auto.Cal] there are no covariates to add to the calibration mode for sensor 5310CAT.
+-----------------------

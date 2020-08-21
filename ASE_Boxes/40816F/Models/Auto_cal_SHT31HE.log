@@ -1,0 +1,165 @@
+#######################
+INFO [2020-08-18 13:16:20] [Auto.Cal] 40816F, sensor SHT31HE fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-18 13:16:22] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-18 13:16:22] Model : 40816F__SHT31HE__percent__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-18 13:16:22] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:22] Model : 40816F__SHT31HE__percent__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-18 13:16:22] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:22] Model : 40816F__SHT31HE__percent__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-18 13:16:22] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:23] Model : 40816F__SHT31HE__percent__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-18 13:16:23] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:23] Model : 40816F__SHT31HE__percent__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-18 13:16:23] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:23] Model : 40816F__SHT31HE__percent__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-18 13:16:23] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:24] Model : 40816F__SHT31HE__percent__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-18 13:16:24] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:24] Model : 40816F__SHT31HE__percent__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-18 13:16:24] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:24] Model : 40816F__SHT31HE__percent__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-18 13:16:24] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:25] Model : 40816F__SHT31HE__percent__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-18 13:16:25] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:25] Model : 40816F__SHT31HE__percent__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-18 13:16:25] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:26] Model : 40816F__SHT31HE__percent__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-18 13:16:26] [Compare_Models] General.csv for 40816F not loaded.
+-----------------------
+INFO [2020-08-18 13:16:26] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-18 13:16:26] [Median_Model] ASE box 40816F, sensor     SHT31HE, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term       estimate std.error statistic p.value tau                                                            MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>         <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                        <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercep~    6.43     1.07        41.7       0 Median of coefficients of rolling calibration models with ~ 1.18      4.68      8.18       5.99   1.35e- 4
+2 x             0.773    0.0169     430.        0 Median of coefficients of rolling calibration models with ~ 0.0184    0.746     0.800     45.7    6.03e-13
+# A tibble: 1 x 7
+  tau                                            logLik     AIC     BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>   <dbl>   <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -52886. 105778. 105801.     0.923         0.923  4.04
+-----------------------
+INFO [2020-08-18 13:16:26] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-18 13:16:31] [List_Covariates] ASE box 40816F, sensor     SHT31HE, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-18 13:16:32] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of SHT31HE is:
+              row.names SHT31HE_volt Relative_humidity_modelled  Out.Ref.RH  Residuals
+1:                DRIFT   0.01622254                 0.01622254 0.003543825 0.06942940
+2: Atmospheric_pressure   0.06331312                 0.06331312 0.031633289 0.07504996
+3:    Absolute_humidity   0.01000336                 0.01000336 0.002116676 0.03672195
+-----------------------
+INFO [2020-08-18 13:16:32] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-18 13:16:32] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:16:32] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:16:32] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+-----------------------
+INFO [2020-08-18 13:16:32] [Auto.Cal] Covariate "Atmospheric_pressure" has a Variance Inflation factor of 1.03284139990065, lower than threshold: 10,
+"Atmospheric_pressure" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-18 13:16:32] [Auto.Cal] Fitting calibration model with 1 covariate(s): Atmospheric_pressure
+-----------------------
+INFO [2020-08-18 13:16:33] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-18 13:16:33] Model : 40816F__SHT31HE__percent__MultiLinear__20200117__20200120__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:33] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:34] Model : 40816F__SHT31HE__percent__MultiLinear__20200118__20200121__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:34] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:34] Model : 40816F__SHT31HE__percent__MultiLinear__20200119__20200122__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:34] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:35] Model : 40816F__SHT31HE__percent__MultiLinear__20200120__20200123__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:35] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:36] Model : 40816F__SHT31HE__percent__MultiLinear__20200121__20200124__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:36] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:36] Model : 40816F__SHT31HE__percent__MultiLinear__20200122__20200125__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:36] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:37] Model : 40816F__SHT31HE__percent__MultiLinear__20200123__20200126__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:37] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:37] Model : 40816F__SHT31HE__percent__MultiLinear__20200124__20200127__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:37] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:38] Model : 40816F__SHT31HE__percent__MultiLinear__20200125__20200128__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:38] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:38] Model : 40816F__SHT31HE__percent__MultiLinear__20200126__20200129__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:38] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:39] Model : 40816F__SHT31HE__percent__MultiLinear__20200127__20200130__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:39] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:39] Model : 40816F__SHT31HE__percent__MultiLinear__20200128__20200131__Atmospheric_pressure-1__.rdata
+WARN [2020-08-18 13:16:39] [Compare_Models] General.csv for 40816F not loaded.
+-----------------------
+INFO [2020-08-18 13:16:40] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-18 13:16:40] [Median_Model] ASE box 40816F, sensor     SHT31HE, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term             estimate std.error statistic p.value     MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                 
+  <chr>               <dbl>     <dbl>     <dbl>   <dbl>   <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                               
+1 (Intercept)       39.1     183.          45.8       0 99.8    -109.      187.        0.214   8.35e- 1 Median of coefficients of rolling calibration model~
+2 x                  0.761     0.0300     492.        0  0.0201    0.731     0.790    25.4     2.06e-10 Median of coefficients of rolling calibration model~
+3 Atmospheric_pre~  -0.0293    0.184      -42.9       0  0.0990   -0.176     0.117    -0.159   8.77e- 1 Median of coefficients of rolling calibration model~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik     AIC     BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>   <dbl>   <dbl> <int> <dbl>
+1     0.913         0.913 -54035. 108078. 108109. 18785  4.30
+WARN [2020-08-18 13:16:40] [Auto.Cal] The Akaike information criterion (AIC) of the current model 108078.099309238 is not lower that the AIC of the precedent model 105777.653116411.
+WARN [2020-08-18 13:16:40] [Auto.Cal] Adding of covariate Atmospheric_pressure does not improve the fitting of calibration model. Looking for other covariates.
+WARN [2020-08-18 13:16:41] [Auto.Cal] Atmospheric_pressure is discarded from the significant covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-18 13:16:41] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-18 13:16:41] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:16:41] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:16:41] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+-----------------------
+INFO [2020-08-18 13:16:41] [Auto.Cal] Covariate "Absolute_humidity" has a Variance Inflation factor of 1.00229134682216, lower than threshold: 10,
+"Absolute_humidity" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-18 13:16:41] [Auto.Cal] Fitting calibration model with 1 covariate(s): Absolute_humidity
+-----------------------
+INFO [2020-08-18 13:16:42] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-18 13:16:42] Model : 40816F__SHT31HE__percent__MultiLinear__20200117__20200120__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:42] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:43] Model : 40816F__SHT31HE__percent__MultiLinear__20200118__20200121__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:43] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:43] Model : 40816F__SHT31HE__percent__MultiLinear__20200119__20200122__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:43] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:44] Model : 40816F__SHT31HE__percent__MultiLinear__20200120__20200123__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:44] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:44] Model : 40816F__SHT31HE__percent__MultiLinear__20200121__20200124__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:44] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:45] Model : 40816F__SHT31HE__percent__MultiLinear__20200122__20200125__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:45] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:45] Model : 40816F__SHT31HE__percent__MultiLinear__20200123__20200126__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:45] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:46] Model : 40816F__SHT31HE__percent__MultiLinear__20200124__20200127__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:46] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:46] Model : 40816F__SHT31HE__percent__MultiLinear__20200125__20200128__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:46] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:47] Model : 40816F__SHT31HE__percent__MultiLinear__20200126__20200129__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:47] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:47] Model : 40816F__SHT31HE__percent__MultiLinear__20200127__20200130__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:47] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-18 13:16:48] Model : 40816F__SHT31HE__percent__MultiLinear__20200128__20200131__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:16:48] [Compare_Models] General.csv for 40816F not loaded.
+-----------------------
+INFO [2020-08-18 13:16:49] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-18 13:16:49] [Median_Model] ASE box 40816F, sensor     SHT31HE, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term           estimate std.error statistic   p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                  
+  <chr>             <dbl>     <dbl>     <dbl>     <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                
+1 (Intercept)       7.28     5.80        32.2 4.98e-222 5.68     -1.15     15.7       1.26    2.38e- 1 Median of coefficients of rolling calibration models~
+2 x                 0.776    0.0315     492.  0.        0.0388    0.718     0.833    24.7     2.75e-10 Median of coefficients of rolling calibration models~
+3 Absolute_humi~    0.188    0.935       27.7 4.79e-165 0.851    -1.07      1.45      0.201   8.45e- 1 Median of coefficients of rolling calibration models~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik     AIC     BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>   <dbl>   <dbl> <int> <dbl>
+1     0.919         0.919 -53326. 106661. 106692. 18785  4.14
+WARN [2020-08-18 13:16:49] [Auto.Cal] The Akaike information criterion (AIC) of the current model 106660.528873256 is not lower that the AIC of the precedent model 105777.653116411.
+WARN [2020-08-18 13:16:49] [Auto.Cal] Adding of covariate Absolute_humidity does not improve the fitting of calibration model. Looking for other covariates.
+WARN [2020-08-18 13:16:49] [Auto.Cal] Absolute_humidity is discarded from the significant covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-18 13:16:49] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-18 13:16:49] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:16:49] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:16:49] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+INFO [2020-08-18 13:16:49] [Auto.Cal] There are no more covariates to be added to the calibration model.

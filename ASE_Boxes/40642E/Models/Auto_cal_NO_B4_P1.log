@@ -1,0 +1,43 @@
+#######################
+INFO [2020-08-21 12:47:50] [Auto.Cal] 40642E, sensor NO_B4_P1 fitting exp_kT_NoC models.
+-----------------------
+INFO [2020-08-21 12:47:51] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-21 12:47:51] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200119__20200122__Temperature-1__.rdata
+WARN [2020-08-21 12:47:52] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:52] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200120__20200123__Temperature-1__.rdata
+WARN [2020-08-21 12:47:52] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:53] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200121__20200124__Temperature-1__.rdata
+WARN [2020-08-21 12:47:53] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:53] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200122__20200125__Temperature-1__.rdata
+WARN [2020-08-21 12:47:53] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:54] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200123__20200126__Temperature-1__.rdata
+WARN [2020-08-21 12:47:54] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:54] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200124__20200127__Temperature-1__.rdata
+WARN [2020-08-21 12:47:54] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:55] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200125__20200128__Temperature-1__.rdata
+WARN [2020-08-21 12:47:55] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:56] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200126__20200129__Temperature-1__.rdata
+WARN [2020-08-21 12:47:56] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:56] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200127__20200130__Temperature-1__.rdata
+WARN [2020-08-21 12:47:56] [Compare_Models] General.csv for 40642E not loaded.
+INFO [2020-08-21 12:47:57] Model : 40642E__NO_B4_P1__nA__exp_kT_NoC__20200128__20200131__Temperature-1__.rdata
+WARN [2020-08-21 12:47:57] [Compare_Models] General.csv for 40642E not loaded.
+-----------------------
+INFO [2020-08-21 12:47:58] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-21 12:47:58] [Median_Model] ASE box 40642E, sensor    NO_B4_P1, creating rolling exp_kT_NoC models between 2020-01-19
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term                   estimate std.error statistic p.value     MAD conf.low conf.high `t value`  `Pr(>|t|)` tau                                                                 
+  <chr>                     <dbl>     <dbl>     <dbl>   <dbl>   <dbl>    <dbl>     <dbl>     <dbl>       <dbl> <chr>                                                               
+1 a0.(Intercept)            5.37     1.29        206.       0 0.813      4.16      6.57       4.15 0.00323     Median of coefficients of rolling calibration models with interval ~
+2 a1.x                      0.611    0.0345      403.       0 0.0200     0.582     0.641     17.7  0.000000105 Median of coefficients of rolling calibration models with interval ~
+3 k.get(name.Temperatur~    0.119    0.0112      249.       0 0.00749    0.107     0.130     10.5  0.00000572  Median of coefficients of rolling calibration models with interval ~
+# A tibble: 1 x 9
+  isConv       finTol  logLik    AIC    BIC  nobs r.squared adj.r.squared  RMSE
+  <lgl>         <dbl>   <dbl>  <dbl>  <dbl> <int>     <dbl>         <dbl> <dbl>
+1 TRUE   0.0000000149 -38911. 77831. 77862. 16107     0.901         0.901  2.71
+-----------------------
+INFO [2020-08-21 12:47:58] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-21 12:48:03] [List_Covariates] ASE box 40642E, sensor    NO_B4_P1, matrix of correlation between 2020-01-18 and 2020-01-24
+INFO [2020-08-21 12:48:04] [Auto.Cal] there are no covariates to add to the calibration mode for sensor NO_B4_P1.
+INFO [2020-08-21 12:48:04] [Auto.Cal] It is not necessary or not requested to add other covariates to the calibration model.

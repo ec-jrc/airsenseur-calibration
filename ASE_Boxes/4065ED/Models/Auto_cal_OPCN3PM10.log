@@ -1,0 +1,53 @@
+#######################
+INFO [2020-08-17 16:58:19] [Auto.Cal] 4065ED, sensor OPCN3PM10 fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-17 16:58:20] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-17 16:58:20] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-17 16:58:20] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:20] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-17 16:58:20] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:20] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-17 16:58:20] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:20] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-17 16:58:21] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:21] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-17 16:58:21] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:21] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-17 16:58:21] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:21] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-17 16:58:22] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:22] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-17 16:58:22] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:22] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-17 16:58:22] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:22] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-17 16:58:22] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:23] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-17 16:58:23] [Compare_Models] General.csv for 4065ED not loaded.
+INFO [2020-08-17 16:58:23] Model : 4065ED__OPCN3PM10__ug.m-3__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-17 16:58:23] [Compare_Models] General.csv for 4065ED not loaded.
+-----------------------
+INFO [2020-08-17 16:58:23] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-17 16:58:23] [Median_Model] ASE box 4065ED, sensor   OPCN3PM10, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                   MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                               <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)   -5.59     11.8       -2.61 0.00896 Median of coefficients of rolling calibration models with interval~ 9.33   -19.4        8.24    -0.473     0.646 
+2 x              0.737     0.357     90.6  0       Median of coefficients of rolling calibration models with interval~ 0.408    0.132      1.34     2.06      0.0660
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -26879. 53763. 53784.   -0.0421       -0.0423  8.94
+-----------------------
+INFO [2020-08-17 16:58:24] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-17 16:58:25] [List_Covariates] ASE box 4065ED, sensor   OPCN3PM10, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-17 16:58:25] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of OPCN3PM10 is:
+          row.names OPCN3PM10_volt Particulate_Matter_10_modelled Out.Ref.PM10  Residuals
+1: NO2_B43F_P1_volt      0.2992004                      0.2992004  0.001555009 0.03251661
+-----------------------
+INFO [2020-08-17 16:58:26] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-17 16:58:26] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:58:26] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:58:26] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+INFO [2020-08-17 16:58:26] [Auto.Cal] There are no more covariates to be added to the calibration model.

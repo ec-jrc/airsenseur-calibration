@@ -1,0 +1,186 @@
+#######################
+INFO [2020-08-17 16:44:16] [Auto.Cal] 40816F, sensor 5310CAT fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-17 16:44:17] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-17 16:44:17] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-17 16:44:17] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:18] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-17 16:44:18] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:18] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-17 16:44:18] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:18] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-17 16:44:18] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:19] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-17 16:44:19] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:19] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-17 16:44:19] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:19] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-17 16:44:19] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:20] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-17 16:44:20] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:20] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-17 16:44:20] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:20] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-17 16:44:20] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:21] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-17 16:44:21] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:21] Model : 40816F__5310CAT__ug.m-3__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-17 16:44:21] [Compare_Models] General.csv for 40816F not loaded.
+-----------------------
+INFO [2020-08-17 16:44:21] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-17 16:44:21] [Median_Model] ASE box 40816F, sensor     5310CAT, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic   p.value tau                                                                MAD conf.low conf.high `t value`  `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>     <dbl> <chr>                                                            <dbl>    <dbl>     <dbl>     <dbl>       <dbl>
+1 (Intercept)    -3.63     6.14      -3.95 0.0000779 Median of coefficients of rolling calibration models with inter~ 2.29     -7.02    -0.236    -0.591     5.67e-1
+2 x               1.97     0.119    287.   0         Median of coefficients of rolling calibration models with inter~ 0.133     1.78     2.17     16.6       1.35e-8
+# A tibble: 1 x 7
+  tau                                            logLik     AIC     BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>   <dbl>   <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -60681. 121368. 121391.     0.886         0.886  8.82
+-----------------------
+INFO [2020-08-17 16:44:22] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-17 16:44:23] [List_Covariates] ASE box 40816F, sensor     5310CAT, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-17 16:44:24] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of 5310CAT is:
+              row.names 5310CAT_volt PM10_PMSCal_modelled Out.Ref.PM10  Residuals
+1:    Absolute_humidity 0.0059051042         0.0059051042   0.01832880 0.17795511
+2:      Temperature_int 0.3227532686         0.3227532686   0.13407370 0.24644675
+3:          Temperature 0.3279527292         0.3279527292   0.13675161 0.24713280
+4:        NO_B4_P1_volt 0.0001079458         0.0001079458   0.00355925 0.03447130
+5: Atmospheric_pressure 0.0006183922         0.0006183922   0.07912569 0.09772952
+-----------------------
+INFO [2020-08-17 16:44:24] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-17 16:44:24] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:44:24] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:44:24] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+-----------------------
+INFO [2020-08-17 16:44:24] [Auto.Cal] Covariate "Absolute_humidity" has a Variance Inflation factor of 1.02671010221718, lower than threshold: 10,
+"Absolute_humidity" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-17 16:44:24] [Auto.Cal] Fitting calibration model with 1 covariate(s): Absolute_humidity
+-----------------------
+INFO [2020-08-17 16:44:25] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-17 16:44:25] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:25] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:26] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:26] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:26] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:26] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:27] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:27] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:27] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:27] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:28] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:28] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:28] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:29] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:29] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:29] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:29] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:30] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:30] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:30] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:31] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:31] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:31] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:44:31] [Compare_Models] General.csv for 40816F not loaded.
+-----------------------
+INFO [2020-08-17 16:44:32] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-17 16:44:32] [Median_Model] ASE box 40816F, sensor     5310CAT, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term            estimate std.error statistic p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                           
+  <chr>              <dbl>     <dbl>     <dbl>   <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                         
+1 (Intercept)        28.9     27.0        52.9       0 31.9     -18.4      76.1       1.07 0.309      Median of coefficients of rolling calibration models with int~
+2 x                   1.77     0.213     361.        0  0.117     1.60      1.95      8.33 0.00000829 Median of coefficients of rolling calibration models with int~
+3 Absolute_humid~    -6.96     5.80      -53.9       0  6.53    -16.6       2.72     -1.20 0.257      Median of coefficients of rolling calibration models with int~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik     AIC     BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>   <dbl>   <dbl> <int> <dbl>
+1     0.915         0.915 -58719. 117445. 117476. 15551  7.62
+-----------------------
+INFO [2020-08-17 16:44:32] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 117445.282171845. It is lower than the AIC of the precedent model 121367.895525901.
+INFO [2020-08-17 16:44:32] [Auto.Cal] Adding of covariate Absolute_humidity improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-17 16:44:32] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+WARN [2020-08-17 16:44:32] [Auto.Cal] The coefficient of parameter(s) (Intercept) and Absolute_humidity of the current model is(are) not significantly different from 0.
+WARN [2020-08-17 16:44:32] [Auto.Cal] The calibration model resulting from adding covariate Absolute_humidity is not valid.
+WARN [2020-08-17 16:44:32] [Auto.Cal] Either parameters are unstable when rolling the calibration models or it/they does not influence significantly the sensor responses. Looking for other covariates.
+
+WARN [2020-08-17 16:44:32] [Auto.Cal] Absolute_humidity is discarded from the significant covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-17 16:44:32] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-17 16:44:32] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:44:32] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:44:32] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+-----------------------
+INFO [2020-08-17 16:44:32] [Auto.Cal] Covariate "Temperature_int" has a Variance Inflation factor of 1.14060750569579, lower than threshold: 10,
+"Temperature_int" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-17 16:44:32] [Auto.Cal] Fitting calibration model with 1 covariate(s): Temperature_int
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Temperature_int-1__.rdata exists
+ASE box 40816F, sensor     5310CAT, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40816F/Models/40816F__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Temperature_int-1__.rdata exists
+-----------------------
+INFO [2020-08-17 16:44:32] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-17 16:44:32] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:32] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:33] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:33] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:34] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:34] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:34] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:34] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:35] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:35] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:35] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:35] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:36] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:36] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:36] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:36] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:37] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:37] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:37] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:37] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:38] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:38] [Compare_Models] General.csv for 40816F not loaded.
+INFO [2020-08-17 16:44:39] Model : 40816F__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Temperature_int-1__.rdata
+WARN [2020-08-17 16:44:39] [Compare_Models] General.csv for 40816F not loaded.
+-----------------------
+INFO [2020-08-17 16:44:39] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-17 16:44:39] [Median_Model] ASE box 40816F, sensor     5310CAT, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term           estimate std.error statistic p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                            
+  <chr>             <dbl>     <dbl>     <dbl>   <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                          
+1 (Intercept)       23.4      7.35       94.8       0 5.66      15.0      31.8       3.19    9.71e-3 Median of coefficients of rolling calibration models with inte~
+2 x                  1.64     0.127     374.        0 0.0711     1.54      1.75     12.9     1.44e-7 Median of coefficients of rolling calibration models with inte~
+3 Temperature_i~    -2.04     0.610    -112.        0 0.343     -2.55     -1.53     -3.35    7.35e-3 Median of coefficients of rolling calibration models with inte~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik     AIC     BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>   <dbl>   <dbl> <int> <dbl>
+1     0.943         0.943 -55486. 110979. 111010. 15551  6.26
+-----------------------
+INFO [2020-08-17 16:44:39] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 110979.179253149. It is lower than the AIC of the precedent model 121367.895525901.
+INFO [2020-08-17 16:44:39] [Auto.Cal] Adding of covariate Temperature_int improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-17 16:44:39] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+INFO [2020-08-17 16:44:39] [Auto.Cal] All parameters of the calibration model with covariate(s) Temperature_int are significantly different from 0
+INFO [2020-08-17 16:44:44] [List_Covariates] ASE box 40816F, sensor     5310CAT, matrix of correlation between 2020-01-17 and 2020-01-30
+WARN [2020-08-17 16:44:44] [Auto.Cal] there are no covariates to add to the calibration mode for sensor 5310CAT.
+-----------------------

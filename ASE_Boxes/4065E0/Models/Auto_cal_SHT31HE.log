@@ -1,0 +1,117 @@
+#######################
+INFO [2020-08-18 13:15:02] [Auto.Cal] 4065E0, sensor SHT31HE fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-18 13:15:03] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-18 13:15:03] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-18 13:15:03] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:03] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-18 13:15:03] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:04] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-18 13:15:04] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:05] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-18 13:15:05] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:05] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-18 13:15:05] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:05] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-18 13:15:05] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:06] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-18 13:15:06] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:06] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-18 13:15:06] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:07] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-18 13:15:07] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:07] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-18 13:15:07] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:07] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-18 13:15:07] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:08] Model : 4065E0__SHT31HE__percent__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-18 13:15:08] [Compare_Models] General.csv for 4065E0 not loaded.
+-----------------------
+INFO [2020-08-18 13:15:08] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-18 13:15:08] [Median_Model] ASE box 4065E0, sensor     SHT31HE, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term       estimate std.error statistic p.value tau                                                            MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>         <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                        <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercep~   10.9      3.59        77.4       0 Median of coefficients of rolling calibration models with ~ 2.78      6.79     15.0        3.04    1.24e-2
+2 x             0.692    0.0651     376.        0 Median of coefficients of rolling calibration models with ~ 0.0388    0.634     0.749     10.6     9.02e-7
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -45012. 90030. 90053.     0.906         0.906  4.25
+-----------------------
+INFO [2020-08-18 13:15:08] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-18 13:15:10] [List_Covariates] ASE box 4065E0, sensor     SHT31HE, matrix of correlation between 2020-01-17 and 2020-01-28
+INFO [2020-08-18 13:15:11] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of SHT31HE is:
+           row.names SHT31HE_volt Relative_humidity_modelled  Out.Ref.RH Residuals
+1: Absolute_humidity 1.166606e-01               1.166606e-01 0.041785712 0.2186155
+2:  NO2_B43F_P1_volt 1.295477e-05               1.295477e-05 0.002056885 0.0177042
+-----------------------
+INFO [2020-08-18 13:15:11] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-18 13:15:11] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:15:11] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:15:11] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+-----------------------
+INFO [2020-08-18 13:15:11] [Auto.Cal] Covariate "Absolute_humidity" has a Variance Inflation factor of 1.04972838031882, lower than threshold: 10,
+"Absolute_humidity" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-18 13:15:11] [Auto.Cal] Fitting calibration model with 1 covariate(s): Absolute_humidity
+-----------------------
+INFO [2020-08-18 13:15:12] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-18 13:15:12] Model : 4065E0__SHT31HE__percent__MultiLinear__20200117__20200120__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:12] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:13] Model : 4065E0__SHT31HE__percent__MultiLinear__20200118__20200121__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:13] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:13] Model : 4065E0__SHT31HE__percent__MultiLinear__20200119__20200122__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:13] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:14] Model : 4065E0__SHT31HE__percent__MultiLinear__20200120__20200123__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:14] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:15] Model : 4065E0__SHT31HE__percent__MultiLinear__20200121__20200124__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:15] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:15] Model : 4065E0__SHT31HE__percent__MultiLinear__20200122__20200125__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:15] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:16] Model : 4065E0__SHT31HE__percent__MultiLinear__20200123__20200126__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:16] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:16] Model : 4065E0__SHT31HE__percent__MultiLinear__20200124__20200127__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:16] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:17] Model : 4065E0__SHT31HE__percent__MultiLinear__20200125__20200128__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:17] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:17] Model : 4065E0__SHT31HE__percent__MultiLinear__20200126__20200129__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:17] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:18] Model : 4065E0__SHT31HE__percent__MultiLinear__20200127__20200130__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:18] [Compare_Models] General.csv for 4065E0 not loaded.
+INFO [2020-08-18 13:15:18] Model : 4065E0__SHT31HE__percent__MultiLinear__20200128__20200131__Absolute_humidity-1__.rdata
+WARN [2020-08-18 13:15:18] [Compare_Models] General.csv for 4065E0 not loaded.
+-----------------------
+INFO [2020-08-18 13:15:19] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-18 13:15:19] [Median_Model] ASE box 4065E0, sensor     SHT31HE, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term           estimate std.error statistic   p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                  
+  <chr>             <dbl>     <dbl>     <dbl>     <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                
+1 (Intercept)      -2.16     5.77        39.1 8.72e-319 6.75    -12.2       7.85     -0.375    7.15e-1 Median of coefficients of rolling calibration models~
+2 x                 0.710    0.0639     453.  0.        0.0630    0.616     0.803    11.1      6.01e-7 Median of coefficients of rolling calibration models~
+3 Absolute_humi~    2.59     0.868       68.1 0.        1.00      1.11      4.07      2.99     1.37e-2 Median of coefficients of rolling calibration models~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.907         0.907 -44861. 89730. 89760. 15710  4.21
+-----------------------
+INFO [2020-08-18 13:15:19] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 89729.7134339003. It is lower than the AIC of the precedent model 90030.208006703.
+INFO [2020-08-18 13:15:19] [Auto.Cal] Adding of covariate Absolute_humidity improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-18 13:15:19] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+INFO [2020-08-18 13:15:19] [Auto.Cal] All parameters of the calibration model with covariate(s) Absolute_humidity are significantly different from 0
+INFO [2020-08-18 13:15:21] [List_Covariates] ASE box 4065E0, sensor     SHT31HE, matrix of correlation between 2020-01-17 and 2020-01-28
+INFO [2020-08-18 13:15:22] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of SHT31HE is:
+           row.names SHT31HE_volt Relative_humidity_modelled  Out.Ref.RH  Residuals
+1:  NO2_B43F_P1_volt 1.295477e-05                 0.01394962 0.002056885 0.07056278
+2: Absolute_humidity 1.166606e-01                 0.02545421 0.041785712 0.05525152
+-----------------------
+INFO [2020-08-18 13:15:22] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-18 13:15:22] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:15:22] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:15:22] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+INFO [2020-08-18 13:15:22] [Auto.Cal] There are no more covariates to be added to the calibration model.

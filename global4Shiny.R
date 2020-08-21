@@ -22,7 +22,7 @@
 #  1.d Install packages (CRAN + Github) ----
 #----------------------------------------------------------CR
 cat("-----------------------------------------------------------------------------------\n")
-cat("[Global] INFO, Check or install packages needed to run the script\n")
+futile.logger::flog.info("[Global4Shiny] List of packages needed to run the Shiny App.")
 # Packages to be loaded
 # Packages to be loaded
 # Grahical User Interface                                               --> shiny
@@ -54,12 +54,13 @@ cat("[Global] INFO, Check or install packages needed to run the script\n")
 # Automatic reporting                                                   --> rmarkdown, xtable, knitr
 # Rmarkdown report                                                      --> formattable, flextable, pandoc, captioner, kableExtra
 # unzip                                                                 --> utils
+# Automatic determination of the starting directory                     --> kimisc
 #
 # Manca rgdal?
 #
 list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "shinyBS"         , "shinycssloaders" , "shinyWidgets"    ,
                    "shinydashboard"  ,
-                   "rChoiceDialogs"  , "R.utils"         , "utils"           ,
+                   "rChoiceDialogs"  , "R.utils"         , "utils"           , "kimisc"          ,
                    "openair"         , "corrplot"        , "DT"              , 
                    "rhandsontable"   , "fields"          , "shape"           , 
                    "dygraphs"        , "leaflet"         , "htmltools"       , 
@@ -67,27 +68,12 @@ list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "
                    "GGally"          , "plotly"          , "maptools"        , "raster"          , "rgeos"           ,
                    "rmarkdown"       , "xtable"          , "knitr"           ,
                    "formattable"     , "flextable"       , "pander"          , "captioner"       , "kableExtra")
-Load_Packages(list.Packages)
-# if error on plyr then type install.packages("plyr") at the console
 # Install PhatomJS Should be done only ONCE - add a test for this, see https://groups.google.com/forum/#!topic/phantomjs/3IUqGG31imI
 # https://www.rdocumentation.org/packages/webshot/versions/0.5.1/topics/install_phantomjs
 #webshot::install_phantomjs(version = "2.1.1", baseURL = "https://github.com/wch/webshot/releases/download/v0.3.1/")
 # for linux see https://github.com/rstudio/shinyapps-package-dependencies/pull/180
 # GitHub, this can crash the code if you have a PROXY, the lines can be commented
 list.packages.github <- c("skgrange/threadr", "daattali/shinyalert")
-for (i in list.packages.github) {
-    # removing author name and version number
-    lib.i <- tail(unlist(strsplit(i, split = "/")), n = 1)
-    lib.i <- head(unlist(strsplit(lib.i, split = "@")), n = 1)
-    if (!(lib.i %in% rownames(installed.packages()))) {
-        cat(sprintf("[Global] INFO, installing package %s", lib.i), sep = "\n")
-        devtools::install_github(i)
-        cat(sprintf("Package %s installed", lib.i), sep = "\n")
-    } else cat(paste0("[Global] INFO, package ", i, " already installed"), sep = "\n")
-    do.call("library", as.list(lib.i))
-    cat(sprintf("[Global] INFO, Package %s loaded",i), sep = "\n")
-}
-rm(i, lib.i)
-cat("[Global] INFO, List of installed packages\n")
-print(search(), quote = FALSE)
-cat("\n")
+# "skgrange/threadr" depends on package XML, that at least on windows is difficult to install
+# Have a look at https://cran.r-project.org/bin/windows/Rtools/
+# then https://github.com/r-windows/docs/blob/master/packages.md#readme

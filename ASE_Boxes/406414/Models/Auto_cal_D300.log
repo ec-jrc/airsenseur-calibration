@@ -1,0 +1,164 @@
+#######################
+INFO [2020-08-21 11:49:15] [Auto.Cal] 406414, sensor D300 fitting Linear.Robust models.
+ASE box 406414, sensor        D300, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/406414/Models/406414__D300__ppm__Linear.Robust__20200117__20200120____.rdata exists
+ASE box 406414, sensor        D300, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/406414/Models/406414__D300__ppm__Linear.Robust__20200118__20200121____.rdata exists
+-----------------------
+INFO [2020-08-21 11:49:15] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-21 11:49:15] Model : 406414__D300__ppm__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-21 11:49:15] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:16] Model : 406414__D300__ppm__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-21 11:49:16] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:16] Model : 406414__D300__ppm__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-21 11:49:16] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:16] Model : 406414__D300__ppm__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-21 11:49:16] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:16] Model : 406414__D300__ppm__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-21 11:49:16] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:17] Model : 406414__D300__ppm__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-21 11:49:17] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:17] Model : 406414__D300__ppm__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-21 11:49:17] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:17] Model : 406414__D300__ppm__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-21 11:49:17] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:18] Model : 406414__D300__ppm__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-21 11:49:18] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:18] Model : 406414__D300__ppm__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-21 11:49:18] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:18] Model : 406414__D300__ppm__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-21 11:49:18] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:18] Model : 406414__D300__ppm__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-21 11:49:18] [Compare_Models] General.csv for 406414 not loaded.
+-----------------------
+INFO [2020-08-21 11:49:19] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-21 11:49:19] [Median_Model] ASE box 406414, sensor        D300, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                              MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                                          <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)   59.2     222.         2.19  0.0289 Median of coefficients of rolling calibration models with interval of 3 days 150.    -164.       282.       0.267      0.795
+2 x              0.735     0.482     36.7   0      Median of coefficients of rolling calibration models with interval of 3 days   0.343    0.227      1.24     1.53       0.158
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -12164. 24333. 24351.     0.280         0.280  20.1
+-----------------------
+INFO [2020-08-21 11:49:19] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-21 11:49:20] [List_Covariates] ASE box 406414, sensor        D300, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 11:49:21] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of D300 is:
+              row.names   D300_volt Carbon_dioxide_modelled  Out.Ref.CO2  Residuals
+1: Atmospheric_pressure 0.266969902             0.266969902 0.0008270361 0.24683962
+2:    Absolute_humidity 0.108157356             0.108157356 0.0023719960 0.10684909
+3:        NO_B4_P1_volt 0.204713890             0.204713890 0.0593628271 0.15619883
+4:       OPCN3PM10_volt 0.009593679             0.009593679 0.0060689610 0.09278824
+-----------------------
+INFO [2020-08-21 11:49:21] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-21 11:49:21] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 11:49:21] [Auto.Cal] request to drop parameters 5310CAT_volt, OPCN3PM10_volt, NO_B4_P1, NO2_B43F_P1_volt, OX_A431_P1_volt from possible significant covariates
+INFO [2020-08-21 11:49:21] [Auto.Cal] Possible ordered covariates: Atmospheric_pressure, Absolute_humidity
+-----------------------
+INFO [2020-08-21 11:49:21] [Auto.Cal] Covariate "Atmospheric_pressure" has a Variance Inflation factor of 1.00117183547314, lower than threshold: 10,
+"Atmospheric_pressure" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 11:49:21] [Auto.Cal] Fitting calibration model with 1 covariate(s): Atmospheric_pressure
+-----------------------
+INFO [2020-08-21 11:49:22] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 11:49:22] Model : 406414__D300__ppm__MultiLinear__20200117__20200120__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:22] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:22] Model : 406414__D300__ppm__MultiLinear__20200118__20200121__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:22] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:22] Model : 406414__D300__ppm__MultiLinear__20200119__20200122__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:23] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:23] Model : 406414__D300__ppm__MultiLinear__20200120__20200123__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:23] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:23] Model : 406414__D300__ppm__MultiLinear__20200121__20200124__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:23] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:24] Model : 406414__D300__ppm__MultiLinear__20200122__20200125__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:24] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:24] Model : 406414__D300__ppm__MultiLinear__20200123__20200126__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:24] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:25] Model : 406414__D300__ppm__MultiLinear__20200124__20200127__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:25] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:25] Model : 406414__D300__ppm__MultiLinear__20200125__20200128__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:25] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:25] Model : 406414__D300__ppm__MultiLinear__20200126__20200129__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:25] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:26] Model : 406414__D300__ppm__MultiLinear__20200127__20200130__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:26] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:26] Model : 406414__D300__ppm__MultiLinear__20200128__20200131__Atmospheric_pressure-1__.rdata
+WARN [2020-08-21 11:49:26] [Compare_Models] General.csv for 406414 not loaded.
+-----------------------
+INFO [2020-08-21 11:49:27] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 11:49:27] [Median_Model] ASE box 406414, sensor        D300, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term                estimate std.error statistic   p.value      MAD  conf.low conf.high `t value` `Pr(>|t|)` tau                                                                 
+  <chr>                  <dbl>     <dbl>     <dbl>     <dbl>    <dbl>     <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                               
+1 (Intercept)         -982.     1406.        -28.5 3.52e-156 1524.    -3242.     1278.       -0.699     0.501  Median of coefficients of rolling calibration models with interval ~
+2 x                      0.479     0.161      40.9 1.24e-285    0.142     0.269     0.689     2.98      0.0138 Median of coefficients of rolling calibration models with interval ~
+3 Atmospheric_pressu~    1.13      1.39       30.1 9.07e-172    1.50     -1.10      3.35      0.811     0.436  Median of coefficients of rolling calibration models with interval ~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1    -0.546        -0.548 -13086. 26180. 26204.  2724  29.5
+WARN [2020-08-21 11:49:27] [Auto.Cal] The Akaike information criterion (AIC) of the current model 26180.0445822741 is not lower that the AIC of the precedent model 24333.0390416773.
+WARN [2020-08-21 11:49:27] [Auto.Cal] Adding of covariate Atmospheric_pressure does not improve the fitting of calibration model. Looking for other covariates.
+WARN [2020-08-21 11:49:27] [Auto.Cal] Atmospheric_pressure is discarded from the list of possible covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-21 11:49:27] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-21 11:49:27] [Auto.Cal] Possible ordered covariates: Absolute_humidity
+-----------------------
+INFO [2020-08-21 11:49:27] [Auto.Cal] Covariate "Absolute_humidity" has a Variance Inflation factor of 1.00123929764664, lower than threshold: 10,
+"Absolute_humidity" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 11:49:27] [Auto.Cal] Fitting calibration model with 1 covariate(s): Absolute_humidity
+-----------------------
+INFO [2020-08-21 11:49:28] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 11:49:28] Model : 406414__D300__ppm__MultiLinear__20200117__20200120__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:28] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:28] Model : 406414__D300__ppm__MultiLinear__20200118__20200121__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:28] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:29] Model : 406414__D300__ppm__MultiLinear__20200119__20200122__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:29] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:29] Model : 406414__D300__ppm__MultiLinear__20200120__20200123__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:29] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:30] Model : 406414__D300__ppm__MultiLinear__20200121__20200124__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:30] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:30] Model : 406414__D300__ppm__MultiLinear__20200122__20200125__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:30] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:30] Model : 406414__D300__ppm__MultiLinear__20200123__20200126__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:30] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:31] Model : 406414__D300__ppm__MultiLinear__20200124__20200127__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:31] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:31] Model : 406414__D300__ppm__MultiLinear__20200125__20200128__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:31] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:32] Model : 406414__D300__ppm__MultiLinear__20200126__20200129__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:32] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:32] Model : 406414__D300__ppm__MultiLinear__20200127__20200130__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:32] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 11:49:33] Model : 406414__D300__ppm__MultiLinear__20200128__20200131__Absolute_humidity-1__.rdata
+WARN [2020-08-21 11:49:33] [Compare_Models] General.csv for 406414 not loaded.
+-----------------------
+INFO [2020-08-21 11:49:33] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 11:49:33] [Median_Model] ASE box 406414, sensor        D300, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term              estimate std.error statistic   p.value     MAD   conf.low conf.high `t value` `Pr(>|t|)` tau                                                                   
+  <chr>                <dbl>     <dbl>     <dbl>     <dbl>   <dbl>      <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                                 
+1 (Intercept)        124.      213.         6.32 2.98e- 10 133.    -73.2         322.      0.584       0.572 Median of coefficients of rolling calibration models with interval of~
+2 x                    0.625     0.532     35.9  1.32e-231   0.421   0.000470      1.25    1.18        0.267 Median of coefficients of rolling calibration models with interval of~
+3 Absolute_humidity   -0.824     8.95     -18.0  2.64e- 68   9.54  -15.0          13.3    -0.0921      0.928 Median of coefficients of rolling calibration models with interval of~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1    -0.132        -0.133 -12657. 25321. 25345.  2723  25.3
+WARN [2020-08-21 11:49:33] [Auto.Cal] The Akaike information criterion (AIC) of the current model 25321.3907286283 is not lower that the AIC of the precedent model 24333.0390416773.
+WARN [2020-08-21 11:49:33] [Auto.Cal] Adding of covariate Absolute_humidity does not improve the fitting of calibration model. Looking for other covariates.
+WARN [2020-08-21 11:49:33] [Auto.Cal] Absolute_humidity is discarded from the list of possible covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-21 11:49:33] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-21 11:49:33] [Auto.Cal] Possible ordered covariates: 
+INFO [2020-08-21 11:49:33] [Auto.Cal] There are no more covariates to be added to the calibration model.

@@ -1,0 +1,127 @@
+#######################
+INFO [2020-08-17 16:56:23] [Auto.Cal] 40641B, sensor OPCN3PM10 fitting Linear.Robust models.
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200117__20200120____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200118__20200121____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200119__20200122____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200120__20200123____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200121__20200124____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200122__20200125____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200123__20200126____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200124__20200127____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200125__20200128____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200126__20200129____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200127__20200130____.rdata exists
+ASE box 40641B, sensor   OPCN3PM10, S:\Box Sync\AirSensEUR\Fieldtests\Shiny/ASE_Boxes/40641B/Models/40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200128__20200131____.rdata exists
+-----------------------
+INFO [2020-08-17 16:56:23] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-17 16:56:23] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-17 16:56:23] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:24] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-17 16:56:24] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:24] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-17 16:56:24] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:24] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-17 16:56:24] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:25] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-17 16:56:25] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:25] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-17 16:56:25] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:25] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-17 16:56:26] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:26] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-17 16:56:26] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:26] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-17 16:56:26] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:27] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-17 16:56:27] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:27] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-17 16:56:27] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:27] Model : 40641B__OPCN3PM10__ug.m-3__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-17 16:56:27] [Compare_Models] General.csv for 40641B not loaded.
+-----------------------
+INFO [2020-08-17 16:56:28] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-17 16:56:28] [Median_Model] ASE box 40641B, sensor   OPCN3PM10, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic  p.value tau                                                                  MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>    <dbl> <chr>                                                              <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercept)   -5.92     11.5       -6.52 7.50e-11 Median of coefficients of rolling calibration models with interva~ 9.50   -20.0        8.17    -0.515     0.618 
+2 x              0.750     0.360     93.0  0.       Median of coefficients of rolling calibration models with interva~ 0.313    0.287      1.21     2.08      0.0638
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -39693. 79392. 79413.    0.0144        0.0142  39.9
+-----------------------
+INFO [2020-08-17 16:56:28] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-17 16:56:31] [List_Covariates] ASE box 40641B, sensor   OPCN3PM10, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-17 16:56:31] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of OPCN3PM10 is:
+           row.names OPCN3PM10_volt Particulate_Matter_10_modelled Out.Ref.PM10  Residuals
+1: Absolute_humidity       0.042616                       0.042616     0.031416 0.04964107
+-----------------------
+INFO [2020-08-17 16:56:31] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-17 16:56:31] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:56:31] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:56:31] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+-----------------------
+INFO [2020-08-17 16:56:31] [Auto.Cal] Covariate "Absolute_humidity" has a Variance Inflation factor of 1.49283502207934, lower than threshold: 10,
+"Absolute_humidity" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-17 16:56:31] [Auto.Cal] Fitting calibration model with 1 covariate(s): Absolute_humidity
+-----------------------
+INFO [2020-08-17 16:56:32] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-17 16:56:32] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200117__20200120__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:32] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:32] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200118__20200121__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:33] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:33] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200119__20200122__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:33] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:33] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200120__20200123__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:33] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:34] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200121__20200124__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:34] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:35] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200122__20200125__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:35] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:35] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200123__20200126__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:35] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:36] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200124__20200127__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:36] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:36] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200125__20200128__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:36] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:37] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200126__20200129__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:37] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:37] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200127__20200130__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:37] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-17 16:56:38] Model : 40641B__OPCN3PM10__ug.m-3__MultiLinear__20200128__20200131__Absolute_humidity-1__.rdata
+WARN [2020-08-17 16:56:38] [Compare_Models] General.csv for 40641B not loaded.
+-----------------------
+INFO [2020-08-17 16:56:38] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-17 16:56:38] [Median_Model] ASE box 40641B, sensor   OPCN3PM10, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term            estimate std.error statistic  p.value    MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                          
+  <chr>              <dbl>     <dbl>     <dbl>    <dbl>  <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                        
+1 (Intercept)        8.05     30.8        14.1 8.62e-45 30.1    -36.6       52.7      0.262     0.799  Median of coefficients of rolling calibration models with in~
+2 x                  0.887     0.390      87.4 0.        0.323    0.409      1.37     2.28      0.0461 Median of coefficients of rolling calibration models with in~
+3 Absolute_humid~   -2.18      5.76      -18.4 4.67e-74  6.55   -11.9        7.54    -0.378     0.713  Median of coefficients of rolling calibration models with in~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1    0.0313        0.0310 -25062. 50132. 50159.  6545  8.08
+-----------------------
+INFO [2020-08-17 16:56:38] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 50131.822488116. It is lower than the AIC of the precedent model 79391.9689230441.
+INFO [2020-08-17 16:56:38] [Auto.Cal] Adding of covariate Absolute_humidity improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-17 16:56:38] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+WARN [2020-08-17 16:56:38] [Auto.Cal] The coefficient of parameter(s) (Intercept) and Absolute_humidity of the current model is(are) not significantly different from 0.
+WARN [2020-08-17 16:56:38] [Auto.Cal] The calibration model resulting from adding covariate Absolute_humidity is not valid.
+WARN [2020-08-17 16:56:38] [Auto.Cal] Either parameters are unstable when rolling the calibration models or it/they does not influence significantly the sensor responses. Looking for other covariates.
+
+WARN [2020-08-17 16:56:39] [Auto.Cal] Absolute_humidity is discarded from the significant covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-17 16:56:39] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-17 16:56:39] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-17 16:56:39] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-17 16:56:39] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from significant covariates
+INFO [2020-08-17 16:56:39] [Auto.Cal] There are no more covariates to be added to the calibration model.

@@ -1,0 +1,185 @@
+#######################
+INFO [2020-08-21 10:01:43] [Auto.Cal] 406414, sensor 5310CAT fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-21 10:01:45] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-21 10:01:45] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-21 10:01:45] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:45] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-21 10:01:46] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:46] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-21 10:01:46] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:46] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-21 10:01:46] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:47] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-21 10:01:47] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:47] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-21 10:01:47] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:48] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-21 10:01:48] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:48] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-21 10:01:48] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:49] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-21 10:01:49] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:49] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-21 10:01:49] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:50] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-21 10:01:50] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:50] Model : 406414__5310CAT__ug.m-3__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-21 10:01:50] [Compare_Models] General.csv for 406414 not loaded.
+-----------------------
+INFO [2020-08-21 10:01:50] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-21 10:01:51] [Median_Model] ASE box 406414, sensor     5310CAT, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                             MAD conf.low conf.high `t value`  `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                                         <dbl>    <dbl>     <dbl>     <dbl>       <dbl>
+1 (Intercept)     9.47     9.68       30.1       0 Median of coefficients of rolling calibration models with interval of 3 days 12.1      -8.48     27.4      0.979 0.351      
+2 x               1.48     0.140     173.        0 Median of coefficients of rolling calibration models with interval of 3 days  0.141     1.27      1.69    10.6   0.000000928
+# A tibble: 1 x 7
+  tau                                            logLik    AIC    BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>  <dbl>  <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -48991. 97988. 98011.     0.805         0.805  11.3
+-----------------------
+INFO [2020-08-21 10:01:51] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-21 10:01:52] [List_Covariates] ASE box 406414, sensor     5310CAT, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 10:01:52] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of 5310CAT is:
+                  row.names 5310CAT_volt PM10_PMSCal_modelled Out.Ref.PM10 Residuals
+1: Carbon_monoxide_modelled  0.449705457          0.449705457   0.04071354 0.5335996
+2:          Temperature_int  0.255853025          0.255853025   0.13931579 0.3894348
+3:              Temperature  0.250892562          0.250892562   0.14051764 0.3841270
+4:        Absolute_humidity  0.086966659          0.086966659   0.03071218 0.2543141
+5:          OX_A431_P1_volt  0.265615064          0.265615064   0.22069988 0.2718464
+6:     Atmospheric_pressure  0.005016115          0.005016115   0.07713221 0.1235334
+-----------------------
+INFO [2020-08-21 10:01:53] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-21 10:01:53] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 10:01:53] [Auto.Cal] request to drop parameters ending with "_modelled" from possible significant covariates
+INFO [2020-08-21 10:01:53] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from possible significant covariates
+INFO [2020-08-21 10:01:53] [Auto.Cal] Possible ordered covariates: Temperature_int, Temperature, Absolute_humidity, Atmospheric_pressure
+-----------------------
+INFO [2020-08-21 10:01:53] [Auto.Cal] Covariate "Temperature_int" has a Variance Inflation factor of 1.07923183993118, lower than threshold: 10,
+"Temperature_int" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 10:01:53] [Auto.Cal] Fitting calibration model with 1 covariate(s): Temperature_int
+-----------------------
+INFO [2020-08-21 10:01:54] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 10:01:54] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:54] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:55] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:55] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:55] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:55] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:56] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:56] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:57] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:57] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:57] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:57] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:58] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:58] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:58] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:58] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:59] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:59] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:01:59] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Temperature_int-1__.rdata
+WARN [2020-08-21 10:01:59] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:00] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Temperature_int-1__.rdata
+WARN [2020-08-21 10:02:00] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:01] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Temperature_int-1__.rdata
+WARN [2020-08-21 10:02:01] [Compare_Models] General.csv for 406414 not loaded.
+-----------------------
+INFO [2020-08-21 10:02:01] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 10:02:01] [Median_Model] ASE box 406414, sensor     5310CAT, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term            estimate std.error statistic p.value    MAD conf.low conf.high `t value`    `Pr(>|t|)` tau                                                                         
+  <chr>              <dbl>     <dbl>     <dbl>   <dbl>  <dbl>    <dbl>     <dbl>     <dbl>         <dbl> <chr>                                                                       
+1 (Intercept)        32.8     4.16        126.       0 4.02      26.8      38.7       7.88 0.0000135     Median of coefficients of rolling calibration models with interval of 3 days
+2 x                   1.24    0.0715      289.       0 0.0747     1.13      1.35     17.3  0.00000000870 Median of coefficients of rolling calibration models with interval of 3 days
+3 Temperature_int    -1.79    0.347      -112.       0 0.372     -2.34     -1.24     -5.16 0.000423      Median of coefficients of rolling calibration models with interval of 3 days
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.905         0.905 -44222. 88452. 88482. 12704  7.86
+-----------------------
+INFO [2020-08-21 10:02:02] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 88451.9559373345. It is lower than the AIC of the precedent model 97988.3245126512.
+INFO [2020-08-21 10:02:02] [Auto.Cal] Adding of covariate Temperature_int improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-21 10:02:02] [Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept
+INFO [2020-08-21 10:02:02] [Auto.Cal] All coefficients of the calibration model with covariate(s) Temperature_int are significantly different from 0
+INFO [2020-08-21 10:02:02] [Auto.Cal] covariate: Temperature_int is included into the model.
+INFO [2020-08-21 10:02:03] [List_Covariates] ASE box 406414, sensor     5310CAT, matrix of correlation between 2020-01-17 and 2020-01-30
+INFO [2020-08-21 10:02:03] [Auto.Cal] ordered list of covariates that are correlated with residuals of the current calibration model for 5310CAT
+                  row.names 5310CAT_volt PM10_PMSCal_modelled Out.Ref.PM10  Residuals
+1: Carbon_monoxide_modelled   0.44970546            0.3434882   0.04071354 0.32544115
+2:           OPCN3PM10_volt   0.03872897            0.1536776   0.02603069 0.04906107
+-----------------------
+INFO [2020-08-21 10:02:03] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-21 10:02:03] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 10:02:03] [Auto.Cal] request to drop parameters ending with "_modelled" from possible significant covariates
+INFO [2020-08-21 10:02:03] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt from possible significant covariates
+INFO [2020-08-21 10:02:03] [Auto.Cal] Possible ordered covariates: Temperature_int, OPCN3PM10_volt
+-----------------------
+INFO [2020-08-21 10:02:03] [Auto.Cal] Covariate "OPCN3PM10_volt" has a Variance Inflation factor of 1.37947910947413, lower than threshold: 10,
+"OPCN3PM10_volt" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 10:02:03] [Auto.Cal] Fitting calibration model with 2 covariate(s): Temperature_int, OPCN3PM10_volt
+-----------------------
+INFO [2020-08-21 10:02:05] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 10:02:05] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200117__20200120__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:05] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:05] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200118__20200121__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:06] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:06] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200119__20200122__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:06] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:07] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200120__20200123__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:07] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:07] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200121__20200124__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:07] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:07] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200122__20200125__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:08] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:08] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200123__20200126__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:08] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:08] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200124__20200127__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:08] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:09] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200125__20200128__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:09] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:09] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200126__20200129__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:09] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:10] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200127__20200130__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:10] [Compare_Models] General.csv for 406414 not loaded.
+INFO [2020-08-21 10:02:10] Model : 406414__5310CAT__ug.m-3__MultiLinear__20200128__20200131__Temperature_int-1&OPCN3PM10_volt-1__.rdata
+WARN [2020-08-21 10:02:10] [Compare_Models] General.csv for 406414 not loaded.
+-----------------------
+INFO [2020-08-21 10:02:11] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 10:02:11] [Median_Model] ASE box 406414, sensor     5310CAT, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 4 x 11
+  term            estimate std.error statistic   p.value   MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                                         
+  <chr>              <dbl>     <dbl>     <dbl>     <dbl> <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                                                       
+1 (Intercept)      26.1       22.8       37.1  2.37e-233 7.91    14.4      37.8       1.14      0.279  Median of coefficients of rolling calibration models with interval of 3 days
+2 x                 1.03       0.339     67.1  0.        0.380    0.469     1.60      3.04      0.0124 Median of coefficients of rolling calibration models with interval of 3 days
+3 Temperature_int  -0.886      1.56     -25.3  5.65e-124 1.70    -3.41      1.64     -0.567     0.583  Median of coefficients of rolling calibration models with interval of 3 days
+4 OPCN3PM10_volt    0.0370     0.116     -4.19 2.96e-  5 0.125   -0.148     0.222     0.321     0.755  Median of coefficients of rolling calibration models with interval of 3 days
+# A tibble: 1 x 7
+  r.squared adj.r.squared logLik    AIC    BIC  nobs  RMSE
+      <dbl>         <dbl>  <dbl>  <dbl>  <dbl> <int> <dbl>
+1     0.735         0.734 -7501. 15013. 15041.  2149  7.94
+-----------------------
+INFO [2020-08-21 10:02:11] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 15012.6903325282. It is lower than the AIC of the precedent model 88451.9559373345.
+INFO [2020-08-21 10:02:11] [Auto.Cal] Adding of covariate OPCN3PM10_volt improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-21 10:02:11] [Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept
+WARN [2020-08-21 10:02:11] [Auto.Cal] The coefficient of parameter(s) (Intercept) and Temperature_int and OPCN3PM10_volt of the current model is(are) not significantly different from 0.
+WARN [2020-08-21 10:02:11] [Auto.Cal] The calibration model resulting from adding covariate OPCN3PM10_volt is not valid.
+WARN [2020-08-21 10:02:11] [Auto.Cal] Either parameters are unstable when rolling the calibration models or it/they does not influence significantly the sensor responses. Looking for other covariates.
+
+WARN [2020-08-21 10:02:11] [Auto.Cal] OPCN3PM10_volt is discarded from the list of possible covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-21 10:02:11] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-21 10:02:11] [Auto.Cal] Possible ordered covariates: Temperature_int
+INFO [2020-08-21 10:02:11] [Auto.Cal] There are no more covariates to be added to the calibration model.

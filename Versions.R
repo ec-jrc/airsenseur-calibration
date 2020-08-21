@@ -1,6 +1,69 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
+# New release V0.20, 2020-07-24
+#             E93 - bug correction: major bug in the determination of the Gain of the chemical shield. We forgot that the external resistance of 1 Mohm
+#                                   was kept always in parallel of the internal 350kOhm of the internal resistance resulting in a Resistance of 260 kOhm
+#                                   . It is now corrected but all calibration model shall be deleted and fitted again. What a hell!
+#             E94 - bug correction: when entering reference data, a confusion of names could take place between NO-NO2 and CO-CO2. Corrected in function Down_ref()
+#            N128 - Changes in Global.R and Gloabal4Shiny.R. Now the packages are not loaded, ony list of packages are returned. The packages are installed and loaded into in App.R
+#            N129 - Changes in Function4ASE.R: a set of new functions for the automatic calibrations awere added: List_models, Identify_ASE, Identify_ASE_Dir, Apply_Model, Fit_New_Model
+#                   Roll_Fit_New_Model, Compare_Models, Confidence_Coeffs, List_All_Compare, Median_Model, List_Covariates, Auto.Cal, Register.Model and AutoCal.Boxes.Sensor. These shall be still
+#                   included in the ASE-App.R.
+#            N130 - Changes in Function4ASE.R: 2 functions were added to simplify downloading of influx data and computation of predicted models: influx.getConfig and influx.downloadAndPredict.
+#                   These functions were developed in collaboration with Eike Hinderk Jürrens (52North)
+#            N131 - Changes in Function4ASE.R: new functions for the filtering of sensor and reference were added: Warm_Index, TRh_Index, Inv_Index, Outliers_Sens, Sens_Conv, Filter.Sensor.Data, 
+#                   Filter.Ref.Data. these functions are used for the automatic calibration but shall be integrated into App.R and influx.downloadAndPredict.
+#            N132 - Two new scripts were added: Compare model download_predict.R, the first one allow setting calibration models for a list of ASE boxes per type of sensors
+#                   and the second one allow the automatic downalod of sensor data applying the configured calibraion models.
+#  ----#TO BE DONE  : ----
+# BUG CORRECTIONS
+#              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user
+#              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA.
+#                   Change substraction to V or nA
+#             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers
+#                   and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
+#             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
+#             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instead of the data series ime zone ("UTC") when discarding values.
+#             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the startvalues
+#             E69 - there is a problem with the color scale of concentration levels of the Target Diagram
+#             E70 - In some cases when selecting a new minimum Valid date, the date for covariates, calibration, prediction and reference outlier is wrongly updated
+#             E75 - When selecting a 2nd AirSensEUR box, it seems that it is not possible to merge the new ASE data, please check
+#             E79 - The button to export the Rmardown report does not work
+#             E89 - The date interval to be selected for the download of SOS refernce data is hidden. By default the start date is the last available dates in RefData
+#                   and the end date is the current date.
+#             E90 - Time of DYGraph are given in local time
+# NEW FEATURES needed:----
+#              N2 - Calibration with linear.robust: add RMSE on statterplot ...
+#              N3 - Add model calibration: neural network model in the list of possible calibration method.
+#              N5 - Add model resulting of laboratory experiments for calibration.
+#              N6 - In NavBar menu "Help": add videos on how to use the shiny interface.
+#              N7 - Do Filtering and conversion only for the selected sensor, not for all sensors.
+#              N8 - add "Sensor" and "Reference" in front of covariates in the comboBox of SideBar "Calib"
+#             N11 - Add evaluation tools: Sensor Evaluation Toolbox (SET) (Barak Fishbain).
+#             N12 - For invalid data: allow to resume data to initial value if CheckBoxes "Enable Outlier discarding" set to FALSE.
+#             N13 - Detect nearest AQMS using GPS coodinates and and download with SOS
+#             N15 - Add support for OPC-N3-2 and MOx sensor
+#             N17 - In getData Time-shield add a 2nd time average to be applied after download, in order to avoid to modify the raw downloaded data if averaging time is changed
+#             N19 - When downloading the SOS data make a query average to download less data as for InfluxQL
+#             N20 - TabSet Calib, add unit for slope and intercept,
+#             N21 - Add automatic reporting, Markdown, knit (WORK IN PROGRESS)
+#             N22 - Enter the width of rolling window for oulier detection in hours instead of numbers of data, e. g. 19 for a rolling window of 3 hours with 10 minutes average time
+#             N27 - automatic order of rows of files "ASE_name"_valid_"sensor.name".cfg" based on the "in" dates
+#             N28 - Add an observer to open the correct sideBar tabPanel according to the selected tabPanel in the mainPanel
+#             N29 - There may be an error when adding dataFrame with subsequent download if a delay has been implemented before or if the Delay is modified between two downloads
+#             N30 - add the log mainTabPanel in the GetData NavBar menu
+#             N31 - Upload concentration levels after calibration to Client SOS and Influx (Grafana) servers
+#             N51 - Every time a .png files for rawData, scatterPlots, time series, matrix, Uncertainty, drift and targetDiagram exists in Calibration, mModelled_gas,
+#                   General_Data should not create a new plot and rather uses the .png plot instead
+#             N52 - Add the possibility to invalidate humidity transient
+#             N53 - Create a button "Delete" of AirSensEUR in NavBar menu "SelectASE"
+#             N54 - Finish Shiny App Manual
+#             N88 - Add interactive selection of points in the matrix plots of covariates, calibration and prediction
+#             N89 - Add the possibility to set some of the coefficients of calibration models with plotty
+#            N106 - Add the possibility to use several calibration models at different date interval
+#            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
+#            N108 - Allow to select only data with GPStimestamp and GPS coordinates
 # New release V0.19, 2020-05-27
 #             E82 - bug correction: In function SETTIME, General.TZ was wrongly estimated. Corrected using function lubridate::tz
 #            N120 - The ASE-App will can now be used to calibrate PM10 sensors from OPC-N3 and PMS5003, reported as OPCN3PM10 sensor by AirSensEUR in InfluxDB. 
@@ -293,7 +356,7 @@
 # 2019-01-31:  N84 - Added interactive maps calibration and Prediction that show the position of AirSensEUR and Reference monitoring station. Therefore, it is necessary to add the coordinates
 #                    of reference station when downloading reference data.
 # 2019-02-10:  N85 - Version history is now in a separate file called Versions.R. The configuration is now in file global.R wun before the UI. tcltk functions are removed
-# 2019-02-14:  N86 - Adding new model for calibration of sensor: T_power(in °Celsius), K_power(in Kelvin), CexpkT (in °Celsius) and CexpkT (in Kelvin),
+# 2019-02-14:  N86 - Adding new model for calibration of sensor: T_power(in ?Celsius), K_power(in Kelvin), CexpkT (in ?Celsius) and CexpkT (in Kelvin),
 #                    Ri = a0 + a1 NO + a2 exp(a4 Temperature) and Ri = a0 + a1 NO + a2 exp(a3 Temperature).
 #              E36 - Bug in the detection of outliers Out.my.Outliers (Fucntions4ASE.R), when the minimum of the interval of tolerance zmin was < Thresholdmin, zmin was not correctly set to ThresholdMin,
 #                    with a mistake for zmax in plotting.
@@ -599,4 +662,3 @@
 #================================================================CR
 # Content ====
 #================================================================CR
-

@@ -1,0 +1,124 @@
+#######################
+INFO [2020-08-18 13:08:22] [Auto.Cal] 40641B, sensor BMP280 fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-18 13:08:23] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-18 13:08:23] Model : 40641B__BMP280__hPa__Linear.Robust__20200117__20200120____.rdata
+WARN [2020-08-18 13:08:23] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:24] Model : 40641B__BMP280__hPa__Linear.Robust__20200118__20200121____.rdata
+WARN [2020-08-18 13:08:24] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:24] Model : 40641B__BMP280__hPa__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-18 13:08:24] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:24] Model : 40641B__BMP280__hPa__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-18 13:08:24] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:25] Model : 40641B__BMP280__hPa__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-18 13:08:25] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:26] Model : 40641B__BMP280__hPa__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-18 13:08:26] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:26] Model : 40641B__BMP280__hPa__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-18 13:08:26] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:26] Model : 40641B__BMP280__hPa__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-18 13:08:26] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:27] Model : 40641B__BMP280__hPa__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-18 13:08:27] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:27] Model : 40641B__BMP280__hPa__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-18 13:08:27] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:27] Model : 40641B__BMP280__hPa__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-18 13:08:28] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:28] Model : 40641B__BMP280__hPa__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-18 13:08:28] [Compare_Models] General.csv for 40641B not loaded.
+-----------------------
+INFO [2020-08-18 13:08:28] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-18 13:08:28] [Median_Model] ASE box 40641B, sensor      BMP280, creating rolling Linear.Robust models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term       estimate std.error statistic p.value tau                                                            MAD conf.low conf.high `t value` `Pr(>|t|)`
+  <chr>         <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                        <dbl>    <dbl>     <dbl>     <dbl>      <dbl>
+1 (Intercep~    -5.08   8.62        -17.5       0 Median of coefficients of rolling calibration models with~ 8.28     -17.4        7.20    -0.589   5.69e- 1
+2 x              1.01   0.00862    6242.        0 Median of coefficients of rolling calibration models with~ 0.00831    0.993      1.02   117.      5.27e-17
+# A tibble: 1 x 7
+  tau                                           logLik     AIC     BIC r.squared adj.r.squared  RMSE
+  <chr>                                          <dbl>   <dbl>   <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration  8085. -16165. -16142.      1.00          1.00 0.154
+-----------------------
+INFO [2020-08-18 13:08:29] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-18 13:08:35] [List_Covariates] ASE box 40641B, sensor      BMP280, matrix of correlation between 2020-01-17 and 2020-07-07
+INFO [2020-08-18 13:08:35] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of BMP280 is:
+                row.names  BMP280_volt Atmospheric_pressure_modelled Out.Ref.Press  Residuals
+ 1: Relative_humidity_int 0.1219317568                  0.1219317568  0.1273376799 0.64275161
+ 2:     Relative_humidity 0.0599310008                  0.0599310008  0.0639989596 0.57236999
+ 3:            Td_deficit 0.0516681171                  0.0516681171  0.0556323266 0.54238445
+ 4:          5310CAT_volt 0.0008600018                  0.0008600018  0.0001730861 0.31540954
+ 5:       OX_A431_P1_volt 0.0781223951                  0.0781223952  0.0710351005 0.31126658
+ 6:             D300_volt 0.0779780208                  0.0779780208  0.0706734580 0.23290231
+ 7:         CO_A4_P1_volt 0.0341539559                  0.0341539560  0.0336797128 0.19002330
+ 8:       Temperature_int 0.1796922782                  0.1796922783  0.1698138276 0.20349625
+ 9:        OPCN3PM10_volt 0.0019189225                  0.0019189225  0.0003835587 0.01696118
+10:           Temperature 0.1781121127                  0.1781121128  0.1689693223 0.18222906
+-----------------------
+INFO [2020-08-18 13:08:35] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-18 13:08:35] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:08:35] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:08:35] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+-----------------------
+INFO [2020-08-18 13:08:35] [Auto.Cal] Covariate "Relative_humidity_int" has a Variance Inflation factor of 1.15045115033006, lower than threshold: 10,
+"Relative_humidity_int" does not show multicolinearity with other dependent variables. It can be included into the MultiLinear calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-18 13:08:35] [Auto.Cal] Fitting calibration model with 1 covariate(s): Relative_humidity_int
+-----------------------
+INFO [2020-08-18 13:08:37] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-18 13:08:37] Model : 40641B__BMP280__hPa__MultiLinear__20200117__20200120__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:37] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:37] Model : 40641B__BMP280__hPa__MultiLinear__20200118__20200121__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:37] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:38] Model : 40641B__BMP280__hPa__MultiLinear__20200119__20200122__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:38] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:39] Model : 40641B__BMP280__hPa__MultiLinear__20200120__20200123__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:39] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:39] Model : 40641B__BMP280__hPa__MultiLinear__20200121__20200124__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:39] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:40] Model : 40641B__BMP280__hPa__MultiLinear__20200122__20200125__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:40] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:41] Model : 40641B__BMP280__hPa__MultiLinear__20200123__20200126__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:41] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:41] Model : 40641B__BMP280__hPa__MultiLinear__20200124__20200127__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:41] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:42] Model : 40641B__BMP280__hPa__MultiLinear__20200125__20200128__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:42] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:42] Model : 40641B__BMP280__hPa__MultiLinear__20200126__20200129__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:42] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:43] Model : 40641B__BMP280__hPa__MultiLinear__20200127__20200130__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:43] [Compare_Models] General.csv for 40641B not loaded.
+INFO [2020-08-18 13:08:44] Model : 40641B__BMP280__hPa__MultiLinear__20200128__20200131__Relative_humidity_int-1__.rdata
+WARN [2020-08-18 13:08:44] [Compare_Models] General.csv for 40641B not loaded.
+-----------------------
+INFO [2020-08-18 13:08:44] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-18 13:08:44] [Median_Model] ASE box 40641B, sensor      BMP280, creating rolling MultiLinear models between 2020-01-17
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term             estimate std.error statistic p.value      MAD conf.low conf.high `t value` `Pr(>|t|)` tau                                                
+  <chr>               <dbl>     <dbl>     <dbl>   <dbl>    <dbl>    <dbl>     <dbl>     <dbl>      <dbl> <chr>                                              
+1 (Intercept)       -6.49    2.19         -94.3       0 2.38     -10.0      -2.96       -2.97   1.42e- 2 Median of coefficients of rolling calibration mode~
+2 x                  1.01    0.00220    13574.        0 0.00241    1.00      1.01      458.     6.05e-23 Median of coefficients of rolling calibration mode~
+3 Relative_humidi~   0.0124  0.000571     175.        0 0.000380   0.0118    0.0129     21.7    9.73e-10 Median of coefficients of rolling calibration mode~
+# A tibble: 1 x 7
+  r.squared adj.r.squared logLik     AIC     BIC  nobs   RMSE
+      <dbl>         <dbl>  <dbl>   <dbl>   <dbl> <int>  <dbl>
+1      1.00          1.00 17648. -35288. -35256. 17830 0.0899
+-----------------------
+INFO [2020-08-18 13:08:45] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is -35287.6482771987. It is lower than the AIC of the precedent model -16164.8827279236.
+INFO [2020-08-18 13:08:45] [Auto.Cal] Adding of covariate Relative_humidity_int improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-18 13:08:45] [Auto.Cal] Checking if any parameter of model is not significant, except for the intercept
+INFO [2020-08-18 13:08:45] [Auto.Cal] All parameters of the calibration model with covariate(s) Relative_humidity_int are significantly different from 0
+INFO [2020-08-18 13:08:50] [List_Covariates] ASE box 40641B, sensor      BMP280, matrix of correlation between 2020-01-17 and 2020-07-07
+INFO [2020-08-18 13:08:51] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of BMP280 is:
+      row.names  BMP280_volt Atmospheric_pressure_modelled Out.Ref.Press  Residuals
+1: 5310CAT_volt 0.0008600018                  0.0004706642  0.0001730861 0.01694922
+-----------------------
+INFO [2020-08-18 13:08:51] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-18 13:08:51] [Auto.Cal] request to drop parameter "DRIFT" from significant covariates
+INFO [2020-08-18 13:08:51] [Auto.Cal] request to drop parameters ending with "_modelled" from significant covariates
+INFO [2020-08-18 13:08:51] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt, OX_A431_P1_volt, OPCN3PM10, 5310CAT, NO_B4_P1, D300, CO_A4_P1 from significant covariates
+INFO [2020-08-18 13:08:51] [Auto.Cal] There are no more covariates to be added to the calibration model.

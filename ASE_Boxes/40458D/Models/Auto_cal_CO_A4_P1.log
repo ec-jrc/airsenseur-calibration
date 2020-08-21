@@ -1,0 +1,169 @@
+#######################
+INFO [2020-08-21 11:31:30] [Auto.Cal] 40458D, sensor CO_A4_P1 fitting Linear.Robust models.
+-----------------------
+INFO [2020-08-21 11:31:33] [Auto.Cal] Comparing Linear.Robust models:
+INFO [2020-08-21 11:31:33] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200119__20200122____.rdata
+WARN [2020-08-21 11:31:33] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:34] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200120__20200123____.rdata
+WARN [2020-08-21 11:31:34] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:34] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200121__20200124____.rdata
+WARN [2020-08-21 11:31:34] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:34] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200122__20200125____.rdata
+WARN [2020-08-21 11:31:34] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:35] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200123__20200126____.rdata
+WARN [2020-08-21 11:31:35] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:35] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200124__20200127____.rdata
+WARN [2020-08-21 11:31:35] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:35] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200125__20200128____.rdata
+WARN [2020-08-21 11:31:35] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:36] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200126__20200129____.rdata
+WARN [2020-08-21 11:31:36] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:36] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200127__20200130____.rdata
+WARN [2020-08-21 11:31:36] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:36] Model : 40458D__CO_A4_P1__nA__Linear.Robust__20200128__20200131____.rdata
+WARN [2020-08-21 11:31:36] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 11:31:37] [Auto.Cal] Creating calibration Median Model with the median of coefficients of the rolling Linear.Robust models.
+INFO [2020-08-21 11:31:37] [Median_Model] ASE box 40458D, sensor    CO_A4_P1, creating rolling Linear.Robust models between 2020-01-19
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 2 x 11
+  term        estimate std.error statistic p.value tau                                                                            MAD conf.low conf.high `t value`   `Pr(>|t|)`
+  <chr>          <dbl>     <dbl>     <dbl>   <dbl> <chr>                                                                        <dbl>    <dbl>     <dbl>     <dbl>        <dbl>
+1 (Intercept)    -15.7      5.91     -81.0       0 Median of coefficients of rolling calibration models with interval of 3 days  7.13    -26.2     -5.09     -2.65 0.0292      
+2 x              203.       9.16     771.        0 Median of coefficients of rolling calibration models with interval of 3 days  6.54    193.     213.       22.1  0.0000000183
+# A tibble: 1 x 7
+  tau                                            logLik     AIC     BIC r.squared adj.r.squared  RMSE
+  <chr>                                           <dbl>   <dbl>   <dbl>     <dbl>         <dbl> <dbl>
+1 Median of coefficients of rolling calibration -62104. 124214. 124238.     0.970         0.970  10.7
+-----------------------
+INFO [2020-08-21 11:31:38] [Auto.Cal] Looking for significant covariates that could be added to the Linear.Robust calibration model:
+INFO [2020-08-21 11:31:45] [List_Covariates] ASE box 40458D, sensor    CO_A4_P1, matrix of correlation between 2020-01-19 and 2020-01-30
+INFO [2020-08-21 11:31:46] [Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of CO_A4_P1 is:
+       row.names CO_A4_P1_volt Carbon_monoxide_modelled Out.Ref.CO_ppm  Residuals
+1: NO_B4_P1_volt  0.0001835037             0.0001835037    0.004818479 0.07330038
+2:         DRIFT  0.0037646521             0.0037646521    0.007117933 0.01728301
+-----------------------
+INFO [2020-08-21 11:31:46] [Auto.Cal] Looking for covariate 1 to be added to the calibration function.
+INFO [2020-08-21 11:31:46] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 11:31:46] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt from possible significant covariates
+INFO [2020-08-21 11:31:46] [Auto.Cal] Possible ordered covariates: NO_B4_P1_volt, DRIFT
+-----------------------
+INFO [2020-08-21 11:31:46] [Auto.Cal] Covariate "NO_B4_P1_volt" has a Variance Inflation factor of 1.00484180927859, lower than threshold: 10,
+"NO_B4_P1_volt" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 11:31:46] [Auto.Cal] Fitting calibration model with 1 covariate(s): NO_B4_P1_volt
+-----------------------
+INFO [2020-08-21 11:31:47] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 11:31:47] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200119__20200122__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:47] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:47] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200120__20200123__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:47] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:48] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200121__20200124__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:48] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:48] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200122__20200125__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:48] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:49] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200123__20200126__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:49] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:50] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200124__20200127__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:50] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:50] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200125__20200128__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:50] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:51] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200126__20200129__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:51] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:51] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200127__20200130__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:51] [Compare_Models] General.csv for 40458D not loaded.
+INFO [2020-08-21 11:31:52] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200128__20200131__NO_B4_P1_volt-1__.rdata
+WARN [2020-08-21 11:31:52] [Compare_Models] General.csv for 40458D not loaded.
+-----------------------
+INFO [2020-08-21 11:31:52] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 11:31:52] [Median_Model] ASE box 40458D, sensor    CO_A4_P1, creating rolling MultiLinear models between 2020-01-19
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 3 x 11
+  term          estimate std.error statistic   p.value   MAD conf.low conf.high `t value`    `Pr(>|t|)` tau                                                                        
+  <chr>            <dbl>     <dbl>     <dbl>     <dbl> <dbl>    <dbl>     <dbl>     <dbl>         <dbl> <chr>                                                                      
+1 (Intercept)    -10.9       6.65      -19.7 1.46e- 85 7.95   -22.7      0.912      -1.64 0.141         Median of coefficients of rolling calibration models with interval of 3 da~
+2 x              205.        7.77      753.  0.        5.86   196.     214.         26.4  0.00000000458 Median of coefficients of rolling calibration models with interval of 3 da~
+3 NO_B4_P1_volt   -0.262     0.127     -35.6 3.88e-267 0.170   -0.514   -0.0102     -2.07 0.0726        Median of coefficients of rolling calibration models with interval of 3 da~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik     AIC     BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>   <dbl>   <dbl> <int> <dbl>
+1     0.971         0.971 -61742. 123491. 123522. 16396  10.5
+-----------------------
+INFO [2020-08-21 11:31:53] [Auto.Cal] The Akaike Information Criterion (AIC) of the current model is 123491.269131205. It is lower than the AIC of the precedent model 124214.432801657.
+INFO [2020-08-21 11:31:53] [Auto.Cal] Adding of covariate NO_B4_P1_volt improves the fit of the calibration model.
+-----------------------
+INFO [2020-08-21 11:31:53] [Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept
+INFO [2020-08-21 11:31:53] [Auto.Cal] All coefficients of the calibration model with covariate(s) NO_B4_P1_volt are significantly different from 0
+INFO [2020-08-21 11:31:53] [Auto.Cal] covariate: NO_B4_P1_volt is included into the model.
+INFO [2020-08-21 11:31:55] [List_Covariates] ASE box 40458D, sensor    CO_A4_P1, matrix of correlation between 2020-01-19 and 2020-01-30
+INFO [2020-08-21 11:31:55] [Auto.Cal] ordered list of covariates that are correlated with residuals of the current calibration model for CO_A4_P1
+   row.names CO_A4_P1_volt Carbon_monoxide_modelled Out.Ref.CO_ppm  Residuals
+1:     DRIFT   0.003764652              0.004178381    0.007117933 0.01512683
+-----------------------
+INFO [2020-08-21 11:31:55] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-21 11:31:55] [Auto.Cal] setting new First.covariates using the covariates correlated with residuals of the previous calibration model.
+INFO [2020-08-21 11:31:55] [Auto.Cal] request to drop parameters NO2_B43F_P1_volt from possible significant covariates
+INFO [2020-08-21 11:31:55] [Auto.Cal] Possible ordered covariates: NO_B4_P1_volt, DRIFT
+-----------------------
+INFO [2020-08-21 11:31:55] [Auto.Cal] Covariate "DRIFT" has a Variance Inflation factor of 1.01288284666427, lower than threshold: 10,
+"DRIFT" does not show multicolinearity with other independent variables. It can be included into the calibration model.
+-----------------------
+-----------------------
+INFO [2020-08-21 11:31:55] [Auto.Cal] Fitting calibration model with 2 covariate(s): NO_B4_P1_volt, DRIFT
+-----------------------
+INFO [2020-08-21 11:31:56] [Auto.Cal] Comparing rolling models.
+INFO [2020-08-21 11:31:56] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200119__20200122__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:31:56] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:31:57] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:31:58] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200120__20200123__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:31:58] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:31:58] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:32:00] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200121__20200124__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:32:00] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:32:00] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:32:01] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200122__20200125__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:32:01] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:32:01] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:32:03] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200123__20200126__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:32:03] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:32:04] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:32:05] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200124__20200127__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:32:05] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:32:05] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:32:07] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200125__20200128__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:32:07] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:32:07] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:32:09] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200126__20200129__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:32:09] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:32:09] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:32:11] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200127__20200130__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:32:11] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:32:12] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+INFO [2020-08-21 11:32:14] Model : 40458D__CO_A4_P1__nA__MultiLinear__20200128__20200131__NO_B4_P1_volt-1&DRIFT-1__.rdata
+WARN [2020-08-21 11:32:14] [Compare_Models] General.csv for 40458D not loaded.
+WARN [2020-08-21 11:32:14] [Meas_Function] "DRIFT" is(are) not numeric. Converting to numeric.
+-----------------------
+INFO [2020-08-21 11:32:16] [Auto.Cal] Creating Median Model with the median of coefficents of rolling models.
+-----------------------
+INFO [2020-08-21 11:32:16] [Median_Model] ASE box 40458D, sensor    CO_A4_P1, creating rolling MultiLinear models between 2020-01-19
+and 2020-01-31 with median of coefficients of models.
+# A tibble: 4 x 11
+  term          estimate std.error statistic   p.value    MAD conf.low conf.high `t value`    `Pr(>|t|)` tau                                                                       
+  <chr>            <dbl>     <dbl>     <dbl>     <dbl>  <dbl>    <dbl>     <dbl>     <dbl>         <dbl> <chr>                                                                     
+1 (Intercept)    -28.8      20.1       -24.4 8.53e-129 27.2    -69.2     11.5       -1.44  0.189         Median of coefficients of rolling calibration models with interval of 3 d~
+2 x              212.        7.91      757.  0.         3.99   206.     218.        26.8   0.00000000407 Median of coefficients of rolling calibration models with interval of 3 d~
+3 NO_B4_P1_volt   -0.193     0.114     -34.6 1.39e-253  0.167   -0.441    0.0551    -1.70  0.127         Median of coefficients of rolling calibration models with interval of 3 d~
+4 DRIFT            1.22      3.35       14.4 1.88e- 46  4.33    -5.20     7.65       0.366 0.724         Median of coefficients of rolling calibration models with interval of 3 d~
+# A tibble: 1 x 7
+  r.squared adj.r.squared  logLik     AIC     BIC  nobs  RMSE
+      <dbl>         <dbl>   <dbl>   <dbl>   <dbl> <int> <dbl>
+1     0.955         0.955 -65323. 130656. 130695. 16396  13.0
+WARN [2020-08-21 11:32:16] [Auto.Cal] The Akaike information criterion (AIC) of the current model 130656.481697291 is not lower that the AIC of the precedent model 123491.269131205.
+WARN [2020-08-21 11:32:16] [Auto.Cal] Adding of covariate DRIFT does not improve the fitting of calibration model. Looking for other covariates.
+WARN [2020-08-21 11:32:17] [Auto.Cal] DRIFT is discarded from the list of possible covariates because AIC is not improved using it or coefficients of model shows rolling variability.
+-----------------------
+INFO [2020-08-21 11:32:17] [Auto.Cal] Looking for covariate 2 to be added to the calibration function.
+INFO [2020-08-21 11:32:17] [Auto.Cal] Possible ordered covariates: NO_B4_P1_volt
+INFO [2020-08-21 11:32:17] [Auto.Cal] There are no more covariates to be added to the calibration model.
