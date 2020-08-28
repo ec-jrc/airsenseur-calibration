@@ -7798,7 +7798,7 @@ influx.downloadAndPredict <- function(boxName, boxConfig, subDirData = "General_
     # var.name.GasSensors <- INFLUX[[3]]
     # var.names.sens      <- INFLUX[[4]]
     # InfluxData          <- INFLUX[[1]]
-    futile.logger::flog.info(paste0("[influx.downloadAndPredict] Setting downloading of Influx data is set to ", Download.Sensor$Retrieve.data.Influx, "if needed."))
+    futile.logger::flog.info(paste0("[influx.downloadAndPredict] Setting downloading of Influx data is set to ", Download.Sensor$Retrieve.data.Influx, " if needed."))
     if (!is.null(Influx)) InfluxData <- Influx[] else InfluxData <- NA_real_
     if (Download.Sensor$Retrieve.data.Influx) {
         INFLUX <- INFLUXDB(
