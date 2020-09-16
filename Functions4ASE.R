@@ -129,10 +129,10 @@ Make.Old <- function(File, File.old = NULL) {
 #=====================================================================================CR
 # 161107 MG : functions for converting digital values
 #=====================================================================================CR
-ASEDigi2Volt <- function(Sensors_Cal, Digital, ADC = 16, Volt.Convert = TRUE) {
-    # return      : the function return a dataframe/data.table with the voltages or currents for all sensors
+ASEDigi2Volt <- function(Sensors_Cal, Digital, ADC = 16, Volt.Convert = TRUE, Pattern = "Out.", Name.Digital = "gas.sensor") {
+    # return      : the function return a data.frame/data.table with the voltages or currents for all sensors. It will convert _StDev if any in Digital
     # Sensors_Cal : dataframe with the following column vectors:
-    #               name.ga       : a vector of strings with the molecule symbols of sensors mounted on the AirSensEUR (CO...)
+    #               name.gas      : a vector of strings with the molecule symbols of sensors mounted on the AirSensEUR (CO...)
     #               gas.sensor    : a vector of strings with the molecule name that are measured by the AirSensEUR (Carbon_monoxide...)
     #               name.sensor   : a vector of strings with the names of sensors mounted on the AirSensEUR (COA4...)
     #               Ref           : a float vector, one value per sensor in Sensors_Cal$Sensors, giving the voltage in the middle of the analogue to digital converter (ADC) on the shield
@@ -142,25 +142,38 @@ ASEDigi2Volt <- function(Sensors_Cal, Digital, ADC = 16, Volt.Convert = TRUE) {
     #               Sens.raw.unit : vector of strings, one value per sensor with the Unit names after conversion of Digital values into raw data
     # ADC         : number of bits of the Aanalogue to digital conversion
     # Digital     : a dataframe of numerics with the Digital values to be converted into Voltages or Currents (Out.Nitrogen_dioxide, ...
-    # Volt.Convert: logical, default is TRUE. If TRUE, the data in Digital dataFrame need conversion from Digital to V/nA. If FALSE data are already in volts and conversion is not necessary.
+    # Volt.Convert: logical, default is TRUE. If TRUE, the data in Digital dataFrame need conversion from Digital to V/nA. If FALSE data units do not need conversion.
+    # Pattern     : string, default "Out.". Pattern to be deleted from names(Digital)
+    # Name.Digital: string, default is  "gas.sensor",. Possible values: "gas.sensor" or "name.sensor". 
+    #               It indicates if the columns names of digital are base on sensor names (name.sensor) or molecules (gas.sensor) found in Sensors_Cal.
     # reorder Sensors_Cal as Digital for gas sensors - create empty data.table of results
     # The name of the sensors are given by the names of the column in Digital
-    Sensors_Cal  <- Sensors_Cal[as.vector(sapply(gsub(pattern = "Out.", replacement = "", names(Digital)),
-                                                 function(i) grep(i, Sensors_Cal$gas.sensor))),]
+
+        # Deleting Pattern from gas.name or sensor.name if needed. Dicard non chemical sensor from Sensors_Cal
+    if (Name.Digital == "gas.sensor") {
+        Sensors_Cal  <- Sensors_Cal[as.vector(sapply(gsub(pattern = Pattern, replacement = "", unique(gsub("_StDev","",names(Digital)))),
+                                                     function(i) grep(i, Sensors_Cal$gas.sensor))),]
+    } else if (Name.Digital == "name.sensor") Sensors_Cal <- Sensors_Cal[as.vector(sapply(gsub(pattern = Pattern, replacement = "", unique(gsub("_StDev","",names(Digital)))),
+                                                 function(i) grep(i, Sensors_Cal$name.sensor))),]
     # Check which ones to converts in V and in nA
     # no need we convert all in volts, maybe this helps to get a dataframe only of numeric
     indexA <- which(Sensors_Cal$Sens.raw.unit == "nA")
+    name.Sensors <- names(Digital)[grep("_StDev", names(Digital), invert = T)]
+    name.StDev   <- names(Digital)[grep("_StDev", names(Digital))]
     # converts in Volts
     if (Volt.Convert) {
         MyVectorMul  <- 2*Sensors_Cal$RefAD/(2^ADC)
         MyVectorAdd  <- Sensors_Cal$Ref - Sensors_Cal$RefAD
-        Digital <- Digital[, Map(`+`, 1, .SD)][, Map("*", .SD, MyVectorMul)][, Map(`+`, MyVectorAdd, .SD)]}
+        set(Digital, j = name.Sensors, value = Digital[, .SD, .SDcols = name.Sensors][, Map(`+`, 1, .SD)][, Map("*", .SD, MyVectorMul)][, Map(`+`, MyVectorAdd, .SD)])
+        if (length(name.StDev) > 0) set(Digital, j = name.StDev, value = Digital[, .SD, .SDcols = name.StDev][, Map("*", .SD, MyVectorMul)])}
     # converts in nA
     if (length(indexA) != 0) {
-        #MyVectornA  <- 10^9/(Sensors_Cal$GAIN[indexA] * Sensors_Cal$Rload[indexA])
         MyVectornA  <- 10^9/(Sensors_Cal$GAIN[indexA])
-        Digital <- Digital[, Map(`-`, .SD, Sensors_Cal$board.zero.set)][, Map("*", .SD, MyVectornA)]}
-    colnames(Digital) <- Sensors_Cal$name.sensor
+        set(Digital, j = name.Sensors, value = Digital[, .SD, .SDcols = name.Sensors][, Map(`-`, .SD, Sensors_Cal$board.zero.set)][, Map("*", .SD, MyVectornA)])
+        if (length(name.StDev) > 0) set(Digital, j = name.StDev, value = Digital[, .SD, .SDcols = name.StDev][, Map("*", .SD, MyVectornA)])}
+    if (length(name.StDev) == 0) {
+        colnames(Digital) <- Sensors_Cal$name.sensor
+    } else colnames(Digital) <- c(Sensors_Cal$name.sensor, paste0(Sensors_Cal$name.sensor,"_StDev"))
     return(Digital)
 }
 ASEVolt2Conc <- function(Sensors_Cal, Voltage) {
@@ -215,7 +228,7 @@ My.rm.Outliers <- function(date, y, ymin = NULL, ymax = NULL, ThresholdMin = NUL
     # ymin, ymax            = minimum values for y, for example to remove negative values
     # ThresholdMin          = minimum values for zmin, the minimum values that evidence outliers when exceeded
     # window                = width of the window used to compute median and average
-    # threshold             = coefficient that muliplied by the difference between median and average that is exceeded result in outlier
+    # threshold             = coefficient muliplied by the difference between median and average. If data eceed this threshold x diff, data is an outlier
     # plotting              = logical, default TRUE, if TRUE the plot of outliers is performed
     # set.Outliers          = logical, default TRUE, if TRUE the the procedure to detect outliers is carried out
     # Ind                   = when not determining outliers (set.Outliers = F), this substitue the datframe  df
@@ -308,7 +321,8 @@ My.rm.Outliers <- function(date, y, ymin = NULL, ymax = NULL, ThresholdMin = NUL
                 dySeries("zmin",        label = names.data[6] , color = "grey",    drawPoints = FALSE) %>%
                 dyLegend(show = "always", hideOnMouseOut = FALSE, width = 800) %>%
                 dyRangeSelector() %>%
-                dyOptions(labelsUTC = T) # plot in UTC
+                #dyOptions(labelsUTC = T) %>% 
+                dyOptions(useDataTimezone = TRUE)
         } else {
             # saving the original graphical parameters
             op <- par(no.readonly = TRUE)
@@ -464,7 +478,8 @@ RollCall <- function(date, Sensor, reference, window = 7, threshold, plotting = 
                 dySeries("zmin",        label = names.data[6] , color = "grey",    drawPoints = FALSE) %>%
                 dyLegend(show = "always", hideOnMouseOut = FALSE, width = 800) %>%
                 dyRangeSelector() %>%
-                dyOptions(labelsUTC = T) # plot in UTC
+                #dyOptions(labelsUTC = T) %>% 
+                dyOptions(useDataTimezone = TRUE)
         } else {
             # saving the original graphical parameters
             op <- par(no.readonly = TRUE)
@@ -562,7 +577,8 @@ GraphOut <- function(date , y, Col = "#E00000", Ylab = "Raw Sensor values", indf
                 dyOptions(drawPoints = TRUE, pointSize = 2) %>%
                 dyLegend(show = "always", hideOnMouseOut = FALSE, width = 350) %>%
                 dyRangeSelector() %>%
-                dyOptions(labelsUTC = T) # plot in UTC
+                #dyOptions(labelsUTC = T) %>% 
+                dyOptions(useDataTimezone = TRUE)
         } else if (class(indfull) == "list") {
             # creating dataframe with xts data series
             data <- data.frame(date   = date,
@@ -575,7 +591,7 @@ GraphOut <- function(date , y, Col = "#E00000", Ylab = "Raw Sensor values", indf
             if (length(indfull[[1]]) > 0) data$TempMini[which(data$date %in% indfull[[1]])]   <- data$Sensor[which(data$date %in% indfull[[1]])]
             if (length(indfull[[2]]) > 0) data$TempMaxi[which(data$date %in% indfull[[2]])]   <- data$Sensor[which(data$date %in% indfull[[2]])]
             if (length(indfull[[3]]) > 0) data$RHMini[  which(data$date %in% indfull[[3]])]   <- data$Sensor[which(data$date %in% indfull[[3]])]
-            if (length(indfull[[4]]) > 0) data$RHMini[  which(data$date %in% indfull[[4]])]   <- data$Sensor[which(data$date %in% indfull[[4]])]
+            if (length(indfull[[4]]) > 0) data$RHMaxi[  which(data$date %in% indfull[[4]])]   <- data$Sensor[which(data$date %in% indfull[[4]])]
             if (length(c(indfull[[1]], indfull[[2]], indfull[[3]], indfull[[4]])) > 0) data$Sensor[which(data$date %in% c(indfull[[1]], indfull[[2]], indfull[[3]], indfull[[4]]))] <- NA
             # Create dygraphs time_series
             #data <- data_frame_to_timeseries(data, tz = threadr::time_zone(General.df$date))
@@ -596,6 +612,8 @@ GraphOut <- function(date , y, Col = "#E00000", Ylab = "Raw Sensor values", indf
                 dySeries("RHMaxi"   , label = names(indfull)[4] , color = Colors[4]) %>%
                 dyLegend(show = "always", hideOnMouseOut = FALSE, width = 350) %>%
                 dyOptions(drawPoints = TRUE, pointSize = 2) %>%
+                #dyOptions(labelsUTC = T) %>% 
+                dyOptions(useDataTimezone = TRUE) %>% 
                 dyRangeSelector()
         }
     } else {
@@ -918,10 +936,10 @@ Check_Download <- function(Influx.name = NULL, WDinput, UserMins, General.df = N
             # Checking if Download of General.df is necessary
             if (difftime(Sys.time(), max(General.df$date, na.rm = TRUE), units = "mins") > UserMins) {    ### MG , I doubt about the tz here, I think all is changed to UTM, as it is a difference maybe it does not matter
                 Retrieve.data.General  = TRUE
-                futile.logger::flog.info(paste0("[Check_Download] sensor data are going to be retrieved. Start date for data download: ", DateEND.General.prev), sep = "\n")
+                futile.logger::flog.info(paste0("[Check_Download] sensor data should be retrieved. Start date for data download: ", DateEND.General.prev), sep = "\n")
             } else {
                 Retrieve.data.General  = FALSE
-                futile.logger::flog.info(paste0("[Check_Download] no sensor data are going to be retrieved. The latest data are already downloaded, please restart in at least ", UserMins, "mins."))
+                futile.logger::flog.info(paste0("[Check_Download] no sensor data should be retrieved. The latest data are already downloaded, please restart in at least ", UserMins, "mins."))
             }
         } else {
             # General.df is NULL
@@ -2629,11 +2647,11 @@ Validation.tool <- function(General, DateIN, DateEND, DateINCal = DateIN, DateEN
                 dev.off()}
         }
         # checking completness of x, y and Covariates
-        General <- General[date >= DateINCal & date < DateENDCal + 1]
+        General <- General[date >= DateINCal & date < DateENDCal + 1,]
         if (is.data.table(General)) {
             if (is.null(Covariates) || length(Covariates) == 0 || Covariates == "") {
-                General <- General[complete.cases(General[,.SD,.SDcols = c(nameGasRef,nameGasVolt)])]
-            } else General <- General[complete.cases(General[,.SD,.SDcols = c(nameGasRef,nameGasVolt,Covariates)])]
+                General <- General[complete.cases(General[,.SD,.SDcols = c(nameGasRef,nameGasVolt)]),.SD,.SDcols = c(nameGasRef,nameGasVolt)]
+            } else General <- General[complete.cases(General[,.SD,.SDcols = c(nameGasRef,nameGasVolt,Covariates)]),.SD,.SDcols = c(nameGasRef,nameGasVolt,Covariates)]
         } else if (is.data.frame(General)) {
             if (is.null(Covariates) || length(Covariates) == 0 || Covariates == "") {
                 General <- General[complete.cases(General[,c(nameGasRef,nameGasVolt)])]
@@ -2681,17 +2699,19 @@ Validation.tool <- function(General, DateIN, DateEND, DateINCal = DateIN, DateEN
             namesCovariates <- paste0(paste(Covariates,Degrees, sep = "-"),collapse = "&")
         } else if (any(mod.eta.model.type %in% c("exp_kT_NoC", "exp_kT", "exp_kK", "T_power", "K_power"))) {
             if (is.null(Covariates) || length(Covariates) == "0" || Covariates == "") Covariates <- "Temperature"
-            Degrees <-  1
-            namesCovariates <- paste0(paste(Covariates,Degrees, sep = "-"),collapse = "&")
-            Matrice         <- General[, .SD, .SDcols = Covariates]
+            Degrees          <-  1
+            namesCovariates  <- paste0(paste(Covariates,Degrees, sep = "-"),collapse = "&")
+            Matrice          <- General[, .SD, .SDcols = Covariates]
             #names(Matrice)  <- namesCovariates
         } else if (any(mod.eta.model.type %in% c("BeerLambert"))) {
-            Covariates <- c("Temperature", "Atmospheric_pressure")
-            Degrees <-  c(1,-1)
+            Covariates      <- c("Temperature", "Atmospheric_pressure")
+            Degrees         <-  c(1,-1)
             namesCovariates <- paste0(Covariates,collapse = "&")
             Matrice         <- General[, .SD, .SDcols = Covariates]
-        } else if (any(mod.eta.model.type %in% c("Kohler"))) {
-            namesCovariates <- "Relative_humidity"
+        } else if (any(mod.eta.model.type %in% c("Kohler", "Kohler_only"))) {
+            Covariates      <- c("Relative_humidity")
+            Degrees         <- 1
+            namesCovariates  <- paste0(paste(Covariates,Degrees, sep = "-"),collapse = "&")
             Matrice         <- General[, .SD, .SDcols = Covariates]
             #names(Matrice)  <- namesCovariates
         } else {
@@ -3761,7 +3781,7 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
     if (file.exists(File_Server_cfg)) {
         # reading the Server configuration files
         cfg <- data.table::transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
-        if (Verbose) cat(paste0("[CONFIG] Info, the config file ", File_Server_cfg, " for the configuration of servers exists"), sep = "\n")
+        if (Verbose) futile.logger::flog.info(paste0("[CONFIG] the config file ", File_Server_cfg, " for the configuration of servers exists"))
         # Changing names
         if ("AirsensEur.name" %in% names(cfg)) names(cfg)[which(names(cfg) == "AirsensEur.name")] <- "AirSensEur.name"
         # Creating UserMinsAvg if it does not exist
@@ -3797,7 +3817,7 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
     #=====================================================================================CR
     # This is to insert both sensors and reference configuration into a dataframe and file
     File_cfg <- list.files(path = file.path(DisqueFieldtestDir,Dir.Config), pattern = paste0(ASE_name,".cfg"))
-    if (!identical(File_cfg,character(0))) {
+    if (length(File_cfg) > 0) {
         # reading the configuration files sens2ref
         File_cfg <- file.path(DisqueFieldtestDir,Dir.Config, paste0(ASE_name,".cfg"))
         if (file.exists(File_cfg)) {
@@ -3846,7 +3866,7 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
             for (j in Vector.type) set(sens2ref, j = j, value = as.numeric(gsub(" ","",sens2ref[[j]])))
         } else { 
             # if no ASE_name,".cfg", Message of error
-            my_message <- paste0("[CONFIG] ERROR, no config file for the AirSensEUR box. \n",
+            my_message <- paste0("[CONFIG] ERROR, no sensor config file for the AirSensEUR box. \n",
                                  "The App is going to crash. This AirSensEUR cannot be selected.\n")
             cat(my_message)
             if (shiny) shinyalert(
@@ -3914,7 +3934,7 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
             }
         }
     } else { # if File_cfg does not exist, , Message of error
-        my_message <- paste0("[CONFIG] ERROR, no server config file for the AirSensEUR box. \n",
+        my_message <- paste0("[CONFIG] ERROR, no sensor config file for the AirSensEUR box. \n",
                              "The App is going to crash. This AirSensEUR cannot be selected.\n")
         cat(my_message)
         if (shiny) shinyalert(
@@ -4088,8 +4108,7 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
     names(return.CONFIG) <- c("Server","sens2ref","CovPlot","CovMod", "sens2ref.shield")
     if (exists("Sensors.cfg")) return.CONFIG$Sensors.cfg <- Sensors.cfg
     if (exists("board.cfg"))   return.CONFIG$board.cfg   <- board.cfg
-    return(return.CONFIG)
-}
+    return(return.CONFIG)}
 #=====================================================================================CR
 # Valid Periods
 #=====================================================================================CR
@@ -5991,7 +6010,7 @@ Identify_ASE <- function(Model, name.sensor = NULL, General.DT = NULL, ASE.cfg =
         General.DT     <- fread(file.path(ASEDir, DIR_General,"General.csv"), showProgress = T)
         data.table::set(General.DT, j = "date", value =  ymd_hms(General.DT[["date"]], tz = "UTC"))}
     # Complete General DT with columns for filtered sesnors if needed
-    General.DT <- Complete.General(f.list.name.sensor = list.sensors, f.list.gas.sensor = list.gas.sensor, f.General.DT = General.DT, f.Config = Config, 
+    General.DT <- Complete_General(f.list.name.sensor = list.sensors, f.list.gas.sensor = list.gas.sensor, f.General.DT = General.DT, f.Config = Config, 
                                    f.ASEDir = ASEDir, f.Shield = Shield, f.list.reference = list.reference, f.ASE.cfg = ASE.cfg)
     # returning
     return(list(General.DT = General.DT, ASE.cfg = ASE.cfg, SetTime = SetTime, k = k, Config = Config,
@@ -6027,57 +6046,40 @@ Warm_Index <- function(Warm.Forced  = TRUE, General.DT, list.gas.sensor, boxConf
             # Index of boardtimeStamp similar for consecutive boardtimeStamp
             Consecutive <- which(diff(General.DT$boardTimeStamp, lag = 1) == 0)
             # Values of indexes whith previous values that are non consecutive (Re-start)
-            Re_start <- Consecutive[diff(Consecutive, lag = 1) > 1]
+            Re_start    <- Consecutive[diff(Consecutive, lag = 1) > 1]
             # Setting NA boardTimeStamp to the last non-NA boardTimeStamp
             data.table::set(General.DT,  j = "boardTimeStamp", value = na.locf(General.DT[["boardTimeStamp"]], na.rm = FALSE, fromLast = FALSE))
             # detecting when boardTimeStamp decreases suddenly (re-boot)
-            Re_boot <- which(diff(General.DT$boardTimeStamp, lag = 1) < 0)
+            Re_boot     <- which(diff(General.DT$boardTimeStamp, lag = 1) < 0)
             # Combining Re_start and reboot
             if (length(Re_start) > 0 | length(Re_boot) > 0) ind <- unique(c(Re_start, Re_boot)) else ind = numeric(0)
         } else {
             # This is for SOS
             ind <- apply(General.DT[, list.gas.sensor, with = FALSE  ], 1, function(i) !all(is.na(i)))
-            ind <- which(ind[2:length(ind)] & !ind[1:(length(ind) - 1 )])
-        }
+            ind <- which(ind[2:length(ind)] & !ind[1:(length(ind) - 1 )])}
         # Set the first discarded value as the value restarting from 0
         ind = ind + 1
         # Adding the first switch-on
         ind <- unique(c(1,ind))
-        # Creating a  vector of index of value to discard in a list including all names of sensors
-        for (n in seq_along(list.gas.sensor)) {
-            # number of data to be discarded after all re-start and re-boot called ind
-            indfull <- integer(length(ind) * boxConfig$sens2ref$hoursWarming[n] * 60 / as.integer(boxConfig$Server$UserMins))
-            # developing IndFull with index to discard for each ind
-            for (i in seq_along(ind)) {
-                indfull[((i - 1) *  boxConfig$sens2ref$hoursWarming[n]*60/as.integer(boxConfig$Server$UserMins) + 1):((i) * boxConfig$sens2ref$hoursWarming[n]*60 / as.integer(boxConfig$Server$UserMins))] <- ind[i]:(ind[i] +  boxConfig$sens2ref$hoursWarming[n] * 60 / as.integer(boxConfig$Server$UserMins) - 1)
-            }
-            # removing duplicated in case of second Re-Boot before the end of the warming time
-            indfull <- unique(indfull)
-            # removing  indexes outside the number of rows of General.DT
-            indfull <- indfull[indfull <= length(General.DT[[list.gas.sensor[n]]])]
-            # creating the list of indfull for each sensor
-            if (exists("ind.warm.out")) ind.warm.out[[n]] <- indfull else ind.warm.out <- list(indfull)
-        } 
+        # Creating a list of  vector of index of value to discard in a list including all names of sensors
+        ind.warm.out <- lapply(list.gas.sensor, function(n) {
+            unique(unlist(sapply(ind, function(i) {
+                which(General.DT$date %within% lubridate::interval(General.DT$date[i],General.DT$date[i]+boxConfig$sens2ref[gas.sensor == n][["hoursWarming"]]*3600))})))})
         names(ind.warm.out) <- list.gas.sensor
         # Saving if requested
         if (Save) {
             # Path file for later saving
             if (is.null(ind.warm.file)) ind.warm.file <- file.path(ASEDir, DIR_General, "ind_warm.RDS")
-            list.save(x = ind.warm.out, file = ind.warm.file)} 
-        # Setting TRh.Forced to TRUE to be sure that it is done before ind.Sens
-        if (!exists("TRh.Forced")           || !TRh.Forced)           TRh.Forced           <- TRUE
-        if (!exists("Inv.Forced")           || !Inv.Forced)           Inv.Forced           <- TRUE
-        if (!exists("Outliers.Sens") || !Outliers.Sens) Outliers.Sens <- TRUE
-        if (!exists("Conv.Forced")          || !Conv.Forced)          Conv.Forced          <- TRUE
-        if (!exists("Cal.Forced")           || !Cal.Forced)           Cal.Forced           <- TRUE
+            list.save(x = ind.warm.out, file = ind.warm.file)
+            futile.logger::flog.info("[Warm_Index] A new ind_warm.RDS was saved.")}
     } else if (file.exists(ind.warm.file)) ind.warm.out <- list.load(ind.warm.file) else ind.warm.out <- NULL
     return(ind.warm.out)   
 }
 #' Flagging the sensor data for temperature and humidity outside interval of tolerance
-#' @return : list of NAs for discarded temperature and humidity with as many elements as in list.gas.sensor
+#' @return : list with 5 elements: ind.TRh, T.min, T.max, Rh.min, Rh.max of NAs for discarded all conditions, temperature min and max, humidity min and max with as many elements as in list.gas.sensor
 #                          consisting of vector of integers of the index of rows of General.DT dataframe
 TRh_Index <- function(TRh.Forced  = TRUE, General.DT, list.gas.sensor,  boxConfig, ind.TRh.file = NULL, ASEDir, DIR_General = "General_data", Save = TRUE) {
-    ind.TRh.file            <- file.path(ASEDir, DIR_General, "ind_TRh.RDS"  )
+    if (is.null(ind.TRh.file)) ind.TRh.file <- file.path(ASEDir, DIR_General, "ind_TRh.RDS"  )
     if (TRh.Forced) {
         # Always starting detection of outliers for T and RH from the dataframe set in General.DT
         index.temp <- which(colnames(General.DT) %in% "Temperature")
@@ -6089,10 +6091,10 @@ TRh_Index <- function(TRh.Forced  = TRUE, General.DT, list.gas.sensor,  boxConfi
         return.ind.Rh.max <- list()
         for (l in list.gas.sensor) {
             # Indexes of temperature and humidity exceeding min/max thresholds
-            T.min  <- General.DT[, index.temp, with = FALSE] < boxConfig$sens2ref$temp.thres.min[match(x = l, table = list.gas.sensor)]
-            T.max  <- General.DT[, index.temp, with = FALSE] > boxConfig$sens2ref$temp.thres.max[match(x = l, table = list.gas.sensor)]
-            Rh.min <- General.DT[, index.rh, with = FALSE]   < boxConfig$sens2ref$rh.thres.min[match(x = l, table = list.gas.sensor)]
-            Rh.max <- General.DT[, index.rh, with = FALSE]   > boxConfig$sens2ref$rh.thres.max[match(x = l, table = list.gas.sensor)]
+            T.min  <- General.DT[, index.temp, with = FALSE] < boxConfig$sens2ref$temp.thres.min[match(x = l, table = list.gas.sensor)] #| is.na(General.DT[, index.temp, with = FALSE])
+            T.max  <- General.DT[, index.temp, with = FALSE] > boxConfig$sens2ref$temp.thres.max[match(x = l, table = list.gas.sensor)] #| is.na(General.DT[, index.temp, with = FALSE])
+            Rh.min <- General.DT[, index.rh, with = FALSE]   < boxConfig$sens2ref$rh.thres.min[match(x = l, table = list.gas.sensor)]   #| is.na(General.DT[, index.rh,   with = FALSE])
+            Rh.max <- General.DT[, index.rh, with = FALSE]   > boxConfig$sens2ref$rh.thres.max[match(x = l, table = list.gas.sensor)]   #| is.na(General.DT[, index.rh,   with = FALSE])
             # Global index of temperature/humidity exceeding thresholds
             return.ind.TRh[[boxConfig[["sens2ref"]][which(gas.sensor == l), name.sensor]]] <- which(T.min | T.max | Rh.min | Rh.max)
             return.ind.T.min[[ paste0(boxConfig[["sens2ref"]][which(gas.sensor == l), name.sensor],"__Temp. < ",boxConfig$sens2ref$temp.thres.min[match(x = l, table = list.gas.sensor)])]] <- which(T.min)
@@ -6104,15 +6106,10 @@ TRh_Index <- function(TRh.Forced  = TRUE, General.DT, list.gas.sensor,  boxConfi
         if (Save) {
             list.save(x = ind.TRh.out, file = ind.TRh.file)
             futile.logger::flog.info("[TRh_Index] A new ind_TRh.RDS was saved. Inv.Forced is set to TRUE")}
-        # Setting Invalid$Forced to True to be sure that it is carried out before ind.sens
-        if (!exists("Inv.Forced")    || !Inv.Forced)    Inv.Forced           <- TRUE
-        if (!exists("Outliers.Sens") || !Outliers.Sens) Outliers.Sens <- TRUE
-        if (!exists("Conv.Forced")   || !Conv.Forced)   Conv.Forced          <- TRUE
-        if (!exists("Cal.Forced")    || !Cal.Forced)    Cal.Forced           <- TRUE
     } else if (file.exists(ind.TRh.file)) ind.TRh.out <- list.load(ind.TRh.file) else ind.TRh.out <- NULL
     return(ind.TRh.out)
 }
-Inv_Index <- function(Inv.Forced  = TRUE, General.DT, list.name.sensor, boxConfig, ind.TRh.file = NULL, ASEDir, DIR_Config  = "Configuration", DIR_General = "General_data", Save = TRUE) {
+Inv_Index <- function(Inv.Forced  = TRUE, General.DT, list.name.sensor, boxConfig, ind.Invalid.file = NULL, ASEDir, DIR_Config  = "Configuration", DIR_General = "General_data", Save = TRUE) {
     ind.Invalid.file    <- file.path(ASEDir, DIR_General, "ind_Invalid.RDS")
     if (Inv.Forced) {
         # min.General.date and max.General.date----
@@ -6170,11 +6167,7 @@ Inv_Index <- function(Inv.Forced  = TRUE, General.DT, list.name.sensor, boxConfi
         }
         ind.Invalid.out <- list(Valid.date,ind.Inval)
         if (Save) list.save(x = ind.Invalid.out, file = ind.Invalid.file)
-        # make sure that Outliers.Sens$Forced is run after Invalid, to discard outliers again and to apply invalid and outliers to General.DT
-        if (!exists("Outliers.Sens") || !Outliers.Sens) Outliers.Sens <- TRUE
-        if (!exists("Conv.Forced")          || !Conv.Forced)          Conv.Forced          <- TRUE
-        if (!exists("Cal.Forced")           || !Cal.Forced)           Cal.Forced           <- TRUE
-        futile.logger::flog.info("[Inv_Index()]  A new ind_Invalid.RDS was saved. Outliers.Sens is set to TRUE")
+        futile.logger::flog.info("[Inv_Index]  A new ind_Invalid.RDS was saved. Outliers.Sens is set to TRUE")
     } else if (file.exists(ind.Invalid.file)) ind.Invalid.out <- list.load(ind.Invalid.file) else ind.Invalid.out <- NULL
     return(ind.Invalid.out)
 }
@@ -6189,35 +6182,34 @@ Outliers_Sens <- function(Outliers.Sens  = TRUE, General.DT, list.gas.sensor, li
             if (i %in% names(General.DT)) {
                 # Initialisation of columns of General.DT
                 Sensor.i <- na.omit(boxConfig[["sens2ref"]][[which(boxConfig[["sens2ref"]][,"gas.sensor"] == i),"name.sensor"]])
-                # resetting to initial values
+                # setting to initial values
                 Vector.columns <- paste0(c("Out.", "Out.Warm.", "Out.TRh.", "Out.Invalid.", "Out.Warm.TRh.", "Out.Warm.TRh.Inv."),i)
                 set(General.DT, j = Vector.columns, value = rep(list(General.DT[[i]]), times = length(Vector.columns)))
+                # Filter warming time
                 if (!is.null(ind.warm.out[i][[1]])) {
                     Vector.columns <- paste0(c("Out.", "Out.Warm.", "Out.Warm.TRh.", "Out.Warm.TRh.Inv."),i)
                     i.Rows <- as.integer(ind.warm.out[[i]])
-                    set(General.DT, i = i.Rows, j = Vector.columns, value = rep(list(rep(NA, times = length(i.Rows))), times = length(Vector.columns)))
-                }
+                    set(General.DT, i = i.Rows, j = Vector.columns, value = rep(list(rep(NA, times = length(i.Rows))), times = length(Vector.columns)))}
+                # Filter T/RH
                 if (!is.null(ind.TRh.out$ind.TR[[Sensor.i]]) && length(ind.TRh.out$ind.TR[[Sensor.i]]) > 0) {
                     Vector.columns <- paste0(c("Out.", "Out.TRh.", "Out.Warm.TRh.", "Out.Warm.TRh.Inv."),i)
                     set(General.DT,i = ind.TRh.out$ind.TRh[Sensor.i][[1]], j = Vector.columns,
-                        value = rep(list(rep(NA, times = length(ind.TRh.out$ind.TRh[Sensor.i][[1]]))), times = length(Vector.columns)))
-                }
+                        value = rep(list(rep(NA, times = length(ind.TRh.out$ind.TRh[Sensor.i][[1]]))), times = length(Vector.columns)))}
+                # Filter Invalid
                 if (!is.null(ind.Invalid.out[[2]][[Sensor.i]]) && length(ind.Invalid.out[[2]][[Sensor.i]]) > 0) {
                     Vector.columns <- paste0(c("Out.", "Out.Invalid." , "Out.Warm.TRh.Inv."),i)
-                    set(General.DT,i = which(General.DT$date %in% ind.Invalid.out[[2]][[Sensor.i]]), j = Vector.columns,
-                        value = rep(list(rep(NA, times = length(which(General.DT$date %in% ind.Invalid.out[[2]][[Sensor.i]])))), times = length(Vector.columns)))
-                }
+                    i.Rows <- which(General.DT$date %in% ind.Invalid.out[[2]][[Sensor.i]])
+                    set(General.DT,i = i.Rows, j = Vector.columns, value = rep(list(rep(NA, times = length(i.Rows))), times = length(Vector.columns)))}
                 # index (1, 2,3, 4  or 1,2,3, 6 ... comng from  selection of control uiFiltering, Calib and SetTime)
                 k <- match(x = i, table = list.gas.sensor)
                 iters <- boxConfig$sens2ref$Sens.iterations[k]
                 set(General.DT, j = paste0("Out.",i,".",1:iters), value = rep(list(General.DT[[paste0("Out.",i)]]), times = iters))
                 # deleting bigger iterations
                 repeat {
-                    if (paste0("Out.",list.gas.sensor[i],".", iters + 1) %in% names(General.DT)) {
+                    if (paste0("Out.",i,".", iters + 1) %in% names(General.DT)) {
                         set(General.DT, j = paste0("Out.",i,".", iters + 1), value = NULL)
                         iters <- iters + 1
-                    } else break # leaving the repeat loop if there are no higher iterations
-                }
+                    } else break} # leaving the repeat loop if there are no higher iterations
                 if (boxConfig$sens2ref$Sens.Inval.Out[k]) {
                     for (j in 1:iters) { # number of iterations
                         if (all(is.na(General.DT[[i]]))) {
@@ -6231,17 +6223,15 @@ Outliers_Sens <- function(Outliers.Sens  = TRUE, General.DT, list.gas.sensor, li
                                     if (class(Y)[1] == "tbl_df") {
                                         Y[as.numeric(paste(unlist(sapply(return.ind.sens.out[c(paste0(i,".",1:(j - 1)))],function(x) which(x$Outliers))))),] <- NA
                                     } else Y[as.numeric(paste(unlist(sapply(return.ind.sens.out[c(paste0(i,".",1:(j - 1)))],function(x) which(x$Outliers)))))] <- NA
-                                } else break
-                            }
+                                } else break}
                             Outli <- My.rm.Outliers(ymin         = boxConfig$sens2ref$Sens.Ymin[k],
                                                     ymax         = boxConfig$sens2ref$Sens.Ymax[k],
-                                                    ThresholdMin = boxConfig$sens2ref$Sens.threshold[k],
+                                                    ThresholdMin = boxConfig$sens2ref$Sens.ThresholdMin[k],
                                                     date         = General.DT[["date"]],
                                                     y            = Y,
                                                     window       = boxConfig$sens2ref$Sens.window[k],
                                                     threshold    = boxConfig$sens2ref$Sens.threshold[k],
-                                                    plotting     = FALSE
-                            )
+                                                    plotting     = FALSE)
                             nameInd      <- paste0(i,".",j)
                             OutlinameInd <- paste0(i,".",j,".Outli")
                             assign(nameInd , data.frame(date = Outli$date, Outliers = apply(Outli[,c("Low_values","High_values","OutliersMin","OutliersMax")], 1, any), stringsAsFactors = FALSE))
@@ -6252,30 +6242,21 @@ Outliers_Sens <- function(Outliers.Sens  = TRUE, General.DT, list.gas.sensor, li
                             # Discarding outliers if requested for the compound
                             Row.Index <- which(return.ind.sens.out[[paste0(i,".",j)]]$Outliers)
                             if (paste0(i,".",j) %in% names(return.ind.sens.out) && length(Row.Index) > 0) {
-                                set(General.DT,i = Row.Index, j = paste0("Out."      ,i),
-                                    value = list(rep(NA, times = length(which(return.ind.sens.out[[paste0(i,".",j)]]$Outliers)))))
-                                set(General.DT,i = Row.Index, j = paste0("Out.",i,".",j),
-                                    value = list(rep(NA, times = length(which(return.ind.sens.out[[paste0(i,".",j)]]$Outliers)))))
-                            }}}}
-            }
-        }
+                                set(General.DT,i = Row.Index, j = paste0("Out."      ,i), value = list(rep(NA, times = length(Row.Index))))
+                                set(General.DT,i = Row.Index, j = paste0("Out.",i,".",j), value = list(rep(NA, times = length(Row.Index))))}}}}}}
         if (exists("return.ind.sens.out")) {
             list.save(x = return.ind.sens.out, file = ind.sens.out.file)
-            futile.logger::flog.info("[Outliers_Sens]  A new ind_sens_out.RDS was saved. Conv.Forced is set to TRUE")
-            # Force conversion of sensors
-            if (!exists("Conv.Forced") || !Conv.Forced) Conv.Forced <- TRUE
-            if (!exists("Cal.Forced") || !Cal.Forced)   Cal.Forced  <- TRUE}}
+            futile.logger::flog.info("[Outliers_Sens]  A new ind_sens_out.RDS was saved. Conv.Forced is set to TRUE")}
+    } else if (file.exists(ind.sens.out.file)) return.ind.sens.out <- list.load(ind.sens.out.file) else return.ind.sens.out <- NULL 
     # deleting unnecessary outlier replicates
     for (i in 1:length(list.gas.sensor)) for (j in 1:boxConfig$sens2ref$Sens.iterations[i]) assign(paste0(list.gas.sensor[i],".",j),NULL)
     
-    return(General.DT)
+    return(list(ind.sens.out = return.ind.sens.out, General.DT = General.DT))
 }
 Sens_Conv <- function(Conv.Forced  = TRUE, General.DT, list.gas.sensor, list.name.sensor, boxConfig, ASEDir, DIR_Config  = "Configuration", DIR_General = "General_data", Shield) {
     if (Conv.Forced) {
         # digits2volt conversion for whole data in nA or V
-        cat("\n")
-        cat("-----------------------------------------------------------------------------------\n")
-        cat("[Sens_Conv()] INFO, digital to volt conversion for all sensors on the shields\n")
+        futile.logger::flog.info("[Sens_Conv()] INFO, digital to volt conversion for all sensors on the shields\n")
         # Checking Filtering of sensor and reference data
         Sensors_Cal <- merge(x = boxConfig$sens2ref[,c("name.gas","gas.sensor","name.sensor","Sens.raw.unit")], 
                              y = Shield[,c("name.gas","name.sensor","gas.sensor","RefAD","Ref","board.zero.set","GAIN","Rload")],
@@ -6310,7 +6291,7 @@ Sens_Conv <- function(Conv.Forced  = TRUE, General.DT, list.gas.sensor, list.nam
 #' @param list.gas.sensor a vector of string representing the names of sensors on which to apply the indexing of dates within warming times. default is NULL. if NULL, boxConfig is use to list gas sensor
 #' @param list.gas.sensor a vector of string representing the names of sensors on which to apply the indexing of dates within warming times.
 #' @return : f.General.DT the data.table with new columns for filtering of data if needed
-Filter.Sensor.Data <- function(ASE.ID = NULL, General.DT = NULL, boxConfig = NULL, list.gas.sensor = NULL, list.name.sensor = NULL, ASEDir = NULL, Shield = NULL) {
+Filter_Sensor_Data <- function(ASE.ID = NULL, General.DT = NULL, boxConfig = NULL, list.gas.sensor = NULL, list.name.sensor = NULL, ASEDir = NULL, Shield = NULL) {
     if (is.null(General.DT))       General.DT       <- ASE.ID$General.DT
     if (is.null(list.gas.sensor))  list.gas.sensor  <- ASE.ID$list.gas.sensor
     if (is.null(list.name.sensor)) list.name.sensor <- ASE.ID$list.sensors
@@ -6320,18 +6301,19 @@ Filter.Sensor.Data <- function(ASE.ID = NULL, General.DT = NULL, boxConfig = NUL
     ind.warm.out     <- Warm_Index(General.DT = General.DT, list.gas.sensor  = list.gas.sensor, boxConfig = boxConfig, ASEDir = ASEDir)
     ind.TRh.out      <- TRh_Index(General.DT  = General.DT, list.gas.sensor  = list.gas.sensor, boxConfig = boxConfig, ASEDir = ASEDir)
     ind.Invalid.out  <- Inv_Index(General.DT  = General.DT, list.name.sensor = list.name.sensor,boxConfig = boxConfig, ASEDir = ASEDir)
-    General.DT       <- Outliers_Sens(General.DT = General.DT, list.gas.sensor  = list.gas.sensor, list.name.sensor = list.name.sensor, boxConfig = boxConfig, ASEDir = ASEDir,
+    ind.send.out     <- Outliers_Sens(General.DT = General.DT, list.gas.sensor  = list.gas.sensor, list.name.sensor = list.name.sensor, boxConfig = boxConfig, ASEDir = ASEDir,
                                       ind.warm.out = ind.warm.out, ind.TRh.out = ind.TRh.out, ind.Invalid.out = ind.Invalid.out)
+    General.DT       <- ind.send.out$General.DT
+    ind.send.out     <- ind.send.out$ind.sens.out
     General.DT       <- Sens_Conv(General.DT = General.DT, list.gas.sensor  = list.gas.sensor, list.name.sensor = list.name.sensor, boxConfig = boxConfig, ASEDir = ASEDir,
                                   Shield = Shield)
-    return(General.DT)
-}
+    return(list(General.DT = General.DT, ind.warm.out = ind.warm.out, ind.TRh.out = ind.TRh.out, ind.Invalid.out = ind.Invalid.out))}
 #' @param ASE.ID list, output of function ASE_Model or ASE_Model_Dir with information on AirSensEUR configuration
 #' If ASE.ID is NULL, General.DT, boxConfig, list.gas.sensor, list.name.sensor, ASEDir, Shield shall be passed.
 #' @param General.DT a data.table with all ASE Box and reference data. Default is NULL. if NULL, Generalcsv loaded with Identify_ASE is loaded
 #' @param list.gas.sensor a vector of string representing the names of sensors on which to apply the indexing of dates within warming times. default is NULL. if NULL, boxConfig is use to list gas sensor
 #' @param list.gas.sensor a vector of string representing the names of sensors on which to apply the indexing of dates within warming times.
-Filter.Ref.Data <- function(ASE.ID = NULL, General.DT = NULL, list.reference = NULL, list.name.sensor = NULL, ASEDir = NULL, ASE.cfg = NULL,
+Filter_Ref_Data <- function(ASE.ID = NULL, General.DT = NULL, list.reference = NULL, list.name.sensor = NULL, ASEDir = NULL, ASE.cfg = NULL,
                             DIR_General = "General_data", Save = TRUE) {
         if (is.null(General.DT))       General.DT       <- ASE.ID$General.DT
         if (is.null(list.reference))   list.reference   <- ASE.ID$list.reference
@@ -6343,7 +6325,7 @@ Filter.Ref.Data <- function(ASE.ID = NULL, General.DT = NULL, list.reference = N
         ind.neg <- apply(X = General.DT[, .SD, .SDcols = list.reference[list.reference %in% names(General.DT)]], MARGIN = 2, function(x) {which(x < 0)})
         for (i in seq_along(list.reference)) {
             # resetting to initial values
-            futile.logger::flog.info(paste0("[Filter.Ref.Data] Initialising filtered reference data columns for ", list.reference[i]))
+            futile.logger::flog.info(paste0("[Filter_Ref_Data] Initialising filtered reference data columns for ", list.reference[i]))
             Vector.columns <- paste0(c("Out.", "Out.Neg."),list.reference[i])
             General.DT[,(Vector.columns) := rep(list(General.DT[[list.reference[i]]]), times = length(Vector.columns))]# discarding negative values if needed
             # number index of reference pollutant in the names(ASE.cfg)
@@ -6351,11 +6333,11 @@ Filter.Ref.Data <- function(ASE.ID = NULL, General.DT = NULL, list.reference = N
             # discarding negative values if needed
             if (as.logical(ASE.cfg[name.gas == "remove.neg", k, with = F][[1]])) {
                 if (exists("ind.neg") && length(ind.neg) > 0 && length(ind.neg[[list.reference[i]]]) > 0) {
-                    futile.logger::flog.info("[Filter.Ref.Data] INFO, Discarding sensor data for reference negative values")
+                    futile.logger::flog.info("[Filter_Ref_Data] INFO, Discarding sensor data for reference negative values")
                     set(General.DT,i = ind.neg[[list.reference[i]]], j = Vector.columns, 
                         value = rep(list(rep(NA, times = length(ind.neg[[list.reference[i]]]))), times = length(Vector.columns)))}}
             # Initial reference data in outlier column
-            futile.logger::flog.info(paste0("[Filter.Ref.Data] initialising outlier reference data for ", list.reference[i]))
+            futile.logger::flog.info(paste0("[Filter_Ref_Data] initialising outlier reference data for ", list.reference[i]))
             iters  <- as.numeric(ASE.cfg[name.gas == "Ref.iterations", k, with = F][[1]])
             General.DT[,(paste0("Out.",list.reference[i],".",1:iters)) := rep(list(General.DT[[paste0("Out.Neg.",list.reference[i])]]), times = iters)]
             # deleting bigger iterations
@@ -6366,13 +6348,13 @@ Filter.Ref.Data <- function(ASE.ID = NULL, General.DT = NULL, list.reference = N
                 } else break # leaving the repeat loop if there are no higher iterations
             }
             # Index of outliers for reference data
-            futile.logger::flog.info(paste0("[Filter.Ref.Data] INFO, detecting row indexes of outliers in reference data for ", list.reference[i]))
+            futile.logger::flog.info(paste0("[Filter_Ref_Data] INFO, detecting row indexes of outliers in reference data for ", list.reference[i]))
             if (as.logical(ASE.cfg[name.gas == "Ref.rm.Out", k, with = F][[1]])) {
                 # number of iterations
                 for (j in 1:as.numeric(ASE.cfg[name.gas == "Ref.iterations", k, with = F][[1]])) {
                     if (list.reference[i] %in% names(General.DT)) {
                         if (all(is.na(General.DT[[list.reference[i]]]))) {
-                            futile.logger::flog.error("[Filter.Ref.Data] no reference data for filtering outliers")
+                            futile.logger::flog.error("[Filter_Ref_Data] no reference data for filtering outliers")
                         } else {
                             Y <- General.DT[[paste0("Out.Neg.",list.reference[i])]]
                             # setting the outliers of previous iterations to NA. If null then stop outlier detection
@@ -6381,7 +6363,7 @@ Filter.Ref.Data <- function(ASE.ID = NULL, General.DT = NULL, list.reference = N
                                     Y[as.numeric(paste(unlist(sapply(return.ind.ref.out[c(paste0(list.reference[i],".",1:(j - 1)))], function(x) which(x$Outliers)))))] <- NA
                                 }  else break
                             }
-                            futile.logger::flog.info(paste0("[Filter.Ref.Data] Reference: ",list.reference[i],", iteration: ",j))
+                            futile.logger::flog.info(paste0("[Filter_Ref_Data] Reference: ",list.reference[i],", iteration: ",j))
                             Outli <- My.rm.Outliers(ymin         = as.numeric(ASE.cfg[name.gas == "Ref.Ymin", k, with = F][[ 1]]),
                                                     ymax         = as.numeric(ASE.cfg[name.gas == "Ref.Ymax", k, with = F][[1]]),
                                                     ThresholdMin = as.numeric(ASE.cfg[name.gas == "Ref.ThresholdMin", k, with = F][[1]]),
@@ -6410,41 +6392,48 @@ Filter.Ref.Data <- function(ASE.ID = NULL, General.DT = NULL, list.reference = N
                                     value = list(rep(NA, times = length(which(return.ind.ref.out[[paste0(list.reference[i],".",j)]]$Outliers)))))
                             }
                         }
-                    } else futile.logger::flog.error("[Filter.Ref.Data] ERROR, Warning no reference values impossible to discard outliers\n")}}
+                    } else futile.logger::flog.error("[Filter_Ref_Data] ERROR, Warning no reference values impossible to discard outliers\n")}}
         if (exists("return.ind.ref.out")) {
             if (Save) {
                 ind.ref.out.file <- file.path(ASEDir, DIR_General, "ind_ref_out.RDS")
                 list.save(x = return.ind.ref.out, file = ind.ref.out.file)  
-                futile.logger::flog.info("[Filter.Ref.Data]  A new ind.ref.out.RDS was saved. Cal.Forced is set to TRUE")} 
+                futile.logger::flog.info("[Filter_Ref_Data]  A new ind.ref.out.RDS was saved. Cal.Forced is set to TRUE")} 
             # Force conversion of sensors
             if (!exists("Cal.Forced") || !Cal.Forced)   Cal.Forced  <- TRUE}}
     return(General.DT)
 }
 
-#' Completing General.DT with columns related to filtering data for sensors and reference data
+#' Completing General.DT with columns related to filtering data for sensors ("sensor_volt") and reference data ("Out.gas") 
+#' and filetering if any index file for warming, TRh, Invalid and sensor, refernce outlier is missing
 #' 
 #' @param f.list.name.sensor a vector of sensors to be completed if needed with columns for filtering data
 #' @param f.list.sensors a vector of sensors to be completed if needed with columns for filtering data
 #' @param f.General.DT the data.table to be completed
 #' @return : f.General.DT the data.table with new columns for filtering of data if needed
-Complete.General <- function(f.list.name.sensor, f.list.gas.sensor, f.General.DT, f.Config, f.ASEDir, f.Shield, f.list.reference, f.ASE.cfg, DIR_General = "General_data") {
+Complete_General <- function(f.list.name.sensor, f.list.gas.sensor, f.General.DT, f.Config, f.ASEDir, f.Shield, f.list.reference, f.ASE.cfg, DIR_General = "General_data") {
     Save.General <- FALSE
-    if (!all(paste0(f.list.name.sensor, "_volt") %in% names(f.General.DT))) {
-        Missing.Sensor <- which(!paste0("Out.",f.list.name.sensor) %in% names(f.General.DT))
-        futile.logger::flog.warn(paste0("[Identify_ASE_Dir] ",paste(paste0("Out.",f.list.name.sensor[Missing.Sensor]), collapse = ", "), " are missing. Sensor data are not filtered."))
+    Missing.Sensor      <- which(!paste0(f.list.name.sensor, "_volt") %in% names(f.General.DT))
+    index.files         <- file.path(f.ASEDir, DIR_General,c("ind_warm.RDS","ind_TRh.RDS","ind_Invalid.RDS","ind_sens_out.RDS","ind_ref_out.RDS"))
+    Missing.index.files <- which(!sapply(index.files, file.exists))
+    if (length(Missing.Sensor) > 0 || length(Missing.index.files) > 0) {
+        if (length(Missing.Sensor) > 0) {
+            futile.logger::flog.warn(paste0("[Identify_ASE_Dir] ",paste(paste0("Out.",f.list.name.sensor[Missing.Sensor]), collapse = ", "), " is (are) missing."))}
+        if (length(Missing.index.files) > 0) {
+            futile.logger::flog.warn(paste0("[Identify_ASE_Dir] ", basename(index.files)[Missing.index.files], " file is (are) missing."))}
         futile.logger::flog.info("[Identify_ASE_Dir] the Filtering of sensor data is going to be carried out.")
-        f.General.DT <- Filter.Sensor.Data(General.DT = f.General.DT, list.gas.sensor = f.list.gas.sensor, list.name.sensor = f.list.name.sensor, boxConfig = f.Config, ASEDir = f.ASEDir, Shield = f.Shield)
-        Save.General <- TRUE
-    }
+        f.General.DT <- Filter_Sensor_Data(General.DT = f.General.DT, list.gas.sensor = f.list.gas.sensor, list.name.sensor = f.list.name.sensor, 
+                                           boxConfig = f.Config, ASEDir = f.ASEDir, Shield = f.Shield)$General.DT
+        Save.General <- TRUE}
     # be sure that sensor and reference data are filtered
     if (!all(paste0("Out.",f.list.reference) %in% names(f.General.DT))) {
         Missing.reference <- which(!paste0("Out.",f.list.reference) %in% names(f.General.DT))
         futile.logger::flog.warn(paste0("[Identify_ASE_Dir] ",paste(paste0("Out.",f.list.reference[Missing.reference]), collapse = ", "), " are missing. Reference data data are not filtered."))
         futile.logger::flog.info("[Identify_ASE_Dir] The Filtering of reference data is going to be carried out.")
-        f.General.DT <- Filter.Ref.Data(General.DT = f.General.DT, list.reference = f.list.reference, list.name.sensor = f.list.name.sensor, ASEDir = f.ASEDir, ASE.cfg = f.ASE.cfg)
-        Save.General <- TRUE
-    }
-    if (Save.General) data.table::fwrite(f.General.DT, file.path(f.ASEDir, DIR_General,"General.csv"), showProgress = T)
+        f.General.DT <- Filter_Ref_Data(General.DT = f.General.DT, list.reference = f.list.reference, list.name.sensor = f.list.name.sensor, ASEDir = f.ASEDir, ASE.cfg = f.ASE.cfg)
+        Save.General <- TRUE}
+    if (Save.General) {
+        data.table::fwrite(f.General.DT, file.path(f.ASEDir, DIR_General,"General.csv"), showProgress = T)
+        futile.logger::flog.info("[Complete_General] A new Genera.csv file was saved.")}
     return(f.General.DT)
 }
 #' @param ASEDir A character vector with the filepath of the ASE boxe to be submitted to the function Identify.ASE
@@ -6493,7 +6482,7 @@ Identify_ASE_Dir <- function(ASEDir, name.sensor = NULL, General.DT = NULL, ASE.
         data.table::set(General.DT, j = "date", value =  ymd_hms(General.DT[["date"]], tz = "UTC"))
     }
     # Complete General DT with columns for filtered sesnors if needed
-    General.DT <- Complete.General(f.list.name.sensor = list.sensors, f.list.gas.sensor = list.gas.sensor, f.General.DT = General.DT, f.Config = Config, 
+    General.DT <- Complete_General(f.list.name.sensor = list.sensors, f.list.gas.sensor = list.gas.sensor, f.General.DT = General.DT, f.Config = Config, 
                                    f.ASEDir = ASEDir, f.Shield = Shield, f.list.reference = list.reference, f.ASE.cfg = ASE.cfg)
     return(list(General.DT = General.DT, ASE.cfg = ASE.cfg, SetTime = SetTime, k = k, Config = Config, Shield = Shield, 
                 Cal.DateIN = Cal.DateIN, Cal.DateEND = Cal.DateEND, Meas.DateIN = Meas.DateIN, Meas.DateEND = Meas.DateEND, 
@@ -6510,7 +6499,8 @@ Identify_ASE_Dir <- function(ASEDir, name.sensor = NULL, General.DT = NULL, ASE.
 #' @param Mod_type Character vector, type of models of Model.i. Default is NULL. If NULL the model type is extracted from Model.i.
 #' @param Variables Character vector with parameters of model separated with &. Default is NULL. if NULL Variables is extracted from.
 #' @param General.DT a data.table with all ASE Box and reference data. Default is NULL. if NULL, Generalcsv loaded with Identify_ASE is loaded
-#' @param ASE.cfg File path of the subdirectory of ASEDir where is the file General.csv.
+#' @param ASE.cfg A data.table with all ASE box configuration. Default is null. If NULL the ASE.cfg file is loaded
+#' @param SetTime A data.table with all ASE box SetTime configuration. Default is null. If NULL the ASE_SETTIME.cfg file is loaded
 #' @return a list of charateristics of a sensor in ASE box with data.table General.DT = General.DT, config data.table ASE.cfg, k = k, 
 # dates of calibration Cal.DateIN  and Cal.DateEND = Cal.DateEND, full date interval of measurements Meas.DateIN and Meas.DateEND, column names of 
 # sensor raw data (nameGasVolt), sensor predicted data (nameGasMod), corresponding reference data (nameGasRef), sensor raw unit (Sens.raw.unit)
@@ -6555,7 +6545,7 @@ Apply_Model    <- function(Model, Mod_type = NULL, name.sensor = NULL, Variables
         is.not.NA.y <- which(complete.cases(General.DT[, .SD, .SDcols = c(ASE.ID$nameGasVolt, "Temperature", "Atmospheric_pressure")]))
         Matrice     <- data.frame(General.DT[is.not.NA.y, c("Temperature", "Atmospheric_pressure")], row.names = row.names(General.DT[is.not.NA.y,]), stringsAsFactors = FALSE)
         names(Matrice) <- c("Temperature", "Atmospheric_pressure")
-    } else if (Mod_type %in% c("Kohler")) {
+    } else if (Mod_type %in% c("Kohler", "Kohler_only")) {
         # take only the one that is nor NA of y = General.DT[!is.na(General.DT[, nameGasVolt]), nameGasVolt]
         is.not.NA.y <- which(complete.cases(General.DT[, .SD, .SDcols = c(ASE.ID$nameGasVolt, "Relative_humidity")]))
         Matrice     <- data.frame(General.DT[is.not.NA.y, c("Relative_humidity")], row.names = row.names(General.DT[is.not.NA.y,]), stringsAsFactors = FALSE)
@@ -6772,7 +6762,7 @@ Compare_Models <- function(List.models, ASE.ID = NULL, General.DT = NULL, ASE.cf
         # Identify ASE box charateristics taking into consideration possible ASE box change
         if (ASE.ID$ASE.name == basename(dirname(dirname(Model)))) {
             ASE.ID <- Identify_ASE(Model = Model, General.DT = ASE.ID$General.DT, ASE.cfg = ASE.ID$ASE.cfg, SetTime = ASE.ID$SetTime, Config = Config, Shield = Shield)
-            futile.logger::flog.warn(paste0("[Compare_Models] General.csv for ",ASE.ID$ASE.name, " not loaded."))
+            futile.logger::flog.warn(paste0("[Compare_Models] General.csv for ",ASE.ID$ASE.name, " already loaded."))
         } else {
             ASE.ID <- Identify_ASE(Model = Model)
             futile.logger::flog.info(paste0("[Compare_Models] General.csv for ",ASE.ID$ASE.name, " loaded."))
@@ -6803,8 +6793,8 @@ Compare_Models <- function(List.models, ASE.ID = NULL, General.DT = NULL, ASE.cf
         N.Predict <- length(which(complete.cases(ASE.ID$General.DT[date >= Meas.DateIN & date <= Meas.DateEND + 1, .SD, .SDcols = c(ASE.ID$nameGasRef,ASE.ID$nameGasMod)])))
         if (!N.Predict > 10) {
             futile.logger::flog.warn(("[Compare_Models] no data for prediction, using dates of calibration."))
-            Meas.DateIN  <- Cal.DateIN
-            Meas.DateEND <- Cal.DateEND}
+            if (is.null(Meas.DateIN))  Meas.DateIN  <- Cal.DateIN
+            if (is.null(Meas.DateEND)) Meas.DateEND <- Cal.DateEND}
         # Averagind data for Prediction if needed
         if (ASE.ID$Config$Server$UserMinsAvg != ASE.ID$Config$Server$UserMins) {
             Prediction.DT <- DF_avg(ASE.ID$General.DT[, .SD, .SDcols = c("date",ASE.ID$nameGasRef,ASE.ID$nameGasMod)], width = ASE.ID$Config$Server$UserMinsAvg)
@@ -6880,7 +6870,7 @@ Confidence_Coeffs <- function(All.Compare, Mod_type = "Linear.Robust") {
 #' @examples
 #' List.All.Compare(ASEDir)
 List_All_Compare <- function(ASEDir, ASE.ID = NULL, name.sensors = "ALL", DIR_Models = "Models", All.Models = NULL, Save = FALSE, Verbose = FALSE,
-                             DateIN = NULL, DateEND = NULL) {
+                             DateIN = NULL, DateEND = NULL, Meas.DateIN = DateIN, Meas.DateEND = DateEND) {
     if (exists("All.Compare.ASEDirs")) rm(All.Compare.ASEDirs)
     for (ASEDir in ASEDir) {
         if (is.null(All.Models)) All.Models  <- List_models(ASEDir, name.sensors)
@@ -6888,7 +6878,7 @@ List_All_Compare <- function(ASEDir, ASE.ID = NULL, name.sensors = "ALL", DIR_Mo
         All.Compare <- lapply(All.Models, function(i) {
             Compare_Models(file.path(ASEDir, DIR_Models, i), ASE.ID = ASE.ID,
                            General.DT = ASE.ID$General.DT, ASE.cfg = ASE.ID$ASE.cfg, SetTime = ASE.ID$SetTime, Verbose = Verbose,
-                           Meas.DateIN = DateIN, Meas.DateEND = DateEND,
+                           Meas.DateIN = Meas.DateIN, Meas.DateEND = Meas.DateEND,
                            Config = ASE.ID$Config, Shield = ASE.ID$Config$sens2ref.shield)}) 
         All.Compare <- rbindlist(All.Compare[which(sapply(1:length(All.Compare), function(i) class(All.Compare[[i]])[1]=="data.table"))], use.names = T, fill = T)
         if (Save) fwrite(All.Compare,file.path(ASEDir, DIR_Models, "All_compare.rdata"))
@@ -6966,7 +6956,7 @@ Meas_Function_complete <- function(Model, ASE.ID, Shiny = F) {
                                   row.names = row.names(ASE.ID$General.DT[is.not.NA.y,]),
                                   stringsAsFactors = FALSE)
             names(Matrice) <- c("Temperature", "Atmospheric_pressure")
-        } else if (ASE.ID$Mod_type %in% c("Kohler")) {
+        } else if (ASE.ID$Mod_type %in% c("Kohler", "Kohler_only")) {
             # take only the one that is nor NA of y = ASE.ID$General.DT[!is.na(ASE.ID$General.DT[, nameGasVolt]), nameGasVolt]
             is.not.NA.y <- which(complete.cases(ASE.ID$General.DT[, .SD, .SDcols = c(nameGasVolt, "Relative_humidity")]))
             is.NA.y     <- setdiff(1:nrow(ASE.ID$General.DT), is.not.NA.y)
@@ -7148,7 +7138,7 @@ Median_Model <- function(ASEDir, ASE.ID = NULL, name.sensors = NULL, Table.Coeff
 #' @return A list with character vectors of up to 4 significant covariates, plot a heatmap with dendogram to evidence clusters of covariates
 #' @examples
 #' #' List_Covariates(Median.Model.1, Relationships = Relationships, Add.Covariates = Add.Covariates)
-List_Covariates <- function(Median.Models, lmat = rbind(c(0,0),c(2,1), c(3,4)), lhei = c(0.3,5,0.8), lwid = c(1.5,6), Relationships = NULL, Thresh.R2 = 0.00, Add.Covariates = FALSE) {
+List_Covariates <- function(Median.Models, lmat = rbind(c(0,0),c(2,1), c(3,4)), lhei = c(0.3,5,0.8), lwid = c(1.5,6), Relationships = NULL, Thresh.R2 = 0.00, Add.Covariates = F, Dev.off =T) {
     for (Model in Median.Models) {
         # Identy ASE boxe from model name
         ASE.ID         <- Identify_ASE(Model)
@@ -7192,8 +7182,8 @@ List_Covariates <- function(Median.Models, lmat = rbind(c(0,0),c(2,1), c(3,4)), 
             # update index.namesCovariates with the final namesCovariates
             index.namesCovariates8 <- match(namesCovariates8, names(Matrix))
             # Heat map with dendogram
-            if (length(namesCovariates) > 10000) { # the 5 element is the 1st covariate
-                if (length(namesCovariates) >= 6) { # Heatmap needs at least 2 covariates
+            if (length(namesCovariates) > 4) { # the 5 element is the 1st covariate
+                if (length(namesCovariates) > 5) { # Heatmap needs at least 2 covariates
                     col           <- colorRampPalette(c("lightblue", "white", "orangered"))(20)
                     par(cex.main = 0.75, cex.lab = 0.7, cex.axis = 0.8)
                     dev.new(width = 800, height = 600, unit = "px",noRStudioGD = TRUE)
@@ -7212,7 +7202,8 @@ List_Covariates <- function(Median.Models, lmat = rbind(c(0,0),c(2,1), c(3,4)), 
                               lhei = lhei, lwid = lwid,
                               key = FALSE                                                                            # Do not plot keyColor scale
                     )
-                    title(main = basename(Model), outer = T, line = -1)}
+                    title(main = basename(Model), outer = T, line = -1)
+                    if (Dev.off) dev.off()}
                 # Compute returning Matrix
                 Co.Variates <- c(ASE.ID$nameGasVolt, ASE.ID$nameGasMod, ASE.ID$nameGasRef, "Residuals")
                 return.Matrix <- Matrix[match(namesCovariates[5:length(namesCovariates)], names(Matrix)), Co.Variates, with = F]
@@ -7265,8 +7256,10 @@ Formula.Degrees <- function(Mod_type = "Linear.Robust", ASE.ID, DateINPlot, Date
         Degrees <-  c(1,-1)
         namesCovariates <- paste0(Covariates,collapse = "&")
         Matrice         <- General[date >= DateINPlot & date <= DateENDPlot + 1, .SD, .SDcols = Covariates]
-    } else if (any(mod.eta.model.type %in% c("Kohler"))) {
-        namesCovariates <- "Relative_humidity"
+    } else if (any(mod.eta.model.type %in% c("Kohler","Kohler_only"))) {
+        Covariates      <- c("Relative_humidity")
+        Degrees         <- 1
+        namesCovariates <- paste0(Covariates,collapse = "&")
         Matrice         <- General[date >= DateINPlot & date <= DateENDPlot + 1, .SD, .SDcols = Covariates]
         #names(Matrice)  <- namesCovariates
     } else {
@@ -7300,10 +7293,10 @@ Formula.Degrees <- function(Mod_type = "Linear.Robust", ASE.ID, DateINPlot, Date
 #' @examples
 #' Fit.NO      <- Auto.Cal(ASEDir, name.sensor = "NO_B4_P1", Interval = 1, DateIN = as.Date("2020-01-21"), DateEND = NULL, DRIFT = FALSE, volt = TRUE, modelled = FALSE, 
 #' Mod_type = "Linear.Robust", Relationships = c("Temperature_int"), degrees = "ExpGrowth", Add.Covariates = TRUE)
-Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval = 5, DateIN = NULL, DateEND = NULL, 
+Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval = 5, DateIN = NULL, DateEND = NULL, Meas.DateIN = DateIN, Meas.DateEND = DateEND,
                      DRIFT = FALSE, volt = FALSE, modelled = FALSE, Discarded.covariates = NULL,
                      del.Rolling = TRUE, Verbose = TRUE, 
-                     VIF = TRUE, Treshold.VIF = 10, Conf.level = 0.10, Mod_type = "Linear.Robust", Relationships = NULL, degrees = "1", Thresh.R2 = 0.00,
+                     VIF = TRUE, Treshold.VIF = 10, Conf.level = 0.05, Mod_type = "Linear.Robust", Relationships = NULL, degrees = "1", Thresh.R2 = 0.00,
                      Add.Covariates = TRUE, DIR_Models = "Models") {
     # sending console to a file in the directory three (script log) and to variable Console for shiny TextOutput ####
     while (sink.number() > 0) {
@@ -7325,16 +7318,16 @@ Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval =
     # Fitting all Mod_type models over the whole period set 1st Model to Linear.Robust if Add.Covariates is set to TRUE
     if (Add.Covariates) Mod_type <- "Linear.Robust"
     cat("#######################\n")
-    futile.logger::flog.info(paste0("[Auto.Cal] ", basename(ASEDir),", sensor ",name.sensor, " fitting ", Mod_type, " models."))
+    futile.logger::flog.info(paste0("[Auto.Cal] ", basename(ASEDir),", sensor ",name.sensor, " fitting \"", Mod_type, "\" models."))
     List.1 <- Roll_Fit_New_Model(ASEDir = ASEDir, ASE.ID = ASE.ID, Interval = Interval, name.sensors = ASE.ID$name.sensor, 
                                  DateIN = DateIN, DateEND = DateEND, Verbose = FALSE,
                                  Mod_type = Mod_type, namesCovariates = ifelse(Mod_type != "Linear.Robust",ifelse(!is.null(Relationships),Relationships[1],""),""), 
-                                 degrees = ifelse(Mod_type != "Linear.Robust",ifelse(!is.null(degrees),degrees[1],"1")))
+                                 degrees = ifelse(Mod_type != "Linear.Robust", ifelse(!is.null(degrees),degrees[1],"1")))
     # Comparing all models of selected boxes in a vector of filepaths (ASEDir), saving and returning the comparisons
     cat("-----------------------\n")
     futile.logger::flog.info("[Auto.Cal] Comparing Linear.Robust models:")
     All.Compare.1 <- List_All_Compare(ASEDir, ASE.ID = ASE.ID, name.sensors = ASE.ID$name.sensor, 
-                                      DateIN = DateIN, DateEND = DateEND,
+                                      DateIN = DateIN, DateEND = DateEND, Meas.DateIN = Meas.DateIN, Meas.DateEND = Meas.DateEND,
                                       All.Models = basename(List.1$List.Added.Models), Save = FALSE, Verbose = TRUE)
     # Confidence interval of coefficents of Models for Calibration models
     Table.Coeffs.1 <- Confidence_Coeffs(All.Compare = All.Compare.1, Mod_type = Mod_type)
@@ -7350,7 +7343,7 @@ Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval =
     if (!is.na(Co_variates.1$covariates.Matrix) && nrow(Co_variates.1$covariates.Matrix) > 0) {
         futile.logger::flog.info(paste0("[Auto.Cal] the list of significant covariates that could be added to the Linear.Robust calibration model of ", name.sensor, " is:"))
         print(Co_variates.1$covariates.Matrix, quote = F)
-    } else futile.logger::flog.info(paste0("[Auto.Cal] there are no covariates to add to the calibration mode for sensor ", name.sensor,"."))
+    } else futile.logger::flog.info(paste0("[Auto.Cal] there are no (more) covariates to add to the calibration mode for sensor ", name.sensor,"."))
     # Deleting rolling calibration models
     if (del.Rolling && exists("List.1")) {
         if ("Models.Already" %in% names(List.1)) {
@@ -7408,12 +7401,11 @@ Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval =
                         Formula <- as.formula(paste0(addq(ASE.ID$nameGasVolt)," ~ ",ASE.ID$nameGasRef, " + ", 
                                                      paste(First.covariate[1:(n.loop - 1)], collapse = " + ")))
                         # here we can use parameter y.name to limit vif only to the new covariate
-                        nVIF <- HH::vif(lm(Formula, 
-                                           data = data.frame(ASE.ID$General.DT[date >= DateIN & date <= DateEND + 1], check.names = F, stringsAsFactors = F), 
+                        nVIF <- HH::vif(lm(Formula, data = data.frame(ASE.ID$General.DT[date >= DateIN & date <= DateEND + 1], check.names = F, stringsAsFactors = F), 
                                            x = TRUE), singular.ok = TRUE)
                         cat("-----------------------\n")
-                        if (is.infinite(nVIF[length(nVIF)]) || nVIF[length(nVIF)] > Treshold.VIF) {
-                            futile.logger::flog.warn(paste0("[Auto.Cal] Covariate ", i," has a Variance Inflation factor of ", nVIF[length(nVIF)], ", higher than threshold: ", Treshold.VIF, ",\n",
+                        if (any(is.infinite(nVIF)) || any(nVIF > Treshold.VIF)) {
+                            futile.logger::flog.warn(paste0("[Auto.Cal] Covariate ", i," gives Variance Inflation factors of ", paste(round(nVIF, digits = 1), collapse = ", "), ", with at least one VIF higher than threshold: ", Treshold.VIF, ",\n",
                                                             i, " does suffer from multicolinearity with other dependent variables. It cannot be included into the MultiLinear calibration model."))
                             if (exists("Dropped.covariates")) Dropped.covariates <- c(Dropped.covariates, i) else Dropped.covariates <- i
                             First.covariate <- First.covariate[grep(i, First.covariate, invert = T)]
@@ -7427,7 +7419,7 @@ Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval =
                                 cat("-----------------------\n")
                                 break} 
                         } else {
-                            futile.logger::flog.info(paste0("[Auto.Cal] Covariate \"", i,"\" has a Variance Inflation factor of ", nVIF[length(nVIF)], ", lower than threshold: ", Treshold.VIF, ",\n",
+                            futile.logger::flog.info(paste0("[Auto.Cal] Covariate \"", i,"\" gives Variance Inflation factors of ", paste(round(nVIF, digits = 1), collapse = ", "), ", lower than threshold: ", Treshold.VIF, ",\n",
                                                             "\"",i, "\" does not show multicolinearity with other independent variables. It can be included into the calibration model."))
                             cat("-----------------------\n")
                             break}}} 
@@ -7470,12 +7462,19 @@ Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval =
                         cat("-----------------------\n")
                         futile.logger::flog.info("[Auto.Cal] Checking if any coefficient of model is not significant, except for the intercept")
                         # The first coefficient is not tested for Conf.level, hoping that it is the intercept of the model. BE CAREFUL IF the FIRST Coefficient is not the intercept 
-                        if (all(get(paste0("Median.Model.", n.loop))$New.General$Tidy$`Pr(>|t|)`[-1] < Conf.level)) {
-                            futile.logger::flog.info(paste0("[Auto.Cal] All coefficients of the calibration model with covariate(s) ", paste0(Select.covariates, collapse =", "), " are significantly different from 0"))
+                        names.coeff    <- names(get(paste0("Median.Model.", n.loop))$New.General$Coef)[2:length(names(get(paste0("Median.Model.", n.loop))$New.General$Coef))]
+                        p.value.Coeffs <- sapply(names.coeff, function(name.coeff) SIGN.test(sort(get(paste0("All.Compare.", n.loop))[[name.coeff]]), md = 0, alternative = "two.sided")$p.value)
+                        Equal.0.Coeffs  <- p.value.Coeffs >= Conf.level | get(paste0("Median.Model.", n.loop))$New.General$Tidy$`Pr(>|t|)`[-1] > Conf.level#(1 - Conf.level)
+                        futile.logger::flog.info(paste0("[Auto.Cal] Probabilities that the median of (coefficients - 0) be equal to 0:"))
+                        print(p.value.Coeffs)
+                        if (!any(Equal.0.Coeffs)) { #all(get(paste0("Median.Model.", n.loop))$New.General$Tidy$`Pr(>|t|)`[-1] < Conf.level)
+                            futile.logger::flog.info(paste0("[Auto.Cal] All coefficients of the model with covariate(s) ", paste0(Select.covariates, collapse =", "), " are significantly different from 0"))
                             futile.logger::flog.info(paste0("[Auto.Cal] covariate: ", First.covariate[n.loop - 1], " is included into the model."))
                             if (exists("Added.Covariates")) Added.Covariates <- c(Added.Covariates,First.covariate[n.loop - 1]) else Added.Covariates <- First.covariate[n.loop - 1]
                             assign(paste0("Co_variates.", n.loop), List_Covariates(file.path(ASE.ID$ASEDir,DIR_Models,get(paste0("Median.Model.", n.loop))$List.NewModels), Thresh.R2 = Thresh.R2))
                             Returned.List[[paste0("Co_variates.", n.loop)]] <- get(paste0("Co_variates.", n.loop))
+                            Del.covariate = FALSE
+                            Returned.List[["Final_median_Model"]] <- get(paste0("Median.Model.", n.loop))
                             if (!is.na(get(paste0("Co_variates.", n.loop))$covariates.Matrix) && nrow(get(paste0("Co_variates.", n.loop))$covariates.Matrix) > 0) {
                                 futile.logger::flog.info(paste0("[Auto.Cal] ordered list of covariates that are correlated with residuals of the current calibration model for ", name.sensor))
                                 print(get(paste0("Co_variates.", n.loop))$covariates.Matrix, quote = F)
@@ -7483,10 +7482,9 @@ Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval =
                                 futile.logger::flog.warn(paste0("[Auto.Cal] there are no covariates to add to the calibration mode for sensor ", name.sensor,"."))
                                 cat("-----------------------\n")
                                 break}
-                            Del.covariate = FALSE
-                            Returned.List[["Final_median_Model"]] <- get(paste0("Median.Model.", n.loop))
                         } else {
-                            Invalid.Coefs <- get(paste0("Median.Model.", n.loop))$New.General$Tidy$term[which(get(paste0("Median.Model.", n.loop))$New.General$Tidy$`Pr(>|t|)` > Conf.level)]
+                            #Invalid.Coefs <- get(paste0("Median.Model.", n.loop))$New.General$Tidy$term[which(get(paste0("Median.Model.", n.loop))$New.General$Tidy$`Pr(>|t|)` > Conf.level)]
+                            Invalid.Coefs <- names.coeff[Equal.0.Coeffs]
                             futile.logger::flog.warn(paste0("[Auto.Cal] The coefficient of parameter(s) " , paste(Invalid.Coefs, collapse = " and ")," of the current model is(are) not significantly different from 0."))
                             futile.logger::flog.warn(paste0("[Auto.Cal] The calibration model resulting from adding covariate ", First.covariate[n.loop - 1]," is not valid."))
                             futile.logger::flog.warn("[Auto.Cal] Either parameters are unstable when rolling the calibration models or it/they does not influence significantly the sensor responses. Looking for other covariates.\n")
@@ -7504,7 +7502,7 @@ Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval =
                     } else  Del.Models <- get(paste0("List.Covariate.", n.loop))$List.Added.Models
                     if (length(Del.Models) > 0) unlink(Del.Models)}
             } else {
-                futile.logger::flog.info("[Auto.Cal] There are no more covariates to be added to the calibration model.")
+                futile.logger::flog.info("[Auto.Cal] There are no (more) covariates to be added to the calibration model.")
                 break}
             # Dropping covariate with multicolinearity or unsignificant parameters of model
             if (Del.covariate == TRUE) {
@@ -7597,11 +7595,12 @@ Register.Model <- function(Model, DIR_Config = "Configuration", Save = TRUE) {
         return(list(ASE.cfg, SetTime, CovMod, Covariates))
     } else return(futile.logger::flog.error("[Config.Model] model ", Model," does not exist."))
 }
+#' @param Conf.level numeric, default is 0.05, threshold to be exceeded for coefficients of models that are not significantly different from 0. If exceeded the tested calibration model is rejected. 
 #' @param Thresh.R2 numeric, default is 0.00, difference between coefficient of determination of covariate/Residuals and covariates/Reference values to select covaristes
 AutoCal.Boxes.Sensor <- function(List.ASE, name.sensor = "CO_A4_P1",
-                                 Interval = 1L, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), 
+                                 Interval = 1L, DateIN = as.Date("2020-01-19"), DateEND = as.Date("2020-01-31"), Meas.DateIN = DateIN, Meas.DateEND = DateEND,
                                  Mod_type = "Linear.Robust", Relationships = NULL, degrees = NULL, Add.Covariates = TRUE, 
-                                 VIF = TRUE, Treshold.VIF = 10, Conf.level = 0.10, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = NULL,
+                                 VIF = TRUE, Treshold.VIF = 10, Conf.level = 0.05, DRIFT = TRUE, volt = TRUE, modelled = FALSE, Discarded.covariates = NULL,
                                  Register = TRUE, Verbolse = TRUE, Thresh.R2 = 0.00){
     Return.list <- list()
     for (i in List.ASE) {
@@ -7613,7 +7612,7 @@ AutoCal.Boxes.Sensor <- function(List.ASE, name.sensor = "CO_A4_P1",
         if (length(List.models) > 0) ASE.ID <- Identify_ASE(Model = file.path(ASEDir,"Models", List.models[1])) else ASE.ID <- Identify_ASE_Dir(ASEDir = ASEDir, name.sensor = name.sensor)
         # calibrate
         assign(paste0("Fit.",strsplit(name.sensor,"_")[[1]][1],"_", i), 
-               Auto.Cal(ASEDir, ASE.ID = ASE.ID, name.sensor = name.sensor, Interval = Interval, DateIN = DateIN, DateEND = DateEND, 
+               Auto.Cal(ASEDir, ASE.ID = ASE.ID, name.sensor = name.sensor, Interval = Interval, DateIN = DateIN, DateEND = DateEND, Meas.DateIN = Meas.DateIN, Meas.DateEND = Meas.DateEND,
                         Mod_type = Mod_type, Relationships = Relationships, degrees = degrees, Add.Covariates = Add.Covariates, 
                         VIF = VIF, Treshold.VIF = Treshold.VIF, Conf.level = Conf.level,
                         DRIFT = DRIFT, volt = volt, modelled = modelled, Discarded.covariates = Discarded.covariates, Thresh.R2 = Thresh.R2))
@@ -7715,16 +7714,13 @@ influx.downloadAndPredict <- function(boxName, boxConfig, subDirData = "General_
                     data.table::set(DT.General, j = "date_PreDelay", value =  ymd_hms(DT.General[["date_PreDelay"]], tz = boxConfig$Server$Influx.TZ))
                 } else {
                     data.table::set(DT.General, j = "date"         , value =  ymd_hms(DT.General[["date"]]         , tz = boxConfig$Server$SOS.TZ))
-                    data.table::set(DT.General, j = "date_PreDelay", value =  ymd_hms(DT.General[["date_PreDelay"]], tz = boxConfig$Server$SOS.TZ))
-                }
+                    data.table::set(DT.General, j = "date_PreDelay", value =  ymd_hms(DT.General[["date_PreDelay"]], tz = boxConfig$Server$SOS.TZ))}
             } else {
                 data.table::set(DT.General, j = "date"         , value =  ymd_hms(DT.General[["date"]]         , tz = "UTC"))
-                data.table::set(DT.General, j = "date_PreDelay", value =  ymd_hms(DT.General[["date_PreDelay"]], tz = "UTC"))
-            }
+                data.table::set(DT.General, j = "date_PreDelay", value =  ymd_hms(DT.General[["date_PreDelay"]], tz = "UTC"))}
         } else if (extension(General.file) == ".Rdata") {
             DT.General <- load_obj(General.file)
-            if (!"data.table" %in% class(DT.General)) DT.General <- data.table(DT.General, key = "date")
-        }
+            if (!"data.table" %in% class(DT.General)) DT.General <- data.table(DT.General, key = "date")}
         if ("V1" %in% names(DT.General)) DT.General[, V1 := NULL]
         # Checking that dew point deficit and absolute humidity are included for old download of AirSensEUR boxes
         # adding absolute humidity is relative humidity and temperature exist
@@ -7735,10 +7731,7 @@ influx.downloadAndPredict <- function(boxName, boxConfig, subDirData = "General_
                 both.Temp.Hum <- complete.cases(DT.General[, c("Temperature", "Relative_humidity")])
                 DT.General[both.Temp.Hum, "Absolute_humidity"] <- threadr::absolute_humidity(DT.General[["Temperature"]][both.Temp.Hum], DT.General[["Relative_humidity"]][both.Temp.Hum])
                 Td <- weathermetrics::humidity.to.dewpoint(rh = DT.General[["Relative_humidity"]][both.Temp.Hum], t = DT.General[["Temperature"]][both.Temp.Hum], temperature.metric = "celsius")
-                DT.General[both.Temp.Hum, Td_deficit := DT.General[both.Temp.Hum, "Temperature"] - Td]
-            }
-        }
-        
+                DT.General[both.Temp.Hum, Td_deficit := DT.General[both.Temp.Hum, "Temperature"] - Td]}}
         # if some sensors of Influx are not included in DT.General, DT.General is re-created
         if (!all(names(Influx) %in% names(DT.General)) ) {
             DT.General <- NULL
@@ -7768,42 +7761,34 @@ influx.downloadAndPredict <- function(boxName, boxConfig, subDirData = "General_
     Warm.Forced <- FALSE
     if (file.exists(ind.warm.file)) ind.warm.out <- list.load(ind.warm.file) else {
         ind.warm.out <- NULL
-        Warm.Forced  <- TRUE
-    }
+        Warm.Forced  <- TRUE}
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Indexes of data discarded during warming time of sensors, setting Warm.Forced to ", Warm.Forced))
     TRh.Forced <- FALSE
     if (file.exists(ind.TRh.file)) ind.TRh.out <- list.load(ind.TRh.file) else {
         ind.TRh.out <- NULL
-        TRh.Forced  <- TRUE
-    }
+        TRh.Forced  <- TRUE}
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Indexes of data discarded outside temperature and humidity tolerance, setting TRh.Forced to ", TRh.Forced))
     Inv.Forced <- FALSE
     if (file.exists(ind.Invalid.file)) ind.Invalid.out <- list.load(ind.Invalid.file) else {
         ind.Invalid.out <- NULL
-        Inv.Forced      <- TRUE
-    }
+        Inv.Forced      <- TRUE}
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Flagging the sensor data for Invalid sensor data, setting Inv.Forced to ", Inv.Forced))
     Outliers.Sens.Forced <- FALSE
     if (file.exists(ind.sens.out.file)) ind.sens.out <- list.load(ind.sens.out.file) else {
         ind.sens.out <- NULL
-        Outliers.Sens.Forced <- TRUE
-    }
+        Outliers.Sens.Forced <- TRUE}
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Indexes of outliers for sensor data, setting Outliers.Sens.Forced to ", Outliers.Sens.Forced))
     # Initialising for conversion and calibration
     futile.logger::flog.info("[influx.downloadAndPredict] Setting initial Conv.Forced and Cal.Forced to FALSE")
     Conv.Forced <- FALSE
     Cal.Forced  <- FALSE
-    
     # Returning the indexes of valid sensors in boxName.cfg taking into account NAs
     list.gas.sensor  <- boxConfig[["sens2ref"]]$gas.sensor[!is.na(boxConfig[["sens2ref"]]$gas.sensor) &
-                                                               boxConfig[["sens2ref"]]$gas.sensor  != "" &
-                                                               boxConfig[["sens2ref"]]$name.sensor %in% boxConfig$sens2ref.shield$name.sensor]
+                                                               boxConfig[["sens2ref"]]$gas.sensor  != ""]
     list.name.sensor <- boxConfig[["sens2ref"]]$name.sensor[!is.na(boxConfig[["sens2ref"]]$name.sensor) &
-                                                                boxConfig[["sens2ref"]]$name.sensor != "" &
-                                                                boxConfig[["sens2ref"]]$name.sensor %in% boxConfig$sens2ref.shield$name.sensor]
+                                                                boxConfig[["sens2ref"]]$name.sensor != ""]
     list.name.gas    <- boxConfig[["sens2ref"]]$name.gas[!is.na(boxConfig[["sens2ref"]]$name.sensor) &
-                                                             boxConfig[["sens2ref"]]$name.sensor != "" &
-                                                             boxConfig[["sens2ref"]]$name.sensor %in% boxConfig$sens2ref.shield$name.sensor]
+                                                             boxConfig[["sens2ref"]]$name.sensor != ""]
     
     # setting the current directory to the root of the file system with the name of the AirSensEUR
     wd <- getwd()
@@ -7846,8 +7831,7 @@ influx.downloadAndPredict <- function(boxName, boxConfig, subDirData = "General_
                                           General.df  = if (!is.null(DT.General))  DT.General else NA,
                                           RefData     = if (exists("Ref") && !is.null(Ref))    Ref else NULL,
                                           InfluxData  = if (!is.null(Influx)) Influx else NA,
-                                          SOSData     = if (exists("Sos") && !is.null(Sos))    Sos else NULL)
-    }
+                                          SOSData     = if (exists("Sos") && !is.null(Sos))    Sos else NULL)}
     # Creating General Data
     # Checking that parameters for sensor download are complete or that they are new data
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Creating or updating of General Data set to ", 
@@ -7872,8 +7856,7 @@ influx.downloadAndPredict <- function(boxName, boxConfig, subDirData = "General_
                                                        DT.General[,.SD, .SDcols = intersect(names(D),names(DT.General))],
                                                        check.attributes = FALSE)))) {
             save.General.df <- TRUE
-            DT.General      <- D
-        }
+            DT.General      <- D}
         futile.logger::flog.info("[influx.downloadAndPredict] DT.General was updated. Warm.Forced is set to TRUE")
         if (save.General.df) {
             # Saving downloaded data in General_data Files
@@ -7894,382 +7877,171 @@ influx.downloadAndPredict <- function(boxName, boxConfig, subDirData = "General_
                                               General.df  = if (!is.null(DT.General))  DT.General else NA,
                                               RefData     = if (exists("Ref") && !is.null(Ref)) Ref else NULL,
                                               InfluxData  = if (!is.null(Influx)) Influx else NA,
-                                              SOSData     = if (exists("Sos") && !is.null(Sos)) Sos else NULL)
-        }
-        rm(D)
-    }
-    
+                                              SOSData     = if (exists("Sos") && !is.null(Sos)) Sos else NULL)}
+        rm(D)}
     # Running filtering if needed
     # Flagging the sensor data for warming time
     # This dataTreatment can only works if boardTimeStamp exists, meaning only in InfluxData. It will not work with SOSData
     # output: a list of 4 character vectors, corresponding to sensors with row index of DT.General corresponding to warming time of sensor data,
     #       the names of the 4 elements are the ones of list.gas.sensor   in the same order
+    ind.warm.out <- Warm_Index(Warm.Forced  = Warm.Forced, General.DT = DT.General, list.gas.sensor  = list.gas.sensor, boxConfig = boxConfig, ASEDir = boxDirectory)
     if (Warm.Forced) {
-        # setting index for warming
-        if (!is.null(DT.General[,"boardTimeStamp"]) ) { # use to be class(DT.General) == "data.frame"
-            # replace everythin boardTimeStamp which does not change with NA so na.locf will works
-            # Index of boardtimeStamp similar for consecutive boardtimeStamp
-            Consecutive <- which(diff(DT.General$boardTimeStamp, lag = 1) == 0)
-            # Values of indexes whith previous values that are non consecutive (Re-start)
-            Re_start <- Consecutive[diff(Consecutive, lag = 1) > 1]
-            # Setting NA boardTimeStamp to the last non-NA boardTimeStamp
-            data.table::set(DT.General,  j = "boardTimeStamp", value = na.locf(DT.General[["boardTimeStamp"]], na.rm = FALSE, fromLast = FALSE))
-            # detecting when boardTimeStamp decreases suddenly (re-boot)
-            Re_boot <- which(diff(DT.General$boardTimeStamp, lag = 1) < 0)
-            # Combining Re_start and reboot
-            ind <- unique(c(Re_start, Re_boot))
-        } else {
-            # This is for SOS
-            ind <- apply(DT.General[, list.gas.sensor, with = FALSE  ], 1, function(i) !all(is.na(i)))
-            ind <- which(ind[2:length(ind)] & !ind[1:(length(ind) - 1 )])
-        }
-        ind = ind + 1
-        # Adding the first switch-on
-        ind <- c(1,ind)
-        for (n in seq_along(list.gas.sensor)) {
-            indfull <- integer(length(ind)* boxConfig$sens2ref$hoursWarming[n] * 60 / as.integer(boxConfig$Server$UserMins))
-            # developing IndFull
-            for (i in seq_along(ind)) {
-                indfull[((i - 1) *  boxConfig$sens2ref$hoursWarming[n]*60/as.integer(boxConfig$Server$UserMins) + 1):((i)* boxConfig$sens2ref$hoursWarming[n]*60 / as.integer(boxConfig$Server$UserMins))] <- ind[i]:(ind[i] +  boxConfig$sens2ref$hoursWarming[n] * 60 / as.integer(boxConfig$Server$UserMins) - 1)
-            }
-            # removing  indexes outside the number of rows of DT.General
-            indfull <- indfull[indfull <= length(DT.General[[list.gas.sensor[n]]])]
-            if (exists("return.ind.warm")) return.ind.warm[[n]] <- indfull else return.ind.warm <- list(indfull)
-        }
-        names(return.ind.warm) <- list.gas.sensor
-        ind.warm.out <- return.ind.warm
-        list.save(x = ind.warm.out, file = ind.warm.file)
-        # Setting TRh.Forced to TRUE to be sure that it is done before ind.Sens
         TRh.Forced <- TRUE
-        rm(return.ind.warm, ind)
-        futile.logger::flog.info("[influx.downloadAndPredict] A new ind_warm.RDS was saved. TRh.Forced is set to TRUE")
-    }
-    
+        Inv.Forced <- TRUE
+        Outliers.Sens.Forced <- TRUE
+        Conv.Forced <- TRUE
+        Cal.Forced  <- TRUE}
     # Flagging the sensor data for temperature and humidity outside interval of tolerance
     # Output:                : list of NAs for discarded temperature and humidity with as many elements as in list.gas.sensor
     #                          consisting of vector of integers of the index of rows of DT.General dataframe
+    ind.TRh.out <- TRh_Index(TRh.Forced  = TRh.Forced, General.DT = DT.General, list.gas.sensor = list.gas.sensor, boxConfig = boxConfig, ASEDir = boxDirectory, Save = TRUE)
     if (TRh.Forced) {
-        # Always starting detection of outleirs for T and RH from the dataframe set in DT.General
-        index.temp <- which(colnames(DT.General) %in% "Temperature")
-        index.rh   <- which(colnames(DT.General) %in% "Relative_humidity")
-        return.ind.TRh    <- list()
-        return.ind.T.min  <- list()
-        return.ind.T.max  <- list()
-        return.ind.Rh.min <- list()
-        return.ind.Rh.max <- list()
-        for (l in list.gas.sensor) {
-            # Global index of temperature/humidity exceeding thresholds
-            ind <- (DT.General[, index.temp, with = FALSE]   < boxConfig$sens2ref$temp.thres.min[match(x = l, table = list.gas.sensor)]  |
-                        DT.General[, index.temp, with = FALSE]   > boxConfig$sens2ref$temp.thres.max[match(x = l, table = list.gas.sensor)]) |
-                (DT.General[, index.temp, with = FALSE]   < boxConfig$sens2ref$rh.thres.min[match(x = l, table = list.gas.sensor)]  |
-                     DT.General[, index.temp, with = FALSE]   > boxConfig$sens2ref$rh.thres.max[match(x = l, table = list.gas.sensor)])
-            # Global index of temperature/humidity exceeding thresholds
-            T.min  <- DT.General[, index.temp, with = FALSE] < boxConfig$sens2ref$temp.thres.min[match(x = l, table = list.gas.sensor)]
-            T.max  <- DT.General[, index.temp, with = FALSE] > boxConfig$sens2ref$temp.thres.max[match(x = l, table = list.gas.sensor)]
-            Rh.min <- DT.General[, index.rh, with = FALSE]   < boxConfig$sens2ref$rh.thres.min[match(x = l, table = list.gas.sensor)]
-            Rh.max <- DT.General[, index.rh, with = FALSE]   > boxConfig$sens2ref$rh.thres.max[match(x = l, table = list.gas.sensor)]
-            # if (exists("return.ind.TRh")) {
-            return.ind.TRh[[boxConfig[["sens2ref"]][which(gas.sensor == l), name.sensor]]] <- which(ind)
-            return.ind.T.min[[ paste0(boxConfig[["sens2ref"]][which(gas.sensor == l), name.sensor],"__Temp. < ",boxConfig$sens2ref$temp.thres.min[match(x = l, table = list.gas.sensor)])]] <- which(T.min)
-            return.ind.T.max[[ paste0(boxConfig[["sens2ref"]][which(gas.sensor == l), name.sensor],"__Temp. > ",boxConfig$sens2ref$temp.thres.max[match(x = l, table = list.gas.sensor)])]] <- which(T.max)
-            return.ind.Rh.min[[paste0(boxConfig[["sens2ref"]][which(gas.sensor == l), name.sensor],"__RH < "   ,boxConfig$sens2ref$rh.thres.min[match(x = l, table = list.gas.sensor)])]] <- which(Rh.min)
-            return.ind.Rh.max[[paste0(boxConfig[["sens2ref"]][which(gas.sensor == l), name.sensor],"__RH > "   ,boxConfig$sens2ref$rh.thres.max[match(x = l, table = list.gas.sensor)])]] <- which(Rh.max)
-        }
-        ind.TRh.out <- list(ind.TRh = return.ind.TRh, T.min = return.ind.T.min, T.max = return.ind.T.max, Rh.min = return.ind.Rh.min, Rh.max = return.ind.Rh.max)
-        list.save(x = ind.TRh.out, file = ind.TRh.file)
-        # Setting Invalid$Forced to True to be sure that it is carried out before ind.sens
         Inv.Forced <- TRUE
-        rm(return.ind.TRh, return.ind.T.min, return.ind.T.max, return.ind.Rh.min, return.ind.Rh.max, T.min,T.max,Rh.min,Rh.max)
-        futile.logger::flog.info("[influx.downloadAndPredict] A new ind_TRh.RDS was saved. Inv.Forced is set to TRUE")
-    }
+        Outliers.Sens.Forced <- TRUE
+        Conv.Forced <- TRUE
+        Cal.Forced  <- TRUE}
     
-    # output: a list of n character vectors, corresponding to sensors with row index of DT.General corresponding to Invalid sensor data,
-    #       the names of the n elements are the ones of list.gas.sensor   in the same order
     # min.General.date and max.General.date----
     if (!is.null(DT.General)) min.General.date <- min(DT.General$date, na.rm = TRUE) else min.General.date <- NULL
     if (!is.null(DT.General)) max.General.date <- max(DT.General$date, na.rm = TRUE) else max.General.date <- NULL
+    # output: a list of vectors, corresponding to sensors with row index of DT.General corresponding to Invalid sensor data,
+    #       the names of the n elements are the ones of list.gas.sensor   in the same order
+    ind.Invalid.out  <- Inv_Index(Inv.Forced  = Inv.Forced, General.DT  = DT.General, list.name.sensor = list.name.sensor,boxConfig = boxConfig, ASEDir = boxDirectory)
     if (Inv.Forced) {
-        if (!is.null(DT.General)) {
-            # reading the files with period of valid data
-            for (i in seq_along(list.name.sensor)) {
-                nameFile <- file.path(boxDirectory,subDirConfig,paste0(boxName,"_Valid_",list.name.sensor[i],".cfg"))
-                if (file.exists(nameFile)) {
-                    assign(paste0("Valid_",list.name.sensor[i]), read.table(file = nameFile, header = TRUE, row.names = NULL, comment.char = "#", stringsAsFactors = FALSE))
-                } else {
-                    # There are no Valid files. Creates files with IN = END = min(General$date)
-                    assign(paste0("Valid_",list.name.sensor[i]), rbind(c(strftime(min(DT.General$date, na.rm = TRUE)), strftime(min(DT.General$date, na.rm = TRUE)))))
-                    write.table(x         = data.frame(In = gsub(" UTC", "",strftime(min.General.date)),
-                                                       End = gsub(" UTC", "",strftime(min.General.date)),
-                                                       stringsAsFactors = FALSE),
-                                file      = nameFile,
-                                row.names = FALSE
-                    )
-                }
-            }
-            # Creating one list with invalid periods for all sensors
-            Valid <- list()
-            for (i in paste0("Valid_",list.name.sensor)) Valid[[i]] <- get(i)
-            # Function to convert charater strings to POSIX
-            NewValid <- function(x) {
-                # making each element a dataframe of POSIXct
-                x <- data.frame( x, stringsAsFactors = FALSE)
-                colnames(x) <- c("In", "End")
-                x$In  <- parse_date_time(x$In , tz = threadr::time_zone(DT.General$date[1]), orders = "YmdHMS")
-                x$End <- parse_date_time(x$End, tz = threadr::time_zone(DT.General$date[1]), orders = "YmdHMS")
-                return(x)
-            }
-            Valid.date <- lapply(Valid, NewValid)
-            # Set inital date for data retrieving (i.e. maximum length time period for data retrieval).
-            # These dates may change according to the data availability
-            # UserDateIN.0, SOS.TZ is set in ASEConfig_MG.R
-            # Set correct time zone
-            # list of invalid date to be used for sensor Evaluation with reference values, a kind of life cycle of each sensor - time zone shall be the same as SOS.TZ (UTC?)
-            # seting invalid to NA and create a list for plotting invalids
-            ind.Inval <- list()
-            for (i in gsub(pattern = "Valid_", replacement = "", names(Valid.date))) {
-                for (j in 1:nrow(Valid.date[[paste0("Valid_",i)]])) {
-                    Valid.interval.j <- which(DT.General$date %within% lubridate::interval(Valid.date[[paste0("Valid_",i)]]$In[j], Valid.date[[paste0("Valid_",i)]]$End[j]))
-                    if (length(Valid.interval.j) > 0) {
-                        if (!(i %in% names(ind.Inval))) {
-                            ind.Inval[[i]] <- DT.General$date[Valid.interval.j]
-                        } else {
-                            ind.Inval[[i]] <- c(ind.Inval[[i]], DT.General$date[Valid.interval.j])
-                        }
-                    }
-                }
-            }
-        }
-        
-        ind.Invalid.out <- list(Valid.date,ind.Inval)
-        list.save(x = ind.Invalid.out, file = ind.Invalid.file)
-        # make sure that Outliers.Sens$Forced is run after Invalid, to discard outliers again and to apply invalid and outliers to DT.General
         Outliers.Sens.Forced <- TRUE
-        rm(Valid.date,ind.Inval)
-        rm(Valid)
-        futile.logger::flog.info("[influx.downloadAndPredict] A new ind_Invalid.RDS was saved. Outliers.Sens.Forced is set to TRUE")
-    }
-    for (i in list.name.sensor) assign(paste0("Valid_",i),NULL)
+        Conv.Forced <- TRUE
+        Cal.Forced  <- TRUE}
+    #for (i in list.name.sensor) assign(paste0("Valid_",i),NULL)
     
     # discard outliers of sensors
+    DT.General <- Outliers_Sens(Outliers.Sens  = Outliers.Sens.Forced, General.DT = DT.General, list.gas.sensor  = list.gas.sensor, list.name.sensor = list.name.sensor, 
+                                boxConfig = boxConfig, ASEDir = boxDirectory, ind.warm.out = ind.warm.out, ind.TRh.out = ind.TRh.out, ind.Invalid.out = ind.Invalid.out)$General.DT
     if (Outliers.Sens.Forced) {
-        if (!is.null(DT.General)) setalloccol(DT.General)
-        for (i in list.gas.sensor) {
-            # Checking if sensor data exists in DT.General
-            if (i %in% names(DT.General)) {
-                # Initialisation of columns of DT.General
-                Sensor.i <- na.omit(boxConfig[["sens2ref"]][[which(boxConfig[["sens2ref"]][,"gas.sensor"] == i),"name.sensor"]])
-                # resetting to initial values
-                Vector.columns <- paste0(c("Out.", "Out.Warm.", "Out.TRh.", "Out.Invalid.", "Out.Warm.TRh.", "Out.Warm.TRh.Inv."),i)
-                set(DT.General, j = Vector.columns, value = rep(list(DT.General[[i]]), times = length(Vector.columns)))
-                if (!is.null(ind.warm.out[i][[1]])) {
-                    Vector.columns <- paste0(c("Out.", "Out.Warm.", "Out.Warm.TRh.", "Out.Warm.TRh.Inv."),i)
-                    i.Rows <- as.integer(ind.warm.out[[i]])
-                    set(DT.General, i = i.Rows, j = Vector.columns, value = rep(list(rep(NA, times = length(i.Rows))), times = length(Vector.columns)))
-                }
-                if (!is.null(ind.TRh.out$ind.TR[[Sensor.i]]) && length(ind.TRh.out$ind.TR[[Sensor.i]]) > 0) {
-                    Vector.columns <- paste0(c("Out.", "Out.TRh.", "Out.Warm.TRh.", "Out.Warm.TRh.Inv."),i)
-                    set(DT.General,i = ind.TRh.out$ind.TRh[Sensor.i][[1]], j = Vector.columns,
-                        value = rep(list(rep(NA, times = length(ind.TRh.out$ind.TRh[Sensor.i][[1]]))), times = length(Vector.columns)))
-                }
-                if (!is.null(ind.Invalid.out[[2]][[Sensor.i]]) && length(ind.Invalid.out[[2]][[Sensor.i]]) > 0) {
-                    Vector.columns <- paste0(c("Out.", "Out.Invalid." , "Out.Warm.TRh.Inv."),i)
-                    set(DT.General,i = which(DT.General$date %in% ind.Invalid.out[[2]][[Sensor.i]]), j = Vector.columns,
-                        value = rep(list(rep(NA, times = length(which(DT.General$date %in% ind.Invalid.out[[2]][[Sensor.i]])))), times = length(Vector.columns)))
-                }
-                # index (1, 2,3, 4  or 1,2,3, 6 ... comng from  selection of control uiFiltering, Calib and SetTime)
-                k <- match(x = i, table = list.gas.sensor)
-                set(DT.General, j = paste0("Out.",i,".",1:boxConfig$sens2ref$Sens.iterations[k]),
-                    value = rep(list(DT.General[[paste0("Out.",i)]]), times = boxConfig$sens2ref$Sens.iterations[k]))
-                # deleting bigger iterations
-                j  <- boxConfig$sens2ref$Sens.iterations[k]
-                repeat (
-                    if (any(grepl(pattern = paste0("Out.",i,".", j + 1)      , x = names(DT.General)))) {
-                        set(DT.General, j = paste0("Out.",i,".",j + 1), value = NULL)
-                        j <- j + 1
-                    } else break # leaving the Repeat if there are no higher iterations
-                )
-                if (boxConfig$sens2ref$Sens.Inval.Out[k]) {
-                    for (j in 1:boxConfig$sens2ref$Sens.iterations[k]) { # number of iterations
-                        if (all(is.na(DT.General[[i]]))) {
-                        } else {
-                            # Setting the columns of sensor data previous to detect outliers
-                            Y <- DT.General[[paste0("Out.Warm.TRh.Inv.",i)]]
-                            # setting Y for the outliers of previous iterations to NA. If null then stop outlier detection
-                            if (j > 1) {
-                                if (length(which(return.ind.sens.out[[paste0(i,".",(j - 1))]]$Outliers)) != 0) {
-                                    if (class(Y)[1] == "tbl_df") {
-                                        Y[as.numeric(paste(unlist(sapply(return.ind.sens.out[c(paste0(i,".",1:(j - 1)))],function(x) which(x$Outliers))))),] <- NA
-                                    } else Y[as.numeric(paste(unlist(sapply(return.ind.sens.out[c(paste0(i,".",1:(j - 1)))],function(x) which(x$Outliers)))))] <- NA
-                                } else break
-                            }
-                            Outli <- My.rm.Outliers(ymin         = boxConfig$sens2ref$Sens.Ymin[k],
-                                                    ymax         = boxConfig$sens2ref$Sens.Ymax[k],
-                                                    ThresholdMin = boxConfig$sens2ref$Sens.threshold[k],
-                                                    date         = DT.General[["date"]],
-                                                    y            = Y,
-                                                    window       = boxConfig$sens2ref$Sens.window[k],
-                                                    threshold    = boxConfig$sens2ref$Sens.threshold[k],
-                                                    plotting     = FALSE
-                            )
-                            nameInd      <- paste0(i,".",j)
-                            OutlinameInd <- paste0(i,".",j,".Outli")
-                            assign(nameInd , data.frame(date = Outli$date, Outliers = apply(Outli[,c("Low_values","High_values","OutliersMin","OutliersMax")], 1, any), stringsAsFactors = FALSE))
-                            if (exists("return.ind.sens.out")) return.ind.sens.out[[nameInd]] <- get(nameInd) else {
-                                return.ind.sens.out <- list(get(nameInd)); names(return.ind.sens.out) <- nameInd
-                            }
-                            return.ind.sens.out[[OutlinameInd]] <- Outli
-                        }
-                        # Discarding outliers if requested for the compound
-                        # Discading outliers
-                        if (any(names(ind.sens.out) %in% paste0(i,".",j), na.rm = TRUE)) {
-                            set(DT.General,i = which(return.ind.sens.out[[paste0(i,".",j)]]$Outliers), j = paste0("Out."      ,i),
-                                value = list(rep(NA, times = length(which(return.ind.sens.out[[paste0(i,".",j)]]$Outliers)))))
-                            set(DT.General,i = which(return.ind.sens.out[[paste0(i,".",j)]]$Outliers), j = paste0("Out.",i,".",j),
-                                value = list(rep(NA, times = length(which(return.ind.sens.out[[paste0(i,".",j)]]$Outliers)))))
-                        }
-                    }
-                }
-            }
-        }
-        if (exists("return.ind.sens.out")) {
-            ind.sens.out <- return.ind.sens.out
-            list.save(x = ind.sens.out, file = ind.sens.out.file)
-            # Force conversion of sensors
-            Conv.Forced <- TRUE
-            futile.logger::flog.info("[influx.downloadAndPredict] A new ind_sens_out.RDS was saved. Conv.Forced is set to TRUE")
-        } 
-        # reseting return.ind.sens.out
-        if (exists("return.ind.sens.out")) {
-            rm(return.ind.sens.out)
-            rm(Outli)
-        } 
-    }
-    # deleting unnecessary outlier replicates
-    for (i in 1:length(list.gas.sensor)) for (j in 1:boxConfig$sens2ref$Sens.iterations[i]) assign(paste0(list.gas.sensor[i],".",j),NULL)
-    
+        Conv.Forced <- TRUE
+        Cal.Forced  <- TRUE}
     # Conversion and calibration
     # list of possible model types
     Models <- c("Linear", "Linear.Robust","MultiLinear", "exp_kT_NoC", "exp_kT", "exp_kK", "T_power", "K_power", "RH_Hysteresis","gam", "Quadratic", "Cubic", "Michelis", "Sigmoid")
     Shield <- if (!is.null(boxConfig$Server$asc.File) & length(boxConfig$Server$asc.File) != 0) {
         ASEPanel04Read(ASEPanel04File = file.path(rootWorkingDirectory, "Shield_Files", boxConfig$Server$asc.File))
     } else return("ERROR, Config file of chemical shield not existing.\n")
-    Calib_data <- data.frame(
-        name.gas           = list.name.gas,
-        name.sensor        = list.name.sensor,
-        gas.sensor         = list.gas.sensor,
-        Sens.raw.unit      = as.character(sapply(seq_along(list.gas.sensor), function(i) boxConfig$sens2ref$Sens.raw.unit[i])),
-        stringsAsFactors = FALSE)
-    
-    if (Conv.Forced || Cal.Forced) {
-        # Converting to nA or V
-        if (Conv.Forced) {
-            # Conversion to volts/A
-            Sensors_Cal <- merge(x = Calib_data[c("name.gas","gas.sensor","name.sensor","Sens.raw.unit")], 
-                                 y = Shield[,c("name.gas","name.sensor","gas.sensor","RefAD","Ref","board.zero.set","GAIN","Rload")],
-                                 by = c("name.gas", "gas.sensor", "name.sensor"), all = TRUE)
-            # Values converted in volt or nA of sensors in Shield only if sensor data exist
-            data.table::set(DT.General,  j = paste0(Shield$name.sensor,"_volt"),
-                            value = ASEDigi2Volt(Sensors_Cal = Sensors_Cal[Sensors_Cal$name.gas %in% Shield$name.gas,],
-                                                 Digital = DT.General[,paste0("Out.",Shield$gas.sensor), with = FALSE]))
-            # Values converted in volt or nA - Board zero in Volt? change to V or nA
-            # # https://stackoverflow.com/questions/6819804/how-to-convert-a-matrix-to-a-list-of-column-vectors-in-r
-            data.table::set(DT.General,  j = paste0(Shield$name.sensor,"_DV"),
-                            value = lapply(Shield$name.sensor, function(i) rep(Shield$Ref[Shield$name.sensor == i] - Shield$RefAD[Shield$name.sensor == i],
-                                                                               times = nrow(DT.General))))
-            # No conversion for the sensors which are not in the Shield only if sensor data exist
-            No.Shield.gas.Sensors <- setdiff(list.gas.sensor, Shield$gas.sensor)
-            No.Shield.gas.Sensors <- No.Shield.gas.Sensors[which(c(paste0("Out.",No.Shield.gas.Sensors) %in% names(DT.General) ))]
-            if (length(No.Shield.gas.Sensors) > 0) {
-                No.Shield.name.Sensors <- setdiff(list.name.sensor, Shield$name.sensor)
-                x <- DT.General[,paste0("Out.",No.Shield.gas.Sensors), with = FALSE]
-                data.table::set(DT.General,  j =  paste0(No.Shield.name.Sensors,"_volt"),
-                                value = lapply(seq_len(ncol(x)), function(i) x[,i]))
-                rm(x)
-            }
-            Cal.Forced <- TRUE
-            futile.logger::flog.info("[influx.downloadAndPredict] A new raw data were converted in DT.General. Cal.Forced is set to TRUE")
-        }
-        # Starting calibration
-        if (Cal.Forced) {
-            # Application of Calibration function to Complete data set
-            if (!is.null(DT.General)) {
-                # initial Calibration with values in input[[paste0("Cal",j)]])) provided that "Method of Prediction" is "Prediction with previous calibration"
-                for (k in seq_along(list.name.sensor)) {
-                    if (boxConfig$sens2ref$Cal.Line[k] == "Prediction with previous calibration") {
-                        if (nchar(boxConfig$sens2ref$Cal.func[k]) > 0) {
-                            # reading file
-                            name.Model.i <- file.path(boxDirectory,subDirModels,
-                                                      paste0(boxName,"__",list.name.sensor[k],"__",boxConfig$sens2ref$Cal.func[k]))
-                            if (file.exists(name.Model.i)) {
-                                Model.i <- load_obj(name.Model.i)
-                                # sensor gas in volt or nA or Count
-                                nameGasVolt <- paste0(list.name.sensor[k],"_volt")
-                                # modelled sensor gas
-                                nameGasMod  <- paste0(list.gas.sensor[k],"_modelled")
-                                # Detecting the model type of the selected calibration model
-                                Mod_type <- Models[grep(pattern = paste0("_",strsplit(name.Model.i, split = "__")[[1]][4],"_"),
-                                                        x = paste0("_",Models,"_"))]
-                                # Preparing the matrix of covariates
-                                # Removing na for nameGasMod for nameGasVolt missing
-                                is.not.NA.y <- which(!is.na(DT.General[[nameGasVolt]]))
-                                is.NA.y     <- which( is.na(DT.General[[nameGasVolt]]))
-                                if (Mod_type %in% c("MultiLinear", "exp_kT_NoC")) {
-                                    CovMod  <- unlist(strsplit(x = unlist(strsplit(x = sub(pattern = paste(c(".rds",".rdata"), collapse = "|"),
-                                                                                           replacement = "", x =  name.Model.i),
-                                                                                   split = "__"))[7], split = "&", fixed = T))
-                                    # Checking if there are "-" in the CovMod, deleting degrees of polynomial
-                                    if (any(grepl(pattern = "-", x = CovMod[1]))) {
-                                        Model.CovMod  <- unlist(strsplit(x = CovMod , split = "-"))
-                                        CovMod  <- Model.CovMod[ seq(from = 1, to = length(Model.CovMod), by = 2) ]
-                                        Degrees <- Model.CovMod[ seq(from = 2, to = length(Model.CovMod), by = 2) ]
-                                    }
-                                    # checking that all CovMod are included in DT.General
-                                    if (!all(CovMod %in% names(DT.General))) {
-                                        futile.logger::flog.error(paste0("[influx.downloadAndPredict] not all Covariates are available, something missing in ", CovMod,"."))
-                                    } else {
-                                        # take only the one that is nor NA of y = DT.General[!is.na(DT.General[, nameGasVolt]), nameGasVolt]
-                                        is.not.NA.y <- which(complete.cases(DT.General[, .SD, .SDcols = c(nameGasVolt,CovMod)]))
-                                        is.NA.y     <- setdiff(1:nrow(DT.General), is.not.NA.y)
-                                        Matrice <- data.frame(DT.General[is.not.NA.y, CovMod, with = FALSE],
-                                                              row.names = row.names(DT.General[is.not.NA.y,]),
-                                                              stringsAsFactors = FALSE)
-                                        names(Matrice) <- CovMod}
-                                } else if (Mod_type %in% c("exp_kT","exp_kK","T_power", "K_power")) {
-                                    # take only the one that is nor NA of y = DT.General[!is.na(DT.General[, nameGasVolt]), nameGasVolt]
-                                    is.not.NA.y <- which(complete.cases(DT.General[, .SD, .SDcols = c(nameGasVolt, "Temperature")]))
-                                    is.NA.y     <- setdiff(1:nrow(DT.General), is.not.NA.y)
-                                    Matrice <- data.frame(DT.General[is.not.NA.y, Temperature],
-                                                          row.names = row.names(DT.General[is.not.NA.y,]),
-                                                          stringsAsFactors = FALSE)
-                                    names(Matrice) <- "Temperature"
-                                } else Matrice <- NULL
-                                # Using the reverse calibration function (measuring function) to extrapolate calibration
-                                if (Mod_type != "MultiLinear" || (Mod_type == "MultiLinear" && all(CovMod %in% names(DT.General)))) {
-                                    data.table::set(DT.General, i = is.not.NA.y, j = nameGasMod,
-                                                    value = list(Meas_Function(y          = DT.General[[nameGasVolt]][is.not.NA.y],
-                                                                               Mod_type   = Mod_type ,
-                                                                               covariates = CovMod,
-                                                                               Degrees    = Degrees,
-                                                                               Model      = Model.i,
-                                                                               Matrice    = Matrice)))
-                                    # Removing na for nameGasMod either nameGasVolt missing or CovMod missing
-                                    data.table::set(DT.General, i = is.NA.y, j = nameGasMod, value = list(rep(NA, times = length(is.NA.y))))
-                                    # setting negative values to NA
-                                    if (boxConfig$sens2ref$remove.neg[k]) {
-                                        data.table::set(DT.General, i = which(DT.General[, nameGasMod, with = FALSE] < 0), j = nameGasMod,
-                                                        value = list(rep(NA, times = length(which(DT.General[, nameGasMod, with = FALSE] < 0)))))
-                                    }
-                                }
-                            } else futile.logger::flog.warn(paste0("[influx.downloadAndPredict] there is no calibration file for sensors: ", list.name.sensor[k], ""))
-                        } else futile.logger::flog.warn(paste0("[influx.downloadAndPredict] there is no calibration file for sensors: ", list.name.sensor[k], ""))
-                    }
+    # Converting to nA or V
+    General.DT <- Sens_Conv(Conv.Forced  = Conv.Forced, General.DT = DT.General, list.gas.sensor  = list.gas.sensor, list.name.sensor = list.name.sensor, 
+                            boxConfig = boxConfig, ASEDir = boxDirectory, Shield = Shield)
+    if (Conv.Forced) Cal.Forced <- TRUE
+    # Starting calibration
+    # Preparing configuration as in cfg files
+    Set.Time <- Set.Time[, lapply(.SD, as.character), .SDcols = 3:ncol(Set.Time)]
+    Set.Time <- data.table::transpose(Set.Time, make.names = 1, keep.names = "name.gas")
+    ASE.cfg  <- data.table::transpose(boxConfig$sens2ref, make.names = 1, keep.names = "name.gas")
+    if (Cal.Forced) {
+        # Application of Calibration function to Complete data set
+        if (!is.null(DT.General)) {
+            # initial Calibration with values in input[[paste0("Cal",j)]])) provided that "Method of Prediction" is "Prediction with previous calibration"
+            for (k in seq_along(list.name.sensor)) {
+                if (boxConfig$sens2ref$Cal.Line[k] == "Prediction with previous calibration") {
+                    if (nchar(boxConfig$sens2ref$Cal.func[k]) > 0) {
+                        # reading file
+                        name.Model.i <- file.path(boxDirectory,subDirModels, paste0(boxName,"__",list.name.sensor[k],"__",boxConfig$sens2ref$Cal.func[k]))
+                        if (file.exists(name.Model.i)) {
+                            DT.General <- Apply_Model(Model = name.Model.i, name.sensor = list.name.sensor[k],General.DT = DT.General, ASE.cfg = ASE.cfg, 
+                                                      SetTime = Set.Time, Config =  boxConfig, Shield =  Shield)
+                        } else futile.logger::flog.warn(paste0("[influx.downloadAndPredict] calibration file missing: ", name.Model.i))
+                    } else futile.logger::flog.warn(paste0("[influx.downloadAndPredict] there is no calibration file for sensors: ", list.name.sensor[k]))
                 }
-                fwrite(DT.General, file = General.file, na = "NA")
-                futile.logger::flog.info("[influx.downloadAndPredict] A new General.csv was saved data were converted in DT.General. Cal.Forced is set to TRUE")
-                
             }
-        } else futile.logger::flog.error("[influx.downloadAndPredict] THERE IS NO General.df or no sensor data converted to voltage or current.\n")
-    }
+            fwrite(DT.General, file = General.file, na = "NA")
+            futile.logger::flog.info("[influx.downloadAndPredict] A new General.csv was saved with calibrated sensor.")
+        }
+    } else futile.logger::flog.error("[influx.downloadAndPredict] There is no General.df or no sensor data converted.")
     setwd(wd)
     return(list(data = DT.General, timeConfig = Set.Time))
 }
+
+#' Adding several parameters to caption for table in the report of evaluation of calibration models
+#'
+#' @param Table A datatable with row of compared models
+#' @param List.models.Final A string of calibration models for each ASE box to be compared
+#' @return the table caption
+#' @examples
+Add_caption.Table <- function(Table, List.models.Final) {
+    name.sensor    <- unique(Table$name.sensor)
+    Interval       <- str_split(str_split(List.models.Final, pattern = "__")[[1]][8], pattern = "-")[[1]][2]
+    Cal.DateIN     <- unique(Table$Cal.DateIN)
+    Cal.DateEND    <- unique(Table$Cal.DateEND)
+    Pred.DateIN    <- unique(Table$Prediction.IN)
+    Pred.DateEND   <- unique(Table$Prediction.END)
+    Sensor.unit    <- unique(Table$Unit)
+    Reference.Unit <- unique(Table$Unit)
+    Model          <- unique(Table$Mod_type)
+    if (length(Cal.DateIN) > 1 || length(Cal.DateEND) > 1) {
+        return("Calibration period different for some ASE boxes. No caption")
+    } else if (length(Pred.DateIN) > 1 || length(Pred.DateEND) > 1) {
+        return("Prediction period different for some ASE boxes. No caption")
+    } else if (length(Sensor.unit) > 1) {
+        return("Sensor unit different for some ASE boxes. No caption")
+    } else if (length(Reference.Unit) > 1) {
+        return("Sensor unit different for some ASE boxes. No caption")
+    } else if (length(Model) > 1) {
+        cat("Model Type different for some ASE boxes. ")
+        Caption <- paste0("**Table XXX.** Comparison of ", name.sensor," calibrated data between ", unique(Table$Cal.DateIN), " and ",
+                          unique(Table$Cal.DateEND)," (rolling window of ", Interval," days).")
+    } else Caption <- paste0("**Table XXX**  Comparison of ", name.sensor, " data calibrated with ", Model, " model between ", 
+                             unique(Table$Cal.DateIN), " and ",unique(Table$Cal.DateEND)," (Rolling window of ", Interval," days).")
+    if (Cal.DateIN != Pred.DateIN || Cal.DateEND != Pred.DateEND)  Caption <- paste0(Caption, " Prediction was carried out between ", Pred.DateIN, " and ", Pred.DateEND, ").")
+    return(Caption)}
+#' # Adding row with median of coefficients
+#'
+#' @param Table A datatable with row of compared models with coefficients of models between columns "Variables" and "R2raw"
+#' @param New.names.coeffs A charater vector with name of coefficientts. Default is c("a0, nA", "a1, nA/ppb") as for a linear model.
+#' @param List.models.Final A list as created using function influx.getConfig for boxName
+#' @return the data.table Table.report adding the row with median of coefficients of calibration models
+#' @examples
+Add_median_coeffs <- function(Table, New.names.coeffs = c("a0, nA", "a1, nA/ppb"), Table.report, Digits = c(1, 2)) {
+    if (length(Digits) != length(New.names.coeffs)) stop("Check number of coefficients and length of vector of digits")
+    Names.coeffs <- seq(which(names(Table) == "Variables") + 1,which(names(Table) == "R2raw") - 1)
+    Table.med <- Table[, lapply(.SD, function(i) {round(median(i, na.rm = T), 2)}), .SDcols = Names.coeffs]
+    Table.mad <- Table[, lapply(.SD, function(i) {round(mad(i, na.rm = T), 2)}), .SDcols = Names.coeffs]
+    Table.med <- rbindlist(list(Table.med, Table.mad), use.names = T, fill = T)
+    Table.med[, (New.names.coeffs) := .SD]
+    Table.med <- Table.med[, ..New.names.coeffs]
+    Table.report <- rbindlist(list(Table.report, Table.med), use.names = T, fill = T)
+    set(Table.report, i = nrow(Table.report)-1, j = 1L , value = "Median")
+    set(Table.report, i = nrow(Table.report), j = 1L , value = "MAD")
+    for (i in seq(length(New.names.coeffs))) {
+        cols <- New.names.coeffs[i]
+        Table.report[,(cols) := round(.SD,Digits[i]), .SDcols=cols]}
+    return(Table.report)}
+
+#' Creating the table for reporting of comparison of models
+#'
+#' @param Table A datatable with row of compared models with coefficients of models between columns "Variables" and "R2raw"
+#' @param New.names.coeffs A character vector with name of coefficients of the model. defaults is c("a0, nA", "a1, nA/ppb") for a linear model.
+#' @param Digits A numeric vector with number of digits for each coefficient of the calibration model. Default is c(1,2) for a linear model. 
+#' @return the data.table Table.report to be printed
+#' @examples
+Create_Table_comparison <- function(Table, New.names.coeffs = c("a0, nA", "a1, nA/ppb"), Digits = c(1, 2), N = FALSE, AIC = FALSE) {
+    if (length(Digits) != length(New.names.coeffs)) stop("Check number of coefficients and length of vector of digits")
+    Names.coeffs <- (which(names(Table) == "Variables") + 1):(which(names(Table) == "R2raw") - 1)
+    columns.Nb1 <- match( c("ASE.name","SN.Cal"), names(Table))
+    columns.Nb2 <- match(c("R2raw","Intcal","SlopeCal","R2Cal","RMSECal", "IntPred","SlopePred","R2Pred","RMSEPred"), names(Table))
+    New.names   <- c("ASE.IDs", "S/N", New.names.coeffs, "R2", "Int.c, ppb", "Slope, ppb/ppb", "R2", "RMSE, ppb", "Int.p, ppb", "Slope, ppb/ppb", "R2", "RMSE, ppb")
+    if (length(unique(Table$Mod_type)) > 1) {
+        columns.Nb1 <- match( c("ASE.name","SN.Cal", "Mod_type"), names(Table))
+        New.names   <- insert(New.names, 3, "Model")}
+    if (N) {
+        columns.Nb1 <- columns.Nb1 <- match( c("ASE.name","SN.Cal", "N.Cal"), names(Table))
+        New.names   <- insert(New.names, 3, "N")}
+    if (AIC) {
+        columns.Nb2 <- match(c("R2raw","Intcal","SlopeCal","R2Cal","RMSECal","AICCal", "IntPred","SlopePred","R2Pred","RMSEPred","AICPred"), names(Table))
+        New.names   <- insert(New.names, match("RMSE, ppb", New.names) + 1, "AIC")
+        New.names   <- c(New.names, "AIC")}  
+    Table.report <- Table[, c(columns.Nb1,Names.coeffs,columns.Nb2), with = F]
+    names(Table.report) <- New.names
+    cols <- c("Int.c, ppb", "Int.p, ppb")
+    Table.report[,(cols) := round(.SD,2), .SDcols=cols]
+    for (i in seq(length(New.names.coeffs))) {
+        cols <- New.names.coeffs[i]
+        Table.report[,(cols) := round(.SD,Digits[i]), .SDcols=cols]}
+    return(Table.report)}
+
