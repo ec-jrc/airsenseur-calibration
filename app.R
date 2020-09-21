@@ -87,7 +87,7 @@ if (exists("list.Packages") && list.Packages != "") {
     librarian::shelf(list.Packages)
     rm(list.Packages)} 
 if (!exists("DisqueFieldtest")) {
-    if (rstudioapi::isAvailable()) DisqueFieldtest  <- dirname(rstudioapi::getActiveDocumentContext()$path) else futile.error::flog.error("[ASE_App] please run the ASE_App in Rstudio")} 
+    if (rstudioapi::isAvailable()) DisqueFieldtest  <- dirname(rstudioapi::getActiveDocumentContext()$path) else futile.logger::flog.error("[ASE_App] please run the ASE_App in Rstudio")} 
 # if Script_Dir does not work, e. g. when deploying the app then force to "/home/shinyadmin/App"
 if (is.null(DisqueFieldtest)) DisqueFieldtest <- "/home/shinyadmin/App"
 DirShiny        <- DisqueFieldtest
