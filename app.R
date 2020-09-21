@@ -160,7 +160,7 @@ ui <- navbarPage(title = "ASE_App v0.21", id = "ASE", theme = shinytheme("cerule
                                   #textInput(inputId = "NewFile", label = "New config file (ASEconfig*, * = SOS id)", value = "ASEconfig"),
                                   textInput(inputId = "NewFile", label = "New AirSensEUR (SOS id)"),
                                   actionButton(inputId = "Create.New", label = "Add new AirSensEUR by cloning the one on the list", icon = icon("plus-circle")),
-                                  actionButton(inputId = "Create.Zip", label = "e", icon = icon("plus-circle")),
+                                  actionButton(inputId = "Create.Zip", label = "Add new AirSensEUR by with zip file", icon = icon("plus-circle")),
                                   hr(),
                                   actionButton(inputId = "Quit"   , label = "Quit", icon = icon("power-off"))
                                   , width = 3),
