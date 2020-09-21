@@ -1,7 +1,22 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
-# New release V0.20, 2020-07-24
+# New release V0.21, Not yet released
+#            N134 - When using button Ready SOS. the App check that all calibration models exist.
+#            N135 - insert function TRH_index into the App in order to simplify coding
+#             E95 - bug correction: When detecting data with temperature or humidity out of tolerance interval, data were were not discarded if temperature or humidity were NA. Now corrected
+#             E96 - bug correction: in plotting data filtered for temperature and humidity, sensor data with RH higher than limit were plotted as sensor data with RH lower than limit. Now Corrected.
+#                                   At the same time the time zone of data was not correctly plotted in the DyGraphs. Now corrected using whatever time zone of data for all DyGraphs.
+#             E97 - bug correction: in influx.downloadAndPredict: general rewritting of this function using functions: Warm_Index, TRh_Index, Inv_Index, Outliers_Sens, Sens_Conv and Apply_Model.
+#                                    additionally List.gas.sensor, list.name.sensor, list.name.gas was limited to gas sensors, now all sensors are considered.
+#                                    in Outliers_Sens: Bug on the deleting of high iterations filtering of outliers. Corrected and ThresholdMin confused with Sens.threshold when 
+#                                                      filtering outliers in function My.rm.Outliers
+#             E98 - bug correction: wrong conversion to POSIXct for Init.DB in function INFLUXDB. Corrected
+#            N136 - in Down_Influx about 10 sec faster per ASE box by avoiding asking for Influx.Total.N that was not used and avoid determining the table of sensors and channels at every start if 
+#                   no sensor is added. This table is now saved and loaded from airsensEUR.db.
+#            N137 - Adding text input "Project" to organise better ASE boxes in project. For now it is disabled and only "ASE_Boxes" is set.
+#
+# New release V0.20, 2020-08-21
 #             E93 - bug correction: major bug in the determination of the Gain of the chemical shield. We forgot that the external resistance of 1 Mohm
 #                                   was kept always in parallel of the internal 350kOhm of the internal resistance resulting in a Resistance of 260 kOhm
 #                                   . It is now corrected but all calibration model shall be deleted and fitted again. What a hell!
@@ -64,6 +79,7 @@
 #            N106 - Add the possibility to use several calibration models at different date interval
 #            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
 #            N108 - Allow to select only data with GPStimestamp and GPS coordinates
+#            N133 - use the information in the new version of AirSensEUR regarding reset to filter data for warming time
 # New release V0.19, 2020-05-27
 #             E82 - bug correction: In function SETTIME, General.TZ was wrongly estimated. Corrected using function lubridate::tz
 #            N120 - The ASE-App will can now be used to calibrate PM10 sensors from OPC-N3 and PMS5003, reported as OPCN3PM10 sensor by AirSensEUR in InfluxDB. 

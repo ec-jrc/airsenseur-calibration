@@ -47,10 +47,7 @@ havingIP <- function() {
             binary = "ifconfig"
         } else if (!system("which ip > /dev/null", intern = FALSE)) {
             binary = "ip addr"
-        } else {
-            stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")
-        }
-    }
+        } else stop("Could not identify binary for IP identification. Tried: ifconfig, ipconfig, ip")}
     ipmessage <- system(binary, intern= TRUE)
     # validIP <- "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)[.]) {3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
     validIP <- "(?<=[^0-9.]|^)[1-9][0-9]{0,2}([.]([0-9]{0,3})){3}(?=[^0-9.]|$)"
@@ -87,7 +84,7 @@ if (exists("list.Packages") && list.Packages != "") {
     librarian::shelf(list.Packages)
     rm(list.Packages)} 
 if (!exists("DisqueFieldtest")) {
-    if (rstudioapi::isAvailable()) DisqueFieldtest  <- dirname(rstudioapi::getActiveDocumentContext()$path) else futile.error::flog.error("[ASE_App] please run the ASE_App in Rstudio")} 
+    if (rstudioapi::isAvailable()) DisqueFieldtest  <- dirname(rstudioapi::getActiveDocumentContext()$path) else futile.logger::flog.error("[ASE_App] please run the ASE_App in Rstudio")} 
 # if Script_Dir does not work, e. g. when deploying the app then force to "/home/shinyadmin/App"
 if (is.null(DisqueFieldtest)) DisqueFieldtest <- "/home/shinyadmin/App"
 DirShiny        <- DisqueFieldtest
@@ -125,8 +122,8 @@ cat("\n")
 # 1.f Init Shiny ----
 #----------------------------------------------------------------CR
 #choices.ASEconfig <- list.files(path = getwd(), pattern = glob2rx("ASEconfig*.R"))
-choices.ASEconfig <- list.dirs(path = file.path(getwd(),"ASE_Boxes"), recursive = FALSE)
-#Dir.Logs          <- grep(pattern = glob2rx("*scriptsLog*"), x = list.dirs(DirShiny), value = TRUE)
+Initial.Project   <- "ASE_Boxes"
+choices.ASEconfig <- list.dirs(path = file.path(getwd(), Initial.Project), recursive = FALSE)
 Dir.Logs          <- grep(pattern = glob2rx("*scriptsLog*"), x = list.dirs(choices.ASEconfig), value = TRUE)
 choices.Logs      <- list.files(Dir.Logs, full.names = TRUE)
 Selected.Logs     <- choices.Logs[which.max(file.info(choices.Logs)$mtime)]
@@ -137,9 +134,9 @@ TableTZ           <- as.data.frame(cbind(seq_along(TimeZone), TimeZone), strings
 Influx.TableTZ    <- as.data.frame(cbind( seq_along(Influx.TimeZone), Influx.TimeZone), stringsAsFactors = FALSE)
 choices.shield    <- list.files(path = file.path(getwd(), "Shield_Files"), pattern = "*.asc")
 choices.Ref.unit  <- c("ppb", "ppm", "ug/m3", "mg/m3", "counts", "Celsius", "K", "percent", "hPa", "m/s", "degrees", "W/m2","mm")
-Models            <- c("Linear", "Linear.Robust","MultiLinear", "exp_kT_NoC", "exp_kT", "exp_kK", "T_power", "K_power", "BeerLambert", "Kohler", "RH_Hysteresis","gam", "Quadratic", "Cubic", "Michelis", "Sigmoid")
+Models            <- c("Linear", "Linear.Robust","MultiLinear", "exp_kT_NoC", "exp_kT", "exp_kK", "T_power", "K_power", "BeerLambert", "Kohler", "Kohler_only","RH_Hysteresis","gam", "Quadratic", "Cubic", "Michelis", "Sigmoid")
 # ui =============================================================
-ui <- navbarPage(title = "ASE_App v0.20", id = "ASE", theme = shinytheme("cerulean"), selected = "SelectASE",
+ui <- navbarPage(title = "ASE_App v0.21", id = "ASE", theme = shinytheme("cerulean"), selected = "SelectASE",
                  # shinyjs must be initialized with a call to useShinyjs() in the app's ui.
                  useShinyjs(),
                  extendShinyjs(text = jscode, functions = c("closeWindow")),
@@ -153,6 +150,7 @@ ui <- navbarPage(title = "ASE_App v0.20", id = "ASE", theme = shinytheme("cerule
                           sidebarLayout(
                               sidebarPanel(
                                   br(),
+                                  textInput(   inputId = "Project", label = "Project to list AirSensEUR boxes", value = Initial.Project),
                                   selectInput( inputId = "Config_Files", label = "List of configured AirSensEURs"          ,
                                                choices = choices.ASEconfig, selected = choices.ASEconfig[1]),
                                   textInput(   inputId = "Selected", label = "Selected AirSensEUR", value = ""),
@@ -161,8 +159,8 @@ ui <- navbarPage(title = "ASE_App v0.20", id = "ASE", theme = shinytheme("cerule
                                   hr(),
                                   #textInput(inputId = "NewFile", label = "New config file (ASEconfig*, * = SOS id)", value = "ASEconfig"),
                                   textInput(inputId = "NewFile", label = "New AirSensEUR (SOS id)"),
-                                  actionButton(inputId = "Create.New", label = "Create new AirSensEUR by cloning the list", icon = icon("plus-circle")),
-                                  actionButton(inputId = "Create.Zip", label = "Create new AirSensEUR from zip file", icon = icon("plus-circle")),
+                                  actionButton(inputId = "Create.New", label = "Add new AirSensEUR by cloning the one on the list", icon = icon("plus-circle")),
+                                  actionButton(inputId = "Create.Zip", label = "e", icon = icon("plus-circle")),
                                   hr(),
                                   actionButton(inputId = "Quit"   , label = "Quit", icon = icon("power-off"))
                                   , width = 3),
@@ -630,6 +628,7 @@ server <- function(input, output, session) {
     }
     # initial config
     shinyjs::disable("Selected")
+    shinyjs::disable("Project")
     # The "NewFile" field is mandatory to create a new config file for new AirSensER box and thus the "Create.New" and "Create.Zip" buttons should not be enabled if there is no new name
     # https://cran.r-project.org/web/packages/shinyjs/vignettes/shinyjs-example.html
     observe({
@@ -641,13 +640,24 @@ server <- function(input, output, session) {
             shinyjs::enable("Create.Zip")
         }
     })
-    # Initial values and reactives ----
-    # Reactive values used to check if there are initial data in General.file() and DF general data
-    DF.NULL <<- reactiveValues(Init = FALSE)
-    DF      <<- reactiveValues()
-    Influx  <<- reactiveValues()
-    Sos     <<- reactiveValues()
-    Ref     <<- reactiveValues()
+    # Reactive DownloadSensor() ----
+    # Getting info on last downloaded data, make i reactive to change in INFLUX(), SOSDATA(), REFDATA(), DF$General
+    DownloadSensor <- eventReactive({
+        input$Dataset
+        input$UserMins
+        Influx$DATA
+        Sos$DATA
+        Ref$DATA
+        DF$General
+        input$Selected
+    },{
+        Check_Download(Influx.name = basename(input$Selected),
+                       WDinput     = file.path(input$Selected, "General_data"),
+                       UserMins    = if (!is.null(input$UserMins)) as.numeric(input$UserMins) else Config$all$Server$UserMins,
+                       General.df  = if (!is.null(DF$General))  DF$General else NA,
+                       RefData     = if (!is.null(Ref$DATA))    Ref$DATA else NA,
+                       InfluxData  = if (!is.null(Influx$DATA)) Influx$DATA else NA,
+                       SOSData     = if (!is.null(Sos$DATA))    Sos$DATA else NA)})
     # AirSensEUR name: The one selected in the list of configured AirSensEURs
     ASE_name           <- reactive({
         cc <- basename(input$Selected)
@@ -662,9 +672,9 @@ server <- function(input, output, session) {
     })
     # Reactive DisqueFieldtestDir() ----
     # DisqueFieldtestDir     : The one of the Selected AirSensEUR
-    # DisqueFieldtestDir      <- reactive({return(file.path(DirShiny, "ASE_Boxes", ASE_name())) })
+    # DisqueFieldtestDir      <- reactive({return(file.path(DirShiny, input$Project, ASE_name())) })
     # DisqueFieldtestDir.List: The one given by the Selected config file in the list of Configured AirSensEUR
-    DisqueFieldtestDir.List <- reactive({return(file.path(DirShiny, "ASE_Boxes", ASE_name.List())) })
+    DisqueFieldtestDir.List <- reactive({return(file.path(DirShiny, input$Project, ASE_name.List())) })
     General.file            <- reactive({file.path(input$Selected, "General_data" , "General.csv")})
     InfluxData.file         <- reactive({file.path(input$Selected, "General_data" , "InfluxData.csv")})
     SOSData.file            <- reactive({file.path(input$Selected, "General_data" , "SOSData.csv")})
@@ -676,9 +686,8 @@ server <- function(input, output, session) {
     ind.ref.out.file        <- reactive({file.path(input$Selected, "General_data" , "ind_ref_out.RDS")})
     # Reactive cfg_file() ----
     # cfg_file     : The cfg file  of the Selected AirSensEUR when clicking button "Selected AirSensEUR"
-    Configuration.TRUE <- reactive({
-        # make it reactive to function CONFIG that will change cfg_file, SETTIME_file ...
-        if (exists("Config") && !is.null(Config$All)) Config$All
+    Configuration.TRUE <- eventReactive({
+        input$Config_Files},{
         ifelse(length(list.files(pattern = ".cfg", file.path(input$Config_Files, "Configuration"))) > 0, TRUE, FALSE)})
     cfg_file           <- reactive({if (Configuration.TRUE()) {
         file.path(input$Selected     ,"Configuration",paste0(ASE_name()     ,".cfg"))
@@ -700,16 +709,7 @@ server <- function(input, output, session) {
         file.path(DisqueFieldtestDir.List(),"Configuration",paste0(ASE_name.List(),"_Servers.cfg"))
     } else file.path(DisqueFieldtestDir.List(),"General_data",paste0(ASE_name.List(),"_Servers.cfg"))})
     # Reactive i.sensors Once AirSensEUR is Selected
-    i.sensors          <- reactive({
-        # Returning the indexes of valid sensors in ASE_name.cfg taking into account NAs
-        # depends on input$asc.File, to make i.sensors() reactive on change of shield config file
-        # I do not think it is necesary, the number of sensors should remain the same, but maybe a new sensor for a new compound could be installed
-        input$asc.File
-        # avoid na and names of sensor in the chemical shield
-        #return(which(!is.na(Config$all[["sens2ref"]]$name.sensor) & Config$all[["sens2ref"]]$name.sensor %in% Config$all$sens2ref.shield$name.sensor))
-        return(which(!is.na(Set$Time$name.gas) & Set$Time$name.gas %in% Config$all$sens2ref$name.gas))
-    })
-    list.gas.sensor       <- eventReactive( Config$all[["sens2ref"]]$gas.sensor,{
+    list.gas.sensor       <- eventReactive(Config$all[["sens2ref"]]$gas.sensor,{
         Config$all[["sens2ref"]]$gas.sensor[
             !is.na(Config$all[["sens2ref"]]$gas.sensor) &
                 Config$all[["sens2ref"]]$gas.sensor  != "" 
@@ -735,27 +735,6 @@ server <- function(input, output, session) {
         Config$all[["sens2ref"]]$gas.reference[!is.na(Config$all[["sens2ref"]]$gas.reference) &
                                                    Config$all[["sens2ref"]]$gas.reference != "" &
                                                    Config$all[["sens2ref"]]$gas.sensor %in% list.gas.sensor()]})
-    # Reactive DownloadSensor() ----
-    # Getting info on last downloaded data, make i reactive to change in INFLUX(), SOSDATA(), REFDATA(), DF$General
-    DownloadSensor          <- eventReactive(
-        {
-            input$Dataset
-            input$UserMins
-            Influx$DATA
-            Sos$DATA
-            Ref$DATA
-            DF$General
-            input$Selected
-        },{
-            Check_Download(Influx.name = basename(input$Selected),
-                           WDinput     = file.path(input$Selected, "General_data"),
-                           UserMins    = if (!is.null(input$UserMins)) as.numeric(input$UserMins) else Config$all$Server$UserMins,
-                           General.df  = if (!is.null(DF$General))  DF$General else NA,
-                           RefData     = if (!is.null(Ref$DATA))    Ref$DATA else NA,
-                           InfluxData  = if (!is.null(Influx$DATA)) Influx$DATA else NA,
-                           SOSData     = if (!is.null(Sos$DATA))    Sos$DATA else NA)
-        }
-    )
     # Navbar menu "About"
     output$VersionInfo <- renderPrint(AboutVersions(DisqueFieldtest = DirShiny,
                                                     FirstLineText   = "# Version History ====",
@@ -779,7 +758,7 @@ server <- function(input, output, session) {
         # Make sure it closes when we exit this reactive, even if there's an error
         on.exit(progress$close())
         progress$set(message = "Creating New Config File of AirSensEUR Box", value = 0.5)
-        if (!dir.exists(file.path(DirShiny, "ASE_Boxes", input$NewFile))) {
+        if (!dir.exists(file.path(DirShiny, input$Project, input$NewFile))) {
             #----------------------------------------------------------CR
             #  1.c Create file system structure. check for General.Rdata availability, sourcing ASEConfig_xx.R ####
             #----------------------------------------------------------CR
@@ -787,7 +766,7 @@ server <- function(input, output, session) {
             # Setting the current directory to the root of the file system with the name of The AirSensEUR
             old_ASE_name       <- basename(input$Config_Files)
             if (input$NewFile != "") {
-                DisqueFieldtestDir <- file.path(DirShiny, "ASE_Boxes", input$NewFile)
+                DisqueFieldtestDir <- file.path(DirShiny, input$Project, input$NewFile)
                 # Creating the the working directory of the AirSensEUR box
                 cat("-----------------------------------------------------------------------------------\n")
                 futile.logger::flog.info(paste0("[ASE_App, Create.New] Creating the directory: ",DisqueFieldtestDir, ". Setting it as working directory."))
@@ -812,7 +791,7 @@ server <- function(input, output, session) {
                     file.copy(from = file.path(input$Config_Files,i), to = file.path(DisqueFieldtestDir, "Configuration",gsub(pattern = old_ASE_name, replacement = input$NewFile, basename(i))),
                               overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)}
                 # Updating list of ASE boxes and select the newly created one
-                Newchoices      <- list.dirs(path = file.path(DirShiny, "ASE_Boxes"), recursive = FALSE)
+                Newchoices      <- list.dirs(path = file.path(DirShiny, input$Project), recursive = FALSE)
                 updateSelectInput( session = session, inputId = "Config_Files", choices = Newchoices,
                                    selected = DisqueFieldtestDir)
             } else shinyalert(
@@ -851,7 +830,7 @@ server <- function(input, output, session) {
         # Make sure it closes when we exit this reactive, even if there's an error
         on.exit(progress$close())
         progress$set(message = "Creating New AirSensEUR Box from zip file", value = 0.5)
-        if (input$NewFile != "" && !dir.exists(file.path(DirShiny, "ASE_Boxes", input$NewFile))) {
+        if (input$NewFile != "" && !dir.exists(file.path(DirShiny, input$Project, input$NewFile))) {
             Zip.file <-  selectFile(caption  = "Select a zip file",
                                     label    = "Select",
                                     path     = paste0(file.path(getwd(), "/*.zip")),
@@ -860,7 +839,7 @@ server <- function(input, output, session) {
             #  1.c Create file system structure. check for General.Rdata availability, sourcing ASEConfig_xx.R ####
             # Check directories existence or create , create log file
             if (file.exists(Zip.file)) {
-                DisqueFieldtestDir <- file.path(DirShiny, "ASE_Boxes", input$NewFile)
+                DisqueFieldtestDir <- file.path(DirShiny, input$Project, input$NewFile)
                 # Unzipping Zip.file to DisqueFieldtestDir which will create the File structure
                 cat("-----------------------------------------------------------------------------------\n")
                 futile.logger::flog.info(paste0("[ASE_App, Create.New] unzipping file in : ",DisqueFieldtestDir, ". Setting it as working directory."))
@@ -882,7 +861,7 @@ server <- function(input, output, session) {
                         } else futile.logger::flog.info(paste0("[ASE_App, Create.New] Dir. already exists: ", file.path(DisqueFieldtestDir,i)))
                     }
                     # Updating list of ASE boxes and select the newly created one
-                    Newchoices      <- list.dirs(path = file.path(DirShiny, "ASE_Boxes"), recursive = FALSE)
+                    Newchoices      <- list.dirs(path = file.path(DirShiny, input$Project), recursive = FALSE)
                     updateSelectInput( session = session, inputId = "Config_Files", choices = Newchoices,
                                        selected = DisqueFieldtestDir)
                 } else {
@@ -942,7 +921,8 @@ server <- function(input, output, session) {
     })
     observeEvent(input$Selected, {
         # not run without clicking once on button "Select ASE"
-        if (input$Select > 0) {
+        # browser()
+        if (input$Select > 0 ) {
             # Create a Progress object
             progress <- shiny::Progress$new()
             # Make sure it closes when we exit this reactive, even if there's an error
@@ -955,47 +935,57 @@ server <- function(input, output, session) {
             #----------------------------------------------------------CR
             # initial Config
             progress$set(message = "[ASE_App] INFO, Loading config file", value = 0.1)
-            Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, 
-                                                   Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data")))
-            # Returning a list with 4 elements see below
+            # Removing all previous global variable in case of reelection of ASE box
+            Global.Var <- c("Config", "Set", "Influx", "Sos", "Ref", "DF", "DF.NULL", "Download", 
+                            "Warm", "init.ind.warm", "ind.warm", "TRh", "init.ind.TRh", "ind.TRh", "Inv", "init.ind.Invalid", "ind.Invalid", 
+                            "Outliers.Sens", "Init.ind.sens", "ind.sens", "Neg", "Outliers.Ref","init.ind.ref", "ind.ref", "Conv", "Cal")
+            for (i in Global.Var) while (exists(i)) {
+                futile.logger::flog.info(paste0("[Shiny, Selected] select new ASE, delete \"", i, "\""))
+                rm(list=i, envir = pryr::where(i))
+            }
+            # use of Configuration.TRUE() for compatibility of filepaths of configuration files with previous version of directory tree
+            Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data")))
             # Config$all[["Server"]]   : server parameters
             # Config$all[["sens2ref"]] : cfg parameters
             # Config$all[["CovPlot"]]  : covariates for plotting
             # Config$all[["CovMod"]]   : covariates for calibrating
-            # initial data in General.file()
+            # Config$all[["Boards"]]   : info from grafana dashboards
+            # Config$all[["Sensors"]]  : info from grafana dashboards
+            # Initial values and reactives ----
+            # Reactive values used to check if there are initial data in General.file() and DF general data
+            DF.NULL <<- reactiveValues(Init = FALSE)
             progress$set(message = "[ASE_App] INFO, Loading Sensor, reference and General data", value = 0.2)
             if (file.exists(InfluxData.file())) {
                 if (extension(InfluxData.file()) == ".csv") {
-                    Influx$DATA <- fread(file = InfluxData.file(), na.strings = c("","NA", "<NA>"))
+                    Influx <<- reactiveValues(DATA = fread(file = InfluxData.file(), na.strings = c("","NA", "<NA>")))
                     if (!"" %in% Config$all$Server$Influx.TZ) {
                         data.table::set(Influx$DATA, j = "date", value =  ymd_hms(Influx$DATA[["date"]], tz = Config$all$Server$Influx.TZ))
                     } else data.table::set(Influx$DATA, j = "date", value =  ymd_hms(Influx$DATA[["date"]], tz = "UTC"))
                 } else if (extension(InfluxData.file()) == ".Rdata") {
-                    Influx$DATA <- load_obj(InfluxData.file())
-                    if (!"data.table" %in% class(Influx$DATA)) Influx$DATA <- data.table(Influx$DATA, key = "date")
-                }
+                    Influx <<- reactiveValues(DATA = load_obj(InfluxData.file()))
+                    if (!"data.table" %in% class(Influx$DATA)) Influx$DATA <- data.table(Influx$DATA, key = "date")}
                 if ("V1" %in% names(Influx$DATA)) Influx$DATA[, V1 := NULL]
             }
             if (file.exists(SOSData.file())) {
                 if (extension(SOSData.file()) == ".csv") {
-                    Sos$DATA <- fread(file = SOSData.file(), na.strings = c("","NA", "<NA>"))
+                    Sos <<- reactiveValues(DATA = fread(file = SOSData.file(), na.strings = c("","NA", "<NA>")))
                     if (!"" %in% Config$all$Server$SOS.TZ) {
                         data.table::set(Sos$DATA, j = "date", value =  ymd_hms(Sos$DATA[["date"]], tz = Config$all$Server$SOS.TZ))
                     } else data.table::set(Sos$DATA, j = "date", value =  ymd_hms(Sos$DATA[["date"]], tz = "UTC"))
                 } else if (extension(SOSData.file()) == ".Rdata") {
-                    Sos$DATA <- load_obj(SOSData.file())
+                    Sos <<- reactiveValues(DATA = load_obj(SOSData.file()))
                     if (!"data.table" %in% class(Sos$DATA)) Sos$DATA <- data.table(Sos$DATA, key = "date")
                 }
                 if ("V1" %in% names(Sos$DATA)) Sos$DATA[, V1 := NULL]
-            }
+            } else Sos <<- reactiveValues(DATA = NULL)
             if (file.exists(RefData.file())) {
                 if (extension(RefData.file()) == ".csv") {
-                    Ref$DATA <- fread(file = RefData.file(), na.strings = c("","NA", "<NA>"))
+                    Ref <<- reactiveValues(DATA = fread(file = RefData.file(), na.strings = c("","NA", "<NA>")))
                     if (!"" %in% Config$all$Server$ref.tzone) {
                         data.table::set(Ref$DATA, j = "date", value =  ymd_hms(Ref$DATA[["date"]], tz = Config$all$Server$ref.tzone))
                     } else data.table::set(Ref$DATA, j = "date", value =  ymd_hms(Ref$DATA[["date"]], tz = "UTC"))
                 } else if (extension(SOSData.file()) == ".Rdata") {
-                    Ref$DATA <- load_obj(RefData.file())
+                    Ref <<- reactiveValues(DATA = load_obj(RefData.file()))
                     if (!"data.table" %in% class(Ref$DATA)) Ref$DATA <- data.table(Ref$DATA, key = "date")
                 }
                 if ("V1" %in% names(Ref$DATA)) Ref$DATA[, V1 := NULL]
@@ -1019,7 +1009,7 @@ server <- function(input, output, session) {
             }
             if (file.exists(General.file())) {
                 if (extension(General.file()) == ".csv") {
-                    DF$General <- data.table::fread(General.file()) #, na.strings = getOption("","NA")
+                    DF <<- reactiveValues(General = data.table::fread(General.file())) #, na.strings = getOption("","NA"))
                     # Convert date to POSIXct
                     if (!all("" %in% c(Config$all$Server$Influx.TZ, Config$all$Server$SOS.TZ))) {
                         if (!"" %in% c(Config$all$Server$Influx.TZ)) {
@@ -1027,16 +1017,13 @@ server <- function(input, output, session) {
                             data.table::set(DF$General, j = "date_PreDelay", value =  ymd_hms(DF$General[["date_PreDelay"]], tz = Config$all$Server$Influx.TZ))
                         } else {
                             data.table::set(DF$General, j = "date"         , value =  ymd_hms(DF$General[["date"]]         , tz = Config$all$Server$SOS.TZ))
-                            data.table::set(DF$General, j = "date_PreDelay", value =  ymd_hms(DF$General[["date_PreDelay"]], tz = Config$all$Server$SOS.TZ))
-                        }
+                            data.table::set(DF$General, j = "date_PreDelay", value =  ymd_hms(DF$General[["date_PreDelay"]], tz = Config$all$Server$SOS.TZ))}
                     } else {
                         data.table::set(DF$General, j = "date"         , value =  ymd_hms(DF$General[["date"]]         , tz = "UTC"))
-                        data.table::set(DF$General, j = "date_PreDelay", value =  ymd_hms(DF$General[["date_PreDelay"]], tz = "UTC"))
-                    }
+                        data.table::set(DF$General, j = "date_PreDelay", value =  ymd_hms(DF$General[["date_PreDelay"]], tz = "UTC"))}
                 } else if (extension(General.file()) == ".Rdata") {
-                    DF$General <- load_obj(General.file())
-                    if (!"data.table" %in% class(DF$General)) DF$General <- data.table(DF$General, key = "date")
-                }
+                    DF <<- reactiveValues(General = load_obj(General.file()))
+                    if (!"data.table" %in% class(DF$General)) DF$General <- data.table(DF$General, key = "date")}
                 if ("V1" %in% names(DF$General)) DF$General[, V1 := NULL]
                 # Checking that dew point deficit and absolute humidity are included for old download of AirSensEUR boxes
                 # adding absolute humidity is relative humidity and temperature exist
@@ -1047,9 +1034,7 @@ server <- function(input, output, session) {
                         both.Temp.Hum <- complete.cases(DF$General[, c("Temperature", "Relative_humidity")])
                         DF$General[both.Temp.Hum, "Absolute_humidity"] <- threadr::absolute_humidity(DF$General[["Temperature"]][both.Temp.Hum], DF$General[["Relative_humidity"]][both.Temp.Hum])
                         Td <- weathermetrics::humidity.to.dewpoint(rh = DF$General[["Relative_humidity"]][both.Temp.Hum], t = DF$General[["Temperature"]][both.Temp.Hum], temperature.metric = "celsius")
-                        DF$General[both.Temp.Hum, Td_deficit := DF$General[both.Temp.Hum, "Temperature"] - Td]
-                    }
-                }
+                        DF$General[both.Temp.Hum, Td_deficit := DF$General[both.Temp.Hum, "Temperature"] - Td]}}
                 if (!all(c("Ref.Absolute_humidity", "Ref.Td_deficit") %in% names(DF$General))) {
                     if (all(c("Ref.Temp", "Ref.RH") %in% names(DF$General))) {
                         DF$General$Ref.Absolute_humidity <- NA_real_
@@ -1057,34 +1042,28 @@ server <- function(input, output, session) {
                         Ref.both.Temp.Hum <- complete.cases(DF$General[, c("Ref.Temp", "Ref.RH")])
                         DF$General[Ref.both.Temp.Hum, "Ref.Absolute_humidity"] <- threadr::absolute_humidity(DF$General[["Ref.Temp"]][Ref.both.Temp.Hum], DF$General[["Ref.RH"]])
                         Td <- weathermetrics::humidity.to.dewpoint(rh = DF$General[Ref.both.Temp.Hum, "Ref.RH"], t = DF$General[["Ref.Temp"]][Ref.both.Temp.Hum], temperature.metric = "celsius")
-                        DF$General[Ref.both.Temp.Hum, Ref.Td_deficit := DF$General[["Ref.Temp"]][Ref.both.Temp.Hum] - Td]
-                    }
-                }
-                #}
+                        DF$General[Ref.both.Temp.Hum, Ref.Td_deficit := DF$General[["Ref.Temp"]][Ref.both.Temp.Hum] - Td]}}
                 progress$set(message = "[ASE_App] INFO, Loading General data", value = 0.3)
                 # se c'e' General.Rdata ma alcuni sensori o referenze di Ref$DATA e Influx$DATA non sono in DF$General le si combina
-                if (!all(c(names(Ref$DATA)[grep(pattern = paste(c("Bin.", "boardTimeStamp", "gpsTimestamp"), collapse = "|"),
-                                                x = names(Ref$DATA), invert = T)], names(Influx$DATA)
-                ) %in% names(DF$General)) ) {
+                if (!all(c(names(Ref$DATA)[grep(pattern = paste(c("Bin.", "boardTimeStamp", "gpsTimestamp"), collapse = "|"), x = names(Ref$DATA), invert = T)], names(Influx$DATA)) %in% names(DF$General))) {
                     DF$General   <<- NULL
-                    DF.NULL$Init <<- TRUE
-                }
+                    DF.NULL$Init <<- TRUE}
             } else {
-                DF$General   <<- NULL
-                DF.NULL$Init <<- TRUE
-            }
-            progress$set(message = "[ASE_App] INFO, Loading config file", value = 0.1)
+                DF <<- reactiveValues(General = NULL)
+                DF.NULL$Init <<- TRUE}
+            progress$set(message = "[ASE_App] INFO, Re-loading config file if needed", value = 0.1)
             if (!is.null(Influx$DATA)) Names.Influx <- names(Influx$DATA) else Names.Influx <- NULL
             if (!is.null(Ref$DATA))    Names.ref    <- names(Ref$DATA)    else Names.ref    <- NULL
+            # Redo Config if CO2, OPCN3 or PMS5003 are in Influx AND Ref nut are nont n Config
             if (!is.null(Names.Influx) && !is.null(Names.ref) && 
-                ((!"CO2" %in% Config$all$sens2ref$name.gas && "Carbon_dioxide" %in% Names.Influx && "Ref.CO2" %in% Names.ref) ||
-                 (!" OPCN3PM10"  %in% Config$all$sens2ref$name.sensor && "Particulate_Matter_10" %in% Names.Influx && "Ref.PM10" %in% Names.ref) ||
-                 (!"PM10_PMSCal" %in% Config$all$sens2ref$name.sensor && "PM10_PMSCal" %in% Names.Influx && "Ref.PM10" %in% Names.ref))) {
+                ((!"CO2"       %in% Config$all$sens2ref$name.gas    && "Carbon_dioxide"        %in% Names.Influx && "Ref.CO2"  %in% Names.ref) ||
+                 (!"OPCN3PM10" %in% Config$all$sens2ref$name.sensor && "Particulate_Matter_10" %in% Names.Influx && "Ref.PM10" %in% Names.ref) ||
+                 (!"5310CAT"   %in% Config$all$sens2ref$name.sensor && "PM10_PMSCal"           %in% Names.Influx && "Ref.PM10" %in% Names.ref))) {
+                if (exists("Config")) rm(Config, envir = pryr::where("Config"))
                 Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, 
                                                        Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data"),
                                                        Names.Influx = Names.Influx, 
-                                                       Names.ref    = Names.ref))
-            }
+                                                       Names.ref    = Names.ref))}
             progress$set(message = "[ASE_App] INFO, Initial DownloadSensor", value = 0.4)
             Download <<- reactiveValues(Sensor = DownloadSensor())
             # Initial SetTime
@@ -1104,32 +1083,28 @@ server <- function(input, output, session) {
             Warm <<- reactiveValues(Forced = FALSE)
             if (file.exists(ind.warm.file())) init.ind.warm <- list.load(ind.warm.file()) else {
                 init.ind.warm <- NULL
-                Warm$Forced   <<- TRUE
-            }
+                Warm$Forced   <<- TRUE}
             ind.warm <<- reactiveValues(out = init.ind.warm)
             # Indexes of data discarded outside temperature and humidity tolerance
             progress$set(message = "[ASE_App] INFO, Loading indexes of data discarded outside temperature and humidity tolerance", value = 0.5)
             TRh <<- reactiveValues(Forced = FALSE)
             if (file.exists(ind.TRh.file())) init.ind.TRh <- list.load(ind.TRh.file()) else {
                 init.ind.TRh <- NULL
-                TRh$Forced   <<- TRUE
-            }
+                TRh$Forced   <<- TRUE}
             ind.TRh <<- reactiveValues(out = init.ind.TRh)
             # Flagging the sensor data for Invalid sensor data
             progress$set(message = "[ASE_App] INFO, Loading indexes of Invalid sensor data", value = 0.6)
             Inv <<- reactiveValues(Forced = FALSE)
             if (file.exists(ind.Invalid.file())) init.ind.Invalid <- list.load(ind.Invalid.file()) else {
                 init.ind.Invalid <- NULL
-                Inv$Forced <<- TRUE
-            }
+                Inv$Forced <<- TRUE}
             ind.Invalid <<- reactiveValues(out = init.ind.Invalid)
             # Indexes of outliers for sensor data
             progress$set(message = "[ASE_App] INFO, Loading indexes of outliers for sensor data", value = 0.7)
             Outliers.Sens <<- reactiveValues(Forced = FALSE)
             if (file.exists(ind.sens.out.file())) Init.ind.sens <- list.load(ind.sens.out.file()) else {
                 Init.ind.sens <- NULL
-                Outliers.Sens$Forced <<- TRUE
-            }
+                Outliers.Sens$Forced <<- TRUE}
             ind.sens <<- reactiveValues(out = Init.ind.sens)
             # Indexes of outliers for sensor data
             progress$set(message = "[ASE_App] INFO, Loading indexes of outliers for reference data", value = 0.8)
@@ -1137,8 +1112,7 @@ server <- function(input, output, session) {
             Neg          <<- reactiveValues(Forced = FALSE)
             if (file.exists(ind.ref.out.file()) && file.size(ind.ref.out.file()) > 0) init.ind.ref <- list.load(ind.ref.out.file()) else {
                 init.ind.ref <- NULL
-                Outliers.Ref$Forced <<- TRUE
-            }
+                Outliers.Ref$Forced <<- TRUE}
             ind.ref <<- reactiveValues(out = init.ind.ref)
             # Initialising for conversion and calibration
             Conv <<- reactiveValues(Forced = FALSE)
@@ -1164,11 +1138,9 @@ server <- function(input, output, session) {
                            "Retrieved_plots","Statistics","Verification_plots")
             for (i in List.Dirs) {
                 if (!dir.exists(file.path(input$Selected, i))) {
-                    dir.create(file.path(input$Selected, i),
-                               showWarning = TRUE, recursive = TRUE)
+                    dir.create(file.path(input$Selected, i), showWarnings = TRUE, recursive = TRUE)
                     futile.logger::flog.info(paste0("[ASE_App, Selected] Dir. created: ", file.path(input$Selected,i)), sep = "\n\r")
-                } else futile.logger::flog.info(paste0("[ASE_App, Selected] Dir. already exists: ", file.path(input$Selected,i)))
-            }
+                } else futile.logger::flog.info(paste0("[ASE_App, Selected] Dir. already exists: ", file.path(input$Selected,i)))}
             remove(List.Dirs,i)
             # setting the current directory to the root of the file system with the name of the AirSensEUR
             cat("-----------------------------------------------------------------------------------\n")
@@ -1177,9 +1149,8 @@ server <- function(input, output, session) {
             #----------------------------------------------------------CR
             # 1.c sending console to a file in the directory three (script log) and to variable Console for shiny TextOutput ####
             #----------------------------------------------------------CR
-            while (sink.number() > 0) {print(paste0("Number of sink channels opened: ", sink.number(), ". Closing opened channels"))
-                sink(file = NULL)
-            }
+            while (sink.number() > 0) {futile.logger::flog.info(paste0("Number of sink channels opened: ", sink.number(), ". Closing opened channels"))
+                sink(file = NULL)}
             sink(file.path(input$Selected, "scriptsLog",paste0("console_", Sys.Date(),".log")),
                  type = c("output", "message"),
                  split = TRUE, append = TRUE ) # with split = TRUE we get the file on the screen and in log file
@@ -1187,9 +1158,6 @@ server <- function(input, output, session) {
             futile.logger::flog.info(paste0("[ASE_App, Selected] Starting log file ", file.path(input$Selected, "scriptsLog",paste0("console_", Sys.Date(),".log"))))
             progress$set(message = paste0("[ASE_App] creating the file system for data treatment at ", input$Selected," if it does not exist\n"), value = 0.5)
             cat("-----------------------------------------------------------------------------------\n")
-            # Now ASEConfig can be sourced with function CONFIG and SETTIME to update the config files
-            # Changed this source does not do anything anymore
-            #source(file.path(initial.dir, input$Selected))
             #  NavBar"GetData", sideBar tabPanel "time-shield" ----
             output$uiUserMins       <- renderUI({
                 selectInput(inputId = "UserMins",
@@ -1308,12 +1276,9 @@ server <- function(input, output, session) {
                                         confirmButtonCol = "#AEDEF4",
                                         timer = 3000,
                                         imageUrl = "",
-                                        animation = FALSE
-                                    )
+                                        animation = FALSE)
                                     series <- httr::GET(URLencode(paste0("http://",input$Host,":",input$Port,"/query?db=", input$Db)),
-                                                        config = authenticate(user = input$User,
-                                                                              password = input$Pass),
-                                                        query = list(q = "SHOW SERIES")) # this is too slow: q = "select * from /.*/ limit 1"
+                                                        config = authenticate(user = input$User, password = input$Pass), query = list(q = "SHOW SERIES")) # this is too slow: q = "select * from /.*/ limit 1"
                                     if (series$status_code != 200) {
                                         my_message <- paste0("[ASE_App, ASE.names.Influx] ERROR reading the names of AirSensEUR boxes availabe at the InfluxDB server. Error :",series$status_code, " \".\n")
                                         cat(my_message)
@@ -1330,19 +1295,14 @@ server <- function(input, output, session) {
                                             confirmButtonCol = "#AEDEF4",
                                             timer = 0,
                                             imageUrl = "",
-                                            animation = FALSE
-                                        )
+                                            animation = FALSE)
                                     } else {
-                                        series <- jsonlite::fromJSON(content(series, "text",
-                                                                             encoding = "ISO-8859-1"),
-                                                                     simplifyVector = TRUE,
-                                                                     flatten = TRUE)
+                                        series <- jsonlite::fromJSON(content(series, "text", encoding = "ISO-8859-1"), simplifyVector = TRUE, flatten = TRUE)
                                         series <- series$results$series[[1]]$values[[1]]
                                         series <- unique(sapply(strsplit(x = series, split = ","),function(x) x[1]))
                                         series <- series[!grepl(pattern = paste(c("_Boards", "_Sensors"), collapse = "|"), x = series)]
                                         print(series)
-                                        return(series)
-                                    }
+                                        return(series)}
                                 }
                             } else return(Config$all[["Server"]]$Dataset)
                         } else return(Config$all[["Server"]]$Dataset)
@@ -1364,8 +1324,7 @@ server <- function(input, output, session) {
                 } else {
                     updateSelectInput(session = session,
                                       inputId  = "Dataset",
-                                      choices  = ASE.names.Influx())
-                }})
+                                      choices  = ASE.names.Influx())}})
             output$uiInflux.TZ          <- renderUI({
                 selectInput("Influx.TZ",
                             label = "Time Zone, Influx data are in UTC:",
@@ -1402,12 +1361,10 @@ server <- function(input, output, session) {
                                 if (is.null(input$LOGIN)) {
                                     set_config(use_proxy(url = input$URL,
                                                          port = as.numeric(input$PORT)))
-                                } else {
-                                    set_config( use_proxy(url = input$URL,
-                                                          port =as.numeric(input$PORT),
-                                                          username = input$LOGIN,
-                                                          password = input$PASSWORD))
-                                }
+                                } else set_config( use_proxy(url = input$URL,
+                                                             port =as.numeric(input$PORT),
+                                                             username = input$LOGIN,
+                                                             password = input$PASSWORD))
                             } else reset_config()
                             # connect
                             apiEndpoint <- Endpoint(input$AirsensWeb)
@@ -1420,9 +1377,7 @@ server <- function(input, output, session) {
                             print(sensorweb4R::label(phenomena(apiEndpoint)), quote = FALSE)
                             print(sensorweb4R::label(stations(srv)), quote = FALSE)
                             return(sensorweb4R::label(stations(srv)))
-                        } else return(Config$all[["Server"]]$AirSensEur.name)
-                    }
-                }
+                        } else return(Config$all[["Server"]]$AirSensEur.name)}}
                 progress$set(message = "Connecting to SOS server", value = 1.0)
             })
             output$ASE.name     <- renderUI({
@@ -1510,22 +1465,14 @@ server <- function(input, output, session) {
                                     phe <- phenomena(apiEndpoint)
                                     cat(paste0("Phenomena: ", sensorweb4R::label(phenomena(apiEndpoint)), "\n"))
                                     cat(paste0("Station: "  , sensorweb4R::label(stations(srv)), "\n"))
-                                    #returing station list
+                                    # returning station list
                                     return(
                                         unique(
                                             as.data.frame(
-                                                matrix(
-                                                    unlist(
-                                                        strsplit(x = sensorweb4R::label(stations(srv)),
-                                                                 split = ":")
-                                                    ),
-                                                    nrow = length(sensorweb4R::label(stations(srv))),
-                                                    byrow = T
-                                                ),
-                                                stringsAsFactors = FALSE
-                                            )
-                                        )
-                                    )
+                                                matrix(strsplit(x = sensorweb4R::label(stations(srv)), split = ":")[[1]],
+                                                       nrow = length(sensorweb4R::label(stations(srv))),
+                                                       byrow = T),
+                                                stringsAsFactors = FALSE)))
                                 } else return(Config$all[["Server"]]$Ref.SOS.name)
                             } else return(Config$all[["Server"]]$Ref.SOS.name)
                         } else return(Config$all[["Server"]]$Ref.SOS.name)
@@ -2040,12 +1987,12 @@ server <- function(input, output, session) {
                                                                                value = Config$all[["sens2ref"]]$Sens.iterations[which(Config$all[["sens2ref"]]$name.sensor == i)])),
                                                               div(style = "display: inline-block;vertical-align:top; width: 47%;",
                                                                   numericInput(inputId  = paste0("Sens.Ymin", which(list.name.sensor() == i)),
-                                                                               label = "Minimum values in digital data series"           ,
+                                                                               label = "Minimum values in raw sensor data"           ,
                                                                                value = Config$all[["sens2ref"]]$Sens.Ymin[which(Config$all[["sens2ref"]]$name.sensor == i)])),
                                                               div(style = "display: inline-block;vertical-align:top; width: 1%;",HTML("<br>")),
                                                               div(style = "display: inline-block;vertical-align:top; width: 47%;",
                                                                   numericInput(inputId  = paste0("Sens.Ymax", which(list.name.sensor() == i)),
-                                                                               label = "Maximum values in digital data series"           ,
+                                                                               label = "Maximum values in raw sensor data"           ,
                                                                                value = Config$all[["sens2ref"]]$Sens.Ymax[which(Config$all[["sens2ref"]]$name.sensor == i)]))
                                                           )
                                                       }
@@ -2152,13 +2099,13 @@ server <- function(input, output, session) {
                                                               ),
                                                               div(style = "display: inline-block;vertical-align:top; width: 47%;",
                                                                   numericInput(inputId  = paste0("Ref.Ymin", i),
-                                                                               label = "Minimum values in digital data series"           ,
+                                                                               label = "Minimum values in raw sensor data"           ,
                                                                                value = Config$all[["sens2ref"]]$Ref.Ymin[i])
                                                               ),
                                                               div(style = "display: inline-block;vertical-align:top; width: 1%;",HTML("<br>")),
                                                               div(style = "display: inline-block;vertical-align:top; width: 47%;",
                                                                   numericInput(inputId  = paste0("Ref.Ymax", i),
-                                                                               label = "Maximum values in digital data series"           ,
+                                                                               label = "Maximum values in raw sensor data"           ,
                                                                                value = Config$all[["sens2ref"]]$Ref.Ymax[i])
                                                               )
                                                           )
@@ -2294,13 +2241,11 @@ server <- function(input, output, session) {
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("left2Out.Valid", which(list.name.sensor() == i)), label = "<<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("left1Out.Valid", which(list.name.sensor() == i)), label = "<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 77%;",
                                              dateRangeInput(inputId = paste0("Valid", which(list.name.sensor() == i)),
                                                             label   = "Range of valid dates (invalid are hidden):",
@@ -2309,61 +2254,49 @@ server <- function(input, output, session) {
                                                             end     = as.Date(Set$Time[["Valid.END"]][which(Set$Time$name.sensor == i)]),
                                                             weekstart = 1,
                                                             min = Set$Time[["Valid.IN"]][which(Set$Time$name.sensor == i)],
-                                                            max = Set$Time[["Valid.END"]][which(Set$Time$name.sensor == i)]
-                                             )
-                                         ),
+                                                            max = Set$Time[["Valid.END"]][which(Set$Time$name.sensor == i)])),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("right1Out.Valid", which(list.name.sensor() == i)), label = ">", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("right2Out.Valid", which(list.name.sensor() == i)), label = ">>", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          br(),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("left2Out.Sens.Date", which(list.name.sensor() == i)), label = "<<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("left1Out.Sens.Date", which(list.name.sensor() == i)), label = "<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 77%;",
                                              dateRangeInput(inputId = paste0("Out.Sens.Date", which(list.name.sensor() == i)),
-                                                            label   = "Range of dates for plotting outliers:",                             #### Need the message for the i = 1, "Range of dates for plotting RawData, DataTable, Retrieved, Warming, Temp&Humid, Invalids and outliers:"
+                                                            label   = "Range of dates for filtering data (1st sensor change DataTable view):",
                                                             format  = "yyyy-mm-dd",
                                                             start   = Set$Time$Out.Sens.IN[which(Set$Time$name.sensor == i)],
                                                             end     = as.Date(Set$Time$Out.Sens.END[which(Set$Time$name.sensor == i)]),
                                                             weekstart = 1,
                                                             min = Set$Time[["Valid.IN"]][which(Set$Time$name.sensor == i)],
-                                                            max = Set$Time[["Valid.END"]][which(Set$Time$name.sensor == i)]
-                                             )
-                                         ),
+                                                            max = Set$Time[["Valid.END"]][which(Set$Time$name.sensor == i)])),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("right1Out.Sens.Date", which(list.name.sensor() == i)), label = ">", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("right2Out.Sens.Date", which(list.name.sensor() == i)), label = ">>", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("left2Date", which(list.name.sensor() == i)), label = "<<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("left1Date", which(list.name.sensor() == i)), label = "<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 71%;",
                                              dateRangeInput(inputId = paste0("Date", which(list.name.sensor() == i)),
                                                             label   = "Range of dates for plotting covariates:",
@@ -2372,35 +2305,28 @@ server <- function(input, output, session) {
                                                             end     = as.Date(Set$Time$Cov.Date.END[which(Set$Time$name.sensor == i)]),
                                                             weekstart = 1,
                                                             min     = Set$Time$Valid.IN[which(Set$Time$name.sensor == i)],
-                                                            max     = Set$Time$Valid.END[which(Set$Time$name.sensor == i)]
-                                             )
-                                         ),
+                                                            max     = Set$Time$Valid.END[which(Set$Time$name.sensor == i)])),
                                          div(style = "display: inline-block;vertical-align:top; width: 6%;",
                                              bsButton(inputId = paste0("DateCOVCal", which(list.name.sensor() == i)), label = "Cal", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("right1Date", which(list.name.sensor() == i)), label = ">", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("right2Date", which(list.name.sensor() == i)), label = ">>", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          hr(),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("left2DateCal", which(list.name.sensor() == i)), label = "<<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("left1DateCal", which(list.name.sensor() == i)), label = "<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 57%;",
                                              dateRangeInput(inputId = paste0("DateCal", which(list.name.sensor() == i)),
                                                             label   = "Range of dates for calibration:",
@@ -2409,44 +2335,35 @@ server <- function(input, output, session) {
                                                             end     = as.Date(Set$Time$DateCal.END[which(Set$Time$name.sensor == i)]),
                                                             weekstart = 1,
                                                             min = Set$Time$Valid.IN[which(Set$Time$name.sensor == i)],
-                                                            max = Set$Time$Valid.END[which(Set$Time$name.sensor == i)]
-                                             )
-                                         ),
+                                                            max = Set$Time$Valid.END[which(Set$Time$name.sensor == i)])),
                                          div(style = "display: inline-block;vertical-align:top; width: 6%;",
                                              bsButton(inputId = paste0("DateCALCal", which(list.name.sensor() == i)), label = "Cal", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 6%;",
                                              bsButton(inputId = paste0("DateCALCovCal", which(list.name.sensor() == i)), label = "Cov", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 6%;",
                                              bsButton(inputId = paste0("DateCALExtCal", which(list.name.sensor() == i)), label = "Ext", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("right1DateCal", which(list.name.sensor() == i)), label = ">", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("right2DateCal", which(list.name.sensor() == i)), label = ">>", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("left2DatePlotCal", which(list.name.sensor() == i)), label = "<<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("left1DatePlotCal", which(list.name.sensor() == i)), label = "<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 57%;",
                                              dateRangeInput(inputId = paste0("DatePlotCal", which(list.name.sensor() == i)),
                                                             label   = "Range of dates for plotting calibration:",
@@ -2455,30 +2372,24 @@ server <- function(input, output, session) {
                                                             end     = as.Date(Set$Time$DatePlotCal.END[which(Set$Time$name.sensor == i)]),
                                                             weekstart = 1,
                                                             min = Set$Time$Valid.IN[which(Set$Time$name.sensor == i)],
-                                                            max = Set$Time$Valid.END[which(Set$Time$name.sensor == i)]
-                                             )
-                                         ),
+                                                            max = Set$Time$Valid.END[which(Set$Time$name.sensor == i)])),
                                          div(style = "display: inline-block;vertical-align:top; width: 24%;",
                                              bsButton(inputId = paste0("right1DatePlotCal", which(list.name.sensor() == i)), label = ">", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("right2DatePlotCal", which(list.name.sensor() == i)), label = ">>", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          hr(),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("left2DateMeas", which(list.name.sensor() == i)), label = "<<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("left1DateMeas", which(list.name.sensor() == i)), label = "<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 77%;",
                                              dateRangeInput(inputId = paste0("DateMeas", which(list.name.sensor() == i)),
                                                             label   = "Range of dates for Prediction:",
@@ -2487,29 +2398,23 @@ server <- function(input, output, session) {
                                                             end     = as.Date(Set$Time$DateMeas.END[which(Set$Time$name.sensor == i)]),
                                                             weekstart = 1,
                                                             min = Set$Time$Valid.IN[which(Set$Time$name.sensor == i)],
-                                                            max = Set$Time$Valid.END[which(Set$Time$name.sensor == i)]
-                                             )
-                                         ),
+                                                            max = Set$Time$Valid.END[which(Set$Time$name.sensor == i)])),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("right1DateMeas", which(list.name.sensor() == i)), label = ">", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("right2DateMeas", which(list.name.sensor() == i)), label = ">>", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("left2DatePlotMeas", which(list.name.sensor() == i)), label = "<<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("left1DatePlotMeas", which(list.name.sensor() == i)), label = "<", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 77%;",
                                              dateRangeInput(inputId = paste0("DatePlotMeas", which(list.name.sensor() == i)),
                                                             label   = "Range of dates for plotting predicted data:",
@@ -2518,19 +2423,15 @@ server <- function(input, output, session) {
                                                             end     = as.Date(Set$Time$DatePlotMeas.END[which(Set$Time$name.sensor == i)]),
                                                             weekstart = 1,
                                                             min = Set$Time$Valid.IN[which(Set$Time$name.sensor == i)],
-                                                            max = Set$Time$Valid.END[which(Set$Time$name.sensor == i)]
-                                             )
-                                         ),
+                                                            max = Set$Time$Valid.END[which(Set$Time$name.sensor == i)])),
                                          div(style = "display: inline-block;vertical-align:top; width: 4%;",
                                              bsButton(inputId = paste0("right1DatePlotMeas", which(list.name.sensor() == i)), label = ">", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         ),
+                                                      value = FALSE)),
                                          div(style = "display: inline-block;vertical-align:top; width: 5%;",
                                              bsButton(inputId = paste0("right2DatePlotMeas", which(list.name.sensor() == i)), label = ">>", style = "default",
                                                       size = "extra-small", type = "action", block = FALSE, disabled = FALSE,
-                                                      value = FALSE)
-                                         )
+                                                      value = FALSE))
                                      )
                                  }
                           )
@@ -2545,7 +2446,7 @@ server <- function(input, output, session) {
             # Opening at least once the TabPanel of sideBarLayout Getdata to update all parameters for download
             updateTabsetPanel(session, inputId = "ForServers", selected = "tPRef")
             progress$set(message = "Selecting AirSensEUR Box", value = 1)}
-    }, ignoreNULL = TRUE, ignoreInit = FALSE)
+    }, ignoreNULL = TRUE, ignoreInit = TRUE)
     # Reactive Shield(), NavBar"SelectASE" ----
     Shield                   <- eventReactive(input$asc.File,{
         if (!is.null(input$asc.File) & length(input$asc.File) != 0) {
@@ -2640,8 +2541,7 @@ server <- function(input, output, session) {
     })
     #  Observer asc.File of NavBar "Getdata", sideBarLayout: TimeShield - Proxy - InfluxDB - SOS -Refer.
     #  TimeShield
-    observeEvent(input$asc.File,
-                 {
+    observeEvent(input$asc.File,{
                      # update the name of asc.File in ASE_name.cfg in order to update the name of sensors
                      # Create a Progress object
                      progress <- shiny::Progress$new()
@@ -2651,7 +2551,7 @@ server <- function(input, output, session) {
                      # Reading the _Servers.cfg file or using the one existing in Config$all
                      if (!"Server" %in% names(Config$all)) {
                          if (file.exists(Servers_file())) {
-                             Config$all[["Server"]] <<- data.table::transpose(fread(file = Servers_file(), header = FALSE), fill = NA, make.names = 1)
+                             Config$all[["Server"]] <- data.table::transpose(fread(file = Servers_file(), header = FALSE), fill = NA, make.names = 1)
                              futile.logger::flog.info(paste0("[ASE_App, asc.File] Info, the config file ", Servers_file(), " for the configuration of servers  is loaded"))
                          } else stop(futile.logger::flog.error(paste0("[ASE_App, asc.File] The file of server configuration for AirSensEUR: ", Servers_file,
                                                 " does not exist. Please select another AirSensEUR of manually create the file")))
@@ -2779,7 +2679,7 @@ server <- function(input, output, session) {
         progress$set(message = "[ASE_App, INFLUX] INFO, Checking/Downloading Connection to INFLUX", value = 1)
         # updating Input$DATA
         if (!is.null(A[[1]])) {
-            Influx$DATA <<- A[[1]]
+            Influx$DATA <- A[[1]]
             Download$Sensor <<- DownloadSensor()
         } 
         return(A)
@@ -2827,7 +2727,7 @@ server <- function(input, output, session) {
         progress$set(message = "[ASE_App, SOSDATA] INFO, Checking/Downloading Connection to SOS", value = 1)
         # updating Sos$DATA
         if (!is.null(B[[1]])) {
-            Sos$DATA <<- B[[1]]
+            Sos$DATA <- B[[1]]
             Download$Sensor <<- DownloadSensor()
         } 
         return(B)
@@ -2863,7 +2763,7 @@ server <- function(input, output, session) {
                                                                                                     session = sesion,
                                                                                                     ID.Long = "coord.ref.Long",
                                                                                                     ID.Lat  = "coord.ref.Lat")
-            r <- reactiveValues(coord.ref = coord.ref)
+            r <<- reactiveValues(coord.ref = coord.ref)
             if (r$coord.ref == "," ||
                 unlist(strsplit(r$coord.ref, split = ","))[1] == "" ||
                 unlist(strsplit(r$coord.ref, split = ","))[2] == "") {
@@ -2925,24 +2825,23 @@ server <- function(input, output, session) {
             if (!is.null(Influx$DATA)) Names.Influx <- names(Influx$DATA) else Names.Influx <- NULL
             if (!is.null(Ref$DATA))    Names.ref    <- names(Ref$DATA)    else Names.ref    <- NULL
             if (!is.null(Names.Influx) && !is.null(Names.ref) && 
-                ((!"CO2" %in% Config$all$sens2ref$name.gas && "Carbon_dioxide" %in% Names.Influx && "Ref.CO2" %in% Names.ref) ||
-                 (!" OPCN3PM10"  %in% Config$all$sens2ref$name.sensor && "Particulate_Matter_10" %in% Names.Influx && "Ref.PM10" %in% Names.ref) ||
-                 (!"PM10_PMSCal" %in% Config$all$sens2ref$name.sensor && "PM10_PMSCal" %in% Names.Influx && "Ref.PM10" %in% Names.ref))){
-                Config <<- reactiveValues(all = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, 
-                                                       Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data"),
-                                                       Names.Influx = Names.Influx, 
-                                                       Names.ref    = Names.ref))
-                Set <<- reactiveValues(Time = SETTIME(DisqueFieldtestDir = input$Selected, 
-                                                      DisqueFieldtest    = DirShiny, 
-                                                      General.t.Valid    = DF$General,
-                                                      Influx.TZ          = Config$all[["Server"]]$Influx.TZ,
-                                                      SOS.TZ             = Config$all[["Server"]]$SOS.TZ,
-                                                      Ref.TZ             = Config$all[["Server"]]$ref.tzone,
-                                                      DownloadSensor     = Download$Sensor,
-                                                      Config             = Config$all,
-                                                      sens2ref.shield    = Config$all$sens2ref.shield,
-                                                      Dir.Config         = "Configuration"))
-            }
+                ((!"CO2"       %in% Config$all$sens2ref$name.gas    && "Carbon_dioxide" %in% Names.Influx        && "Ref.CO2"  %in% Names.ref) ||
+                 (!"OPCN3PM10" %in% Config$all$sens2ref$name.sensor && "Particulate_Matter_10" %in% Names.Influx && "Ref.PM10" %in% Names.ref) ||
+                 (!"5310CAT"   %in% Config$all$sens2ref$name.sensor && "PM10_PMSCal" %in% Names.Influx           && "Ref.PM10" %in% Names.ref)) ){
+                Config <<- reactiveValues(all  = CONFIG(DisqueFieldtestDir = input$Selected, DisqueFieldtest = DirShiny, 
+                                                        Dir.Config = ifelse(Configuration.TRUE(),"Configuration", "General_data"),
+                                                        Names.Influx = Names.Influx, 
+                                                        Names.ref    = Names.ref))
+                Set    <<- reactiveValues(Time = SETTIME(DisqueFieldtestDir = input$Selected, 
+                                                         DisqueFieldtest    = DirShiny, 
+                                                         General.t.Valid    = DF$General,
+                                                         Influx.TZ          = Config$all[["Server"]]$Influx.TZ,
+                                                         SOS.TZ             = Config$all[["Server"]]$SOS.TZ,
+                                                         Ref.TZ             = Config$all[["Server"]]$ref.tzone,
+                                                         DownloadSensor     = Download$Sensor,
+                                                         Config             = Config$all,
+                                                         sens2ref.shield    = Config$all$sens2ref.shield,
+                                                         Dir.Config         = "Configuration"))}
         } else {
             # loading existing RefData
             if (!is.null(Ref$DATA)) RefData <- Ref$DATA[] else RefData <- NA_real_
@@ -2962,7 +2861,7 @@ server <- function(input, output, session) {
         }
         # updating Ref$DATA
         if (!is.null(C[[1]])) {
-            Ref$DATA <<- C[[1]]
+            Ref$DATA <- C[[1]]
             Download$Sensor <<- DownloadSensor()
         } 
         return(C)
@@ -3042,15 +2941,70 @@ server <- function(input, output, session) {
         # Declare Ready for SOS Download
         observeEvent(input$Ready.SOS, {
             if (input$Ready.SOS == "Ready") {
-                file.create(file.path(input$Selected, "Configuration", "Ready.SOS"))
+                # Check if calibration function exists
+                # List of calibration model in saved Config file
+                List.Cal.Models    <- sapply(seq(list.name.sensor()), function(i) file.path(input$Selected, "Models", paste0(ASE_name(),"__", list.name.sensor()[i], "__", Config$all$sens2ref$Cal.func[i])))
+                uiList.Cal.Models  <- sapply(seq(list.name.sensor()), function(i) file.path(input$Selected, "Models", paste0(ASE_name(),"__", list.name.sensor()[i], "__", input[[paste0("Cal", i)]])))
+                if (exists("List.Cal.Models") && length(List.Cal.Models) > 0 && length(List.Cal.Models) == length(list.name.sensor()) && all(List.Cal.Models == uiList.Cal.Models)) {
+                    if (all(file.exists(List.Cal.Models))) {
+                        file.create(file.path(input$Selected, "Configuration", "Ready.SOS"))
+                        shinyalert(
+                            title = "ASE box set to ready",
+                            text = "The ASE Box is set to \"Ready\" status.",
+                            closeOnEsc = TRUE,
+                            closeOnClickOutside = TRUE,
+                            html = FALSE,
+                            type = "info",
+                            showConfirmButton = FALSE,
+                            showCancelButton = FALSE,
+                            timer = 3000,
+                            imageUrl = "",
+                            animation = FALSE)
+                    } else {shinyalert(
+                        title = "Warning calibration missing",
+                        text = paste0("The ASE Box cannot be set to \"Ready\" status because some calibration of sensors are missing or are not yet saved. Please save or check sensors:\n", 
+                                      paste0(list.name.sensor()[!file.exists(List.Cal.Models)], collapse = ", ")),
+                        closeOnEsc = TRUE,
+                        closeOnClickOutside = TRUE,
+                        html = FALSE,
+                        type = "warning",
+                        showConfirmButton = FALSE,
+                        showCancelButton = FALSE,
+                        timer = 0,
+                        imageUrl = "",
+                        animation = FALSE)
+                        updateRadioButtons(session = session, inputId = "Ready.SOS", selected = "Not Ready")}
+                } else {shinyalert(
+                    title = "Warning calibration missing",
+                    text = paste0("The ASE Box cannot be set to \"Ready\" status because some calibration of sensors are missing or are not yet saved. Please save or check sensors:\n", 
+                                  paste0(list.name.sensor()[which(List.Cal.Models != uiList.Cal.Models)], collapse = ", ")),
+                    closeOnEsc = TRUE,
+                    closeOnClickOutside = TRUE,
+                    html = FALSE,
+                    type = "warning",
+                    showConfirmButton = FALSE,
+                    showCancelButton = FALSE,
+                    timer = 0,
+                    imageUrl = "",
+                    animation = FALSE)
+                    updateRadioButtons(session = session, inputId = "Ready.SOS", selected = "Not Ready")}
             } else {
                 Ready.SOS.path <- file.path(input$Selected, "Configuration", "Ready.SOS")
                 if (file.exists(Ready.SOS.path)) {
                     unlink(Ready.SOS.path)
-                } else {
-                    cat(paste0(" File ", Ready.SOS.path, "did not exist anyhow.\n"))
-                }
-            }
+                } else futile.logger::flog.warn(paste0(" File ", Ready.SOS.path, " does not exist and cannot be deleted.\n"))
+                shinyalert(
+                    title = "ASE box set to \"Not Ready\"",
+                    text = "The ASE Box is set to \"Not Ready\" status.",
+                    closeOnEsc = TRUE,
+                    closeOnClickOutside = TRUE,
+                    html = FALSE,
+                    type = "info",
+                    showConfirmButton = FALSE,
+                    showCancelButton = FALSE,
+                    timer = 3000,
+                    imageUrl = "",
+                    animation = FALSE)}
         }, ignoreInit = TRUE)
         # Updating date of all dateRange when date of input$Valid is changed and moving buttons ----
         observeEvent({
@@ -3165,10 +3119,10 @@ server <- function(input, output, session) {
             unlist(sapply(seq_along(list.gas.reference()), function(i) input[[paste0("left2Out.Ref.Date", i)]]))
         },{
             # index 1,2,3,4, 5, 6 of the reference gas selected in uiFiltering corresponding of rows of ASE_name.cfg
-            Ref.Index <-  match(x = CalSet()$name.sensor , table = list.name.sensor())
+            Ref.Index <-  match(x = input$Sensors , table = list.name.sensor())
             # Corresponding index for Valid
             # Corresponding index for input$Valid
-            Sens.Index <-  match(x = CalSet()$name.sensor , table = list.name.sensor())
+            Sens.Index <-  match(x = input$Sensors , table = list.name.sensor())
             if (!is.na(Sens.Index)) {
                 # update correct dateRange
                 if (!is.na(input[[paste0("Valid",Sens.Index)]][1])) updateDateRangeInput(session,
@@ -3185,7 +3139,7 @@ server <- function(input, output, session) {
             unlist(sapply(seq_along(list.gas.reference()), function(i) input[[paste0("left1Out.Ref.Date", i)]]))
         }, {
             # index 1,2,3,4, 5, 6 of the reference gas selected in uiFiltering corresponding of rows of ASE_name.cfg
-            Ref.Index  <-  match(x = CalSet()$name.sensor , table = list.name.sensor())
+            Ref.Index  <-  match(x = input$Sensors , table = list.name.sensor())
             # Corresponding index for input$Valid
             Sens.Index <-  match(x = list.gas.sensor()[Ref.Index], table = list.gas.sensor())
             if (!is.na(Sens.Index)){
@@ -3209,7 +3163,7 @@ server <- function(input, output, session) {
             unlist(sapply(seq_along(list.gas.reference()), function(i) input[[paste0("right1Out.Ref.Date", i)]]))
         }, {
             # index 1,2,3,4, 5, 6 of the reference gas selected in uiFiltering corresponding of rows of ASE_name.cfg
-            Ref.Index <-  match(x = CalSet()$name.sensor , table = list.name.sensor())
+            Ref.Index <-  match(x = input$Sensors , table = list.name.sensor())
             # Corresponding index for input$Valid
             Sens.Index <-  match(x = list.gas.sensor()[Ref.Index], table = list.gas.sensor())
             if (!is.na(Sens.Index)) {
@@ -3232,7 +3186,7 @@ server <- function(input, output, session) {
             unlist(sapply(seq_along(list.gas.reference()), function(i) input[[paste0("right2Out.Ref.Date", i)]]))
         }, {
             # index 1,2,3,4, 5, 6 of the reference gas selected in uiFiltering corresponding of rows of ASE_name.cfg
-            Ref.Index <-  match(x = CalSet()$name.sensor , table = list.name.sensor())
+            Ref.Index <-  match(x = input$Sensors , table = list.name.sensor())
             # Corresponding index for input$Valid
             Sens.Index <-  match(x = list.gas.sensor()[Ref.Index], table = list.gas.sensor())
             if (!is.na(Sens.Index)) {
@@ -3765,7 +3719,7 @@ server <- function(input, output, session) {
         })
         # download report
         output$report <- downloadHandler(
-            filename = file.path(CalSet()$WDModelled_gas, paste0(AirSensEur.name(),"__",CalSet()$name.sensor,"__",CalSet()$Cal,"__.html")),
+            filename = file.path(CalSet()$WDModelled_gas, paste0(AirSensEur.name(),"__",input$Sensors,"__",CalSet()$Cal,"__.html")),
             content  = function(file) {
                 #if (file.exists(filename)) file.remove(filename)
                 renderedFile <- render(
@@ -4212,8 +4166,8 @@ server <- function(input, output, session) {
             data.table::set(Config$all[["Table_Config"]], i = nrow(Config$all[["Table_Config"]]), j = "mod.eta.model.type"  , value = "Linear.Robust")
         })
         observeEvent(input$Update.Config, {
-            Config$all[["Table_Config"]] <<- Update.Hansome.Config(Table_Config = Config$all[["Table_Config"]], DT_Filtering = input$DT_Filtering, DT_Calib.cfg = input$DT_Calib.cfg, DT_CalTime = input$DT_CalTime)
-            Config$all[["sens2ref"]]     <<- merge(Config$all$Table_Config[,intersect(names(Config$all$sens2ref), names(Config$all$Table_Config)), with = FALSE], 
+            Config$all[["Table_Config"]] <- Update.Hansome.Config(Table_Config = Config$all[["Table_Config"]], DT_Filtering = input$DT_Filtering, DT_Calib.cfg = input$DT_Calib.cfg, DT_CalTime = input$DT_CalTime)
+            Config$all[["sens2ref"]]     <- merge(Config$all$Table_Config[,intersect(names(Config$all$sens2ref), names(Config$all$Table_Config)), with = FALSE], 
                                                    Config$all$sens2ref[, c("name.gas", "name.sensor", setdiff(names(Config$all$sens2ref), names(Config$all$Table_Config))), with = FALSE],
                                                    by = c("name.gas", "name.sensor"), all = TRUE, fill = T)
             # Saving file *.cfg
@@ -4226,7 +4180,7 @@ server <- function(input, output, session) {
             fwrite(setDT(as.data.frame(t(sens2ref)), keep.rownames = "name.gas")[], file = cfg_file(), row.names = FALSE, col.names = FALSE)
             futile.logger::flog.info(paste0("[ASE_App, Update.Config]", ASE_name(),".cfg config file saved in directory General_data."))
             # Saving file *_SETTIME
-            Set$Time <<- Config$all[["Table_Config"]][,c("name.gas","name.sensor", "Out.Ref.IN", "Out.Ref.END", "Out.Sens.IN", "Out.Sens.END",
+            Set$Time <- Config$all[["Table_Config"]][,c("name.gas","name.sensor", "Out.Ref.IN", "Out.Ref.END", "Out.Sens.IN", "Out.Sens.END",
                                                          "Valid.IN", "Valid.END", "Cov.Date.IN", "Cov.Date.END",
                                                          "DateCal.IN", "DateCal.END", "DatePlotCal.IN", "DatePlotCal.END", "DateMeas.IN", "DateMeas.END", "DatePlotMeas.IN", "DatePlotMeas.END")]
             fwrite(setDT(as.data.frame(t(Set$Time)), keep.rownames = "name.gas")[], file = SETTIME_file(), row.names = FALSE, col.names = FALSE)
@@ -4254,21 +4208,19 @@ server <- function(input, output, session) {
             # Quit to restart the UI and redo the whole data treatment
             shinyjs::click(id = "Quit")
         })
-        output$ui_Del_name.sensor       <- renderUI({selectInput(inputId = "Del_name.sensor"      , label = "Sensor name (name.sensor)"           , choices = list.name.sensor(), multiple = T)}) 
+        output$ui_Del_name.sensor       <- renderUI({selectInput(inputId = "Del_name.sensor", label = "Sensor name (name.sensor)", choices = list.name.sensor(), multiple = T)}) 
         observeEvent(input$delRow, {
-            Config$all[["Table_Config"]] <<- Update.Hansome.Config(Table_Config = Input_Config(), DT_Filtering = input$DT_Filtering, DT_Calib.cfg = input$DT_Calib.cfg, DT_CalTime = input$DT_CalTime)
+            Config$all[["Table_Config"]] <- Update.Hansome.Config(Table_Config = Input_Config(), DT_Filtering = input$DT_Filtering, DT_Calib.cfg = input$DT_Calib.cfg, DT_CalTime = input$DT_CalTime)
             # Deleting the row of Table_Config equal to Del_name.sensor
-            Config$all[["Table_Config"]] <<- Config$all[["Table_Config"]][!name.sensor %in% input$Del_name.sensor]
+            Config$all[["Table_Config"]] <- Config$all[["Table_Config"]][!name.sensor %in% input$Del_name.sensor]
             # Deleting row in Config$all and Set$Time
-            Config$all[["sens2ref"]] <<- Config$all[["sens2ref"]][!name.sensor %in% input$Del_name.sensor]
+            Config$all[["sens2ref"]] <- Config$all[["sens2ref"]][!name.sensor %in% input$Del_name.sensor]
             Set$Time <- Set$Time[!name.sensor %in% input$Del_name.sensor]
         })
         # NavBar"Data Treatment", mainTabPanel "CalibMain" - "Config", ----
         Calib_data               <- reactive({
-            #updateTabsetPanel(session, inputId = "Calib_data", selected = "Calib")
             return(Input_Config()[,c("name.gas", "name.sensor", "gas.reference", "gas.reference2use", "gas.sensor", "Sens.raw.unit", "Sens.unit", "ref.unitgas", 
-                                     "Cal.Line", "Cal.func", "mod.eta.model.type", "Neg.mod", "Slope", "Intercept", "ubsRM", "ubss", "Sync.Cal", "Sync.Pred", "eta.model.type")])
-        })
+                                     "Cal.Line", "Cal.func", "mod.eta.model.type", "Neg.mod", "Slope", "Intercept", "ubsRM", "ubss", "Sync.Cal", "Sync.Pred", "eta.model.type")])})
         output$DT_Calib.cfg <- renderRHandsontable({
             rhandsontable(Input_Config()[,c("name.gas", "name.sensor", "gas.reference", "gas.reference2use", "gas.sensor", "Sens.raw.unit", "Sens.unit", "ref.unitgas", 
                                                           "Cal.Line", "Cal.func", "mod.eta.model.type", "Neg.mod", "Slope", "Intercept", "ubsRM", "ubss", "Sync.Cal", "Sync.Pred", "eta.model.type")], 
@@ -4308,7 +4260,7 @@ server <- function(input, output, session) {
             # Plotting raw downloaded data in DF$General
             cat("\n")
             cat("-----------------------------------------------------------------------------------\n")
-            futile.logger::flog.info("[ASE_App, Plot.RawData] plotting raw digital data series")
+            futile.logger::flog.info("[ASE_App, Plot.RawData] plotting raw sensor data")
             # Create a Progress object
             progress <- shiny::Progress$new()
             progress$set(message = "Plotting all raw data of AirSensEUR Box", value = 0.5)
@@ -4343,8 +4295,8 @@ server <- function(input, output, session) {
                     plot_RawData <- dygraph(ts_RawData, group = "Influx", height = Height, width = "100%") %>%
                         dySeries(label = Names.to.plot[i], color = colour_vector[i]) %>%
                         dyAxis("y", label = Names.to.plot[i]) %>%
-                        dyOptions(labelsUTC = T) # plot in UTC
-                    #dyOptions(useDataTimezone = TRUE) # do not use the local time zone
+                        dyOptions(useDataTimezone = TRUE)
+                    #dyOptions(labelsUTC = T) # plot in UTC
                     plot_RawData_list[[i]] <- plot_RawData  #add each element to list
                 }
             } else futile.logger::flog.warn("[ASE_App, Plot.RawData] no raw digital data to plot from df General.")
@@ -4444,7 +4396,7 @@ server <- function(input, output, session) {
             # Reactive function to trigger for Warming time, temperature/humidity tolerance, negative reference values and invalid, DF$General
             # Warm$Forced is TRUE if Apply.Warm    is TRUE
             if (any(unlist(sapply(seq_along(isolate(list.name.sensor())), function(i) input[[paste0("Apply.Warm", i)]])))
-            ) Warm$Forced <- TRUE else Warm$Forced <- FALSE}, ignoreInit = TRUE, priority = 200)
+            ) Warm$Forced <<- TRUE else Warm$Forced <<- FALSE}, ignoreInit = TRUE, priority = 200)
         observeEvent(Warm$Forced, {
             # Flagging the sensor data for warming time
             # This dataTreatment can only works if boardTimeStamp exists, meaning only in InfluxData. It will not work with SOSData
@@ -4538,23 +4490,23 @@ server <- function(input, output, session) {
                                           Col     = "green",
                                           Ylab    = "Raw Sensor values",
                                           indfull = which(General.df[["date"]] %in% unlist(Index.warm[CalSet()$gas.sensor])),
-                                          Title   = (paste0("Data invalidated during warming of sensor ", CalSet()$name.sensor,
+                                          Title   = (paste0("Data invalidated during warming of sensor ", input$Sensors,
                                                             " for ", isolate(input[[paste0("Warming",CalSet()$k)]]), " hours after each switch-on.")),
                                           Dygraphs = TRUE)
                 } else {
-                    futile.logger::flog.info(paste0("[ASE_App, Plot.Warming] There is no warming data to discard for ", CalSet()$name.sensor, ""))
+                    futile.logger::flog.info(paste0("[ASE_App, Plot.Warming] There is no warming data to discard for ", input$Sensors, ""))
                     plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                    text(1,1,paste0("[ASE_App, Plot.Warming] INFO, There is no warming data to discard for ", CalSet()$name.sensor))
+                    text(1,1,paste0("[ASE_App, Plot.Warming] INFO, There is no warming data to discard for ", input$Sensors))
                 }
-                futile.logger::flog.info(paste0("[ASE_App, Plot.Warming] sensor ", CalSet()$name.sensor,
+                futile.logger::flog.info(paste0("[ASE_App, Plot.Warming] sensor ", input$Sensors,
                            ", ",length(which(!is.na(General.df[, .SD, .SDcols = paste0("Out.Warm.",CalSet()$gas.sensor)]))),
                            " valid data after removing ",length(which(General.df[["date"]] %in% unlist(Index.warm[CalSet()$gas.sensor]))),
                            " values during ", isolate(input[[paste0("Warming", CalSet()$k)]])," hours of warming at each switch-on"))
                 # Saving plot if requested
                 if (input$SavePlot) {
-                    dev.copy(png,filename = file.path(CalSet()$WDOutliers, paste0(AirSensEur.name(), "_", CalSet()$name.sensor, "_Warming.png")), res = 300 )
+                    dev.copy(png,filename = file.path(CalSet()$WDOutliers, paste0(AirSensEur.name(), "_", input$Sensors, "_Warming.png")), res = 300 )
                     dev.off()
-                    futile.logger::flog.info(paste0("[ASE_App] ", AirSensEur.name(), "_", CalSet()$name.sensor, "_Warming.png saved in ", CalSet()$WDOutliers, "\n" ))
+                    futile.logger::flog.info(paste0("[ASE_App] ", AirSensEur.name(), "_", input$Sensors, "_Warming.png saved in ", CalSet()$WDOutliers, "\n" ))
                     # reset of CheckBox
                     updateCheckboxInput(session,  inputId = "SavePlot", value = FALSE)
                 }
@@ -4569,8 +4521,8 @@ server <- function(input, output, session) {
             # Make sure it closes when we exit this reactive, even if there's an error
             on.exit(progress$close())
             # Opening the Filtering TabSet for GUI consistency
-            isolate({if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
-                     if (input$Treatments != "Sensors")   updateTabsetPanel(session, inputId = "Treatments", selected = "Sensors")})
+            # isolate({if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
+            #          if (input$Treatments != "Sensors")   updateTabsetPanel(session, inputId = "Treatments", selected = "Sensors")})
             # returning plot
             if (exists("plot_warm")) return(plot_warm)
         })
@@ -4587,7 +4539,7 @@ server <- function(input, output, session) {
             #       DF$General
             #       input$Apply.TRh
             if (any(unlist(sapply(seq_along(isolate(list.name.sensor())), function(i) input[[paste0("Apply.TRh", i)]])))
-            ) TRh$Forced <- TRUE else TRh$Forced <- FALSE},
+            ) TRh$Forced <<- TRUE else TRh$Forced <<- FALSE},
         ignoreInit = TRUE,
         priority = 190
         )
@@ -4595,7 +4547,7 @@ server <- function(input, output, session) {
             # Input:
             #   General.df           : dataframe General created by reactive function DF$General merfing influx, SOS and reference data.
             #   INFLUX()[[2]]        : charater vector with the name of meteorological parameters ("Temperature","Relative_humidity" and "Atmospheric_pressure")
-            #   list.gas.sensor()   : charater vector with the name of sensor gas compounds ("Carbon_monoxide","Nitric_oxide","Nitrogen_dioxide" and "Ozone")
+            #   list.gas.sensor()    : charater vector with the name of sensor gas compounds ("Carbon_monoxide","Nitric_oxide","Nitrogen_dioxide" and "Ozone")
             # Output:                : list of NAs for discarded temperature and humidity with as many elements as in list.gas.sensor()
             #                          consisting of vector of integers of the index of rows of DF$General dataframe
             if (TRh$Forced) {
@@ -4603,36 +4555,11 @@ server <- function(input, output, session) {
                 progress <- shiny::Progress$new()
                 progress$set(message = "[ASE_App, ind.TRh] INFO, Setting the index temperature and Humidity out of tolerance", value = 0.5)
                 futile.logger::flog.info("[ASE_App, ind.TRh] Setting index of sensor data outside temperature and RH validity ranges")
-                # Always starting detection of outleirs for T and RH from the dataframe set in DF$General
-                index.temp <- which(colnames(DF$General) == "Temperature")   #  %in% INFLUX()[[2]][1]
-                index.rh   <- which(colnames(DF$General) == "Relative_humidity")   #  %in% INFLUX()[[2]][2]
-                return.ind.TRh    <- list()
-                return.ind.T.min  <- list()
-                return.ind.T.max  <- list()
-                return.ind.Rh.min <- list()
-                return.ind.Rh.max <- list()
-                #for (l in INFLUX()[[3]]) {
-                for (l in list.gas.sensor()) {
-                    # Global index of temperature/humidity exceeding thresholds
-                    ind <- (DF$General[,index.temp, with = FALSE]   < input[[paste0("Temperature",match(x = l, table = list.gas.sensor()))]][1] |
-                                DF$General[,index.temp, with = FALSE]   > input[[paste0("Temperature",match(x = l, table = list.gas.sensor()))]][2]) |
-                        (DF$General[, index.rh, with = FALSE]     < input[[paste0("Humidity"   ,match(x = l, table = list.gas.sensor()))]][1]  |
-                             DF$General[, index.rh, with = FALSE]     > input[[paste0("Humidity"   ,match(x = l, table = list.gas.sensor()))]][2])
-                    # Global index of temperature/humidity exceeding thresholds
-                    T.min  <- DF$General[, index.temp, with = FALSE] < input[[paste0("Temperature",match(x = l, table = list.gas.sensor()))]][1]
-                    T.max  <- DF$General[, index.temp, with = FALSE] > input[[paste0("Temperature",match(x = l, table = list.gas.sensor()))]][2]
-                    Rh.min <- DF$General[, index.rh, with = FALSE]   < input[[paste0("Humidity"   ,match(x = l, table = list.gas.sensor()))]][1]
-                    Rh.max <- DF$General[, index.rh, with = FALSE]   > input[[paste0("Humidity"   ,match(x = l, table = list.gas.sensor()))]][2]
-                    # if (exists("return.ind.TRh")) {
-                    return.ind.TRh[[Config$all[["sens2ref"]][which(gas.sensor == l), name.sensor]]] <- which(ind)
-                    return.ind.T.min[[ paste0(Config$all[["sens2ref"]][which(gas.sensor == l), name.sensor],"__Temp. < ",input[[paste0("Temperature",match(x = l, table = list.gas.sensor()))]][1])]] <- which(T.min)
-                    return.ind.T.max[[ paste0(Config$all[["sens2ref"]][which(gas.sensor == l), name.sensor],"__Temp. > ",input[[paste0("Temperature",match(x = l, table = list.gas.sensor()))]][2])]] <- which(T.max)
-                    return.ind.Rh.min[[paste0(Config$all[["sens2ref"]][which(gas.sensor == l), name.sensor],"__RH < "   ,input[[paste0("Humidity"   ,match(x = l, table = list.gas.sensor()))]][1])]] <- which(Rh.min)
-                    return.ind.Rh.max[[paste0(Config$all[["sens2ref"]][which(gas.sensor == l), name.sensor],"__RH > "   ,input[[paste0("Humidity"   ,match(x = l, table = list.gas.sensor()))]][2])]] <- which(Rh.max)
-                }
-                ind.TRh$out <<- list(ind.TRh = return.ind.TRh, T.min = return.ind.T.min, T.max = return.ind.T.max, Rh.min = return.ind.Rh.min, Rh.max = return.ind.Rh.max)
+                # Always starting detection of outliers for T and RH from DF$General
+                ind.TRh$out <<- TRh_Index(General.DT = DF$General, list.gas.sensor = list.gas.sensor(), boxConfig = list(sens2ref = Input_Config()), 
+                                          ASEDir = input$Selected, Save = ifelse(file.exists(ind.TRh.file()), FALSE, TRUE))
                 # Setting Invalid$Forced to True to be sure that it is carried out before ind.sens
-                Inv$Forced <- TRUE
+                Inv$Forced <<- TRUE
                 progress$set(message = "[ASE_App, ind.TRh] INFO, Setting the index temperature and Humidity out of tolerance", value = 1)
                 progress$close()
             }
@@ -4650,42 +4577,38 @@ server <- function(input, output, session) {
             General.df <- DF$General[date >= input[[paste0("Out.Sens.Date", CalSet()$k)]][1] & date <= input[[paste0("Out.Sens.Date", CalSet()$k)]][2] + 1, .SD,
                                      .SDcols = c("date", CalSet()$gas.sensor, paste0("Out.Warm.TRh.",CalSet()$gas.sensor))]
             # Creating a list of dates with values out of tolerance of T and RH : T.min, T.max, Rh.min and Rh.maxin in ind.TRh$out
-            Index.TRh <- lapply(ind.TRh$out$ind.TRh, function(x) {DF$General$date[x]} )
-            T.min     <- lapply(ind.TRh$out$T.min  , function(x) {DF$General$date[x]} )
-            T.max     <- lapply(ind.TRh$out$T.max  , function(x) {DF$General$date[x]} )
-            Rh.min    <- lapply(ind.TRh$out$Rh.min , function(x) {DF$General$date[x]} )
-            Rh.max    <- lapply(ind.TRh$out$Rh.max , function(x) {DF$General$date[x]} )
+            Index.TRh <- DF$General$date[ind.TRh$out$ind.TRh[input$Sensors][[1]]]
+            T.min     <- DF$General$date[ind.TRh$out$T.min[grep(input$Sensors, x = names(ind.TRh$out$T.min))][[1]]]
+            T.max     <- DF$General$date[ind.TRh$out$T.max[grep(input$Sensors, x = names(ind.TRh$out$T.max))][[1]]]
+            Rh.min    <- DF$General$date[ind.TRh$out$Rh.min[grep(input$Sensors, x = names(ind.TRh$out$Rh.min))][[1]]]
+            Rh.max    <- DF$General$date[ind.TRh$out$Rh.max[grep(input$Sensors, x = names(ind.TRh$out$Rh.max))][[1]]]
             cat("-----------------------------------------------------------------------------------\n")
             if (length(Index.TRh) != 0) {
-                if (!is.null(Index.TRh[CalSet()$name.sensor])) {
-                    ind = list(
-                        T.min[[ names(T.min)[ grep(CalSet()$name.sensor, x = names(T.min))] ]],
-                        T.max[[ names(T.max)[ grep(CalSet()$name.sensor, x = names(T.max))] ]],
-                        Rh.min[[names(Rh.min)[grep(CalSet()$name.sensor, x = names(Rh.min))] ]],
-                        Rh.max[[names(Rh.max)[grep(CalSet()$name.sensor, x = names(Rh.max))] ]]
-                    )
-                    names(ind) <-  c(unlist(strsplit(names(T.min)[  match(CalSet()$gas.sensor, list.gas.sensor())], split = "__"))[2],
-                                     unlist(strsplit(names(T.max)[  match(CalSet()$gas.sensor, list.gas.sensor())], split = "__"))[2],
-                                     unlist(strsplit(names(Rh.min)[ match(CalSet()$gas.sensor, list.gas.sensor())], split = "__"))[2],
-                                     unlist(strsplit(names(Rh.max)[ match(CalSet()$gas.sensor, list.gas.sensor())], split = "__"))[2])
-                    Plot.Temp.Humid <- GraphOut(date = General.df[["date"]],
+                if (!is.null(Index.TRh)) {
+                    ind = list(T.min, T.max, Rh.min, Rh.max)
+                    names(ind) <-  c(strsplit(names(ind.TRh$out$T.min[grep(input$Sensors, x = names(ind.TRh$out$T.min))]), split = "__")[[1]][2], 
+                                     strsplit(names(ind.TRh$out$T.max[grep(input$Sensors, x = names(ind.TRh$out$T.max))]), split = "__")[[1]][2],
+                                     strsplit(names(ind.TRh$out$Rh.min[grep(input$Sensors, x = names(ind.TRh$out$Rh.min))]), split = "__")[[1]][2], 
+                                     strsplit(names(ind.TRh$out$Rh.max[grep(input$Sensors, x = names(ind.TRh$out$Rh.max))]), split = "__")[[1]][2])
+                    # https://stackoverflow.com/questions/24886119/dygraphs-timestamp-with-timezone
+                    # I use dyOptions(useDataTimezone = T) in GraphOut()
+                    Plot.Temp.Humid <- GraphOut(date    = General.df[["date"]], # lubridate::force_tz(General.df$date, tzone = Sys.timezone(), roll = T),
                                                 y       = General.df[[CalSet()$gas.sensor]],
                                                 Col     = "green",
                                                 Ylab    = "Raw Sensor values",
                                                 indfull = ind,
-                                                Title   = paste0("Data invalidated for temperature or humidity outside thresholds for sensor ", CalSet()$name.sensor),
-                                                Dygraphs = TRUE
-                    )
-                    futile.logger::flog.info(paste0("[ASE_App, Plot.Temp.Humid] for sensor ", CalSet()$name.sensor,": ",
+                                                Title   = paste0("Data invalidated for temperature or humidity outside thresholds for sensor ", input$Sensors),
+                                                Dygraphs = TRUE)
+                    futile.logger::flog.info(paste0("[ASE_App, Plot.Temp.Humid] for sensor ", input$Sensors,": ",
                                length(which(!is.na(General.df[[paste0("Out.Warm.TRh.",CalSet()$gas.sensor)]]))),
                                " valid data after removing sensor warm up data and ",
-                               length(which(General.df[["date"]] %in% unlist(Index.TRh[CalSet()$name.sensor]))),
+                               length(which(General.df[["date"]] %in% unlist(Index.TRh[input$Sensors]))),
                                " values outside temperature/humidity intervals"))
                 } else{
-                    futile.logger::flog.info(paste0("[ASE_App, Plot.Temp.Humid] sensor ", CalSet()$name.sensor,
+                    futile.logger::flog.info(paste0("[ASE_App, Plot.Temp.Humid] sensor ", input$Sensors,
                                " was not used outside temperature or humidity validity ranges."))
                     plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                    text(1,1,paste0("[ASE_App, Plot.Temp.Humid] INFO, INFO, sensor ", CalSet()$name.sensor,
+                    text(1,1,paste0("[ASE_App, Plot.Temp.Humid] INFO, INFO, sensor ", input$Sensors,
                                     " was not used outside temperature or humidity validity ranges."))
                 }
                 # Saving plot if requested
@@ -4711,9 +4634,9 @@ server <- function(input, output, session) {
             # Make sure it closes when we exit this reactive, even if there's an error
             on.exit(progress$close())
             # Opening the Filtering TabSet for GUI consistency
-            isolate({
-                if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
-                if (input$Treatments != "Sensors")   updateTabsetPanel(session, inputId = "Treatments", selected = "Sensors")})
+            # isolate({
+            #     if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
+            #     if (input$Treatments != "Sensors")   updateTabsetPanel(session, inputId = "Treatments", selected = "Sensors")})
             # returning plot
             if (exists("Plot.Temp.Humid")) return(Plot.Temp.Humid)
         })
@@ -4729,7 +4652,7 @@ server <- function(input, output, session) {
             futile.logger::flog.info(paste0("[ASE_App]Plot.Neg.values, number of valid measurements for ", CalSet()$name.reference,
                        " before removing negative values: ", length(which(!is.na(DF$General[,CalSet()$name.reference, with = F])))))
             # number index of reference in the list of references
-            j <- match(x = CalSet()$name.sensor , table = list.name.sensor())
+            j <- match(x = input$Sensors , table = list.name.sensor())
             # Discarding negative values
             # negative values for selected pollutants
             ind.neg <- which(DF$General[,CalSet()$name.reference] < 0)
@@ -4828,9 +4751,9 @@ server <- function(input, output, session) {
             # # Make sure it closes when we exit this reactive, even if there's an error
             on.exit(progress$close())
             # Opening the Filtering TabSet for GUI consistency
-            isolate({
-                if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
-                if (input$Treatments != "Reference")   updateTabsetPanel(session, inputId = "Treatments", selected = "Reference")})
+            # isolate({
+            #     if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
+            #     if (input$Treatments != "Reference")   updateTabsetPanel(session, inputId = "Treatments", selected = "Reference")})
             # returning plot
             if (exists("Plot.Neg.values")) return(Plot.Neg.values)
         })
@@ -4852,17 +4775,17 @@ server <- function(input, output, session) {
                 # plotting the data discarded for the selected sensor
                 # checking that discarding of invalid data is requested
                 if (input[[paste0("Sens.Inval.Out", CalSet()$k)]]) {
-                    if (!is.null(ind.Invalid$out[[2]][[CalSet()$name.sensor]])) {
+                    if (!is.null(ind.Invalid$out[[2]][[input$Sensors]])) {
                         # Selecting the species associated with sensor in rows of ASE_name.cfg
                         Plot_invalid <- GraphOut(date    = General.df[["date"]],
                                                  y       = General.df[[CalSet()$gas.sensor]],
                                                  Col     = "green",
                                                  Ylab    = "Raw Sensor values",
-                                                 indfull = which(General.df[["date"]] %in% ind.Invalid$out[[2]][[CalSet()$name.sensor]]),
-                                                 Title   = paste0("Data invalidated, dates outside valid period, for sensor ", CalSet()$name.sensor),
+                                                 indfull = which(General.df[["date"]] %in% ind.Invalid$out[[2]][[input$Sensors]]),
+                                                 Title   = paste0("Data invalidated, dates outside valid period, for sensor ", input$Sensors),
                                                  Dygraphs = TRUE)
                     } else shinyalert(title = "INFO no sensor invalid data",
-                                      text = paste0("[ASE_App, Plot.Inv] INFO, There is no Invalid data to discard for sensor ", CalSet()$name.sensor, "\n"),
+                                      text = paste0("[ASE_App, Plot.Inv] INFO, There is no Invalid data to discard for sensor ", input$Sensors, "\n"),
                                       closeOnEsc = TRUE,
                                       closeOnClickOutside = TRUE,
                                       html = FALSE,
@@ -4875,7 +4798,7 @@ server <- function(input, output, session) {
                                       imageUrl          = "",
                                       animation         = FALSE)
                 } else shinyalert(title = "INFO no sensor invalid data",
-                                  text = paste0("[ASE_App, Plot.Inv] INFO, Discarding of invalid data not requested for sensor ", CalSet()$name.sensor,"\n"),
+                                  text = paste0("[ASE_App, Plot.Inv] INFO, Discarding of invalid data not requested for sensor ", input$Sensors,"\n"),
                                   closeOnEsc = TRUE,
                                   closeOnClickOutside = TRUE,
                                   html = FALSE,
@@ -4887,9 +4810,9 @@ server <- function(input, output, session) {
                                   timer             = 3000,
                                   imageUrl          = "",
                                   animation         = FALSE)
-                futile.logger::flog.info(paste0("[ASE_App, Plot.Inv] sensor ", CalSet()$name.sensor,
+                futile.logger::flog.info(paste0("[ASE_App, Plot.Inv] sensor ", input$Sensors,
                            ", ",length(which(!is.na(DF$General[,paste0("Out.",CalSet()$gas.sensor)]))),
-                           " valid data within validity period removing ",length(which(General.df[["date"]] %in% ind.Invalid$out[[2]][[CalSet()$name.sensor]])),
+                           " valid data within validity period removing ",length(which(General.df[["date"]] %in% ind.Invalid$out[[2]][[input$Sensors]])),
                            " values outside validity period."))
                 # Saving plot if requested
                 if (input$SavePlot) {
@@ -4915,9 +4838,9 @@ server <- function(input, output, session) {
             cat("-----------------------------------------------------------------------------------\n")
             cat("\n")
             # Opening the Filtering TabSet for GUI consistency
-            isolate({
-                if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
-                if (input$Treatments != "Sensors")   updateTabsetPanel(session, inputId = "Treatments", selected = "Sensors")})
+            # isolate({
+            #     if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
+            #     if (input$Treatments != "Sensors")   updateTabsetPanel(session, inputId = "Treatments", selected = "Sensors")})
             progress$set(message = "[ASE_App, Plot.Inv] INFO, Plotting discarded invalid sensor data", value = 1)
             # returning plot
             if (exists("Plot_invalid")) return(Plot_invalid)})
@@ -5022,7 +4945,7 @@ server <- function(input, output, session) {
             #       list.gas.sensor()
             #       input$Apply.Invalid
             if (any(unlist(sapply(seq_along(isolate(list.name.sensor())), function(i) input[[paste0("Apply.Invalid", i)]])))
-            ) Inv$Forced <- TRUE else Inv$Forced <- FALSE
+            ) Inv$Forced <<- TRUE else Inv$Forced <<- FALSE
         },
         ignoreInit = TRUE,
         priority = 170
@@ -5148,7 +5071,7 @@ server <- function(input, output, session) {
                     # Checking if sensor data exists in DF$General
                     if (i %in% names(DF$General)) {
                         # Initialisation of columns of DF$General
-                        Sensor.i <- na.omit(Config$all[["sens2ref"]][[which(Config$all[["sens2ref"]][,"gas.sensor"] == i),"name.sensor"]])
+                        Sensor.i <- na.omit(list.name.sensor()[match(i,list.gas.sensor())])
                         # resetting to initial values
                         progress$set(message = "[ASE_App, Outliers.Sens$Forced] INFO, Initialising filtered data columns", value = match(i,list.gas.sensor()) * ValueRate + 0.2 * 1/Tot.Iter)
                         futile.logger::flog.info("[ASE_App, Outliers.Sens$Forced] Initialising filtered data columns for sensor ", i, "")
@@ -5434,7 +5357,7 @@ server <- function(input, output, session) {
                                                              ind          = ind.sens.out,
                                                              plotting     = TRUE,
                                                              set.Outliers = FALSE,
-                                                             Title        = paste0("Outliers for ", CalSet()$gas.sensor, " , iteration ",j),
+                                                             Title        = paste0("Outliers for ", input$Sensors, " , iteration ",j),
                                                              Dygraphs = TRUE)
                                 futile.logger::flog.info(paste0("[ASE_App, Plot.Sens.Outliers] sensor for ", input$Sensors,
                                            ", number of valid measurements after removing outliers ",
@@ -5475,9 +5398,9 @@ server <- function(input, output, session) {
                               animation         = FALSE)
             cat("-----------------------------------------------------------------------------------\n")
             # Opening the Filtering TabSet for GUI consistency
-            isolate({
-                if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
-                if (input$Treatments != "Sensors")   updateTabsetPanel(session, inputId = "Treatments", selected = "Sensors")})
+            # isolate({
+            #     if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
+            #     if (input$Treatments != "Sensors")   updateTabsetPanel(session, inputId = "Treatments", selected = "Sensors")})
             progress$set(message = "[ASE_App, Plot.Inv] INFO, Plotting discarded invalid sensor data", value = 1)
             on.exit(progress$close())
             # returning plot
@@ -5489,13 +5412,13 @@ server <- function(input, output, session) {
             # depends: Config(), input$Filtering.References,input[[paste0("Ref.iterations",k)]], input[[paste0("Ref.rm.Out",k)]], input[[paste0("Out.Ref.Date",k)]]
             # isolate: number of iterations
             # index 1,2,3,4, 5, 6 of the reference gas selected in uiFiltering corresponding of rows of ASE_name.cfg
-            k <-  match(x = CalSet()$name.sensor , table = list.name.sensor())
+            k <-  match(x = input$Sensors , table = list.name.sensor())
             # Selecting gas.reference2use corresponding to input$Filtering.References selected
             i <-  list.gas.reference2use()[k]
             # checking that the data of Reference pollutant exists
             if (i %in% list.gas.reference2use()) {
                 # Executing DF$General and ind.ref$out; created for the data series and selected for date for plotting
-                General.df <- DF$General[date >= input[[paste0("Out.Ref.Date",k)]][1] & date <= input[[paste0("Out.Ref.Date",k)]][2] + 1]
+                General.df <- DF$General[date >= input[[paste0("Out.Ref.Date",k)]][1] & date <= input[[paste0("Out.Ref.Date",k)]][2] + 1][,.SD, .SDcols = c("date", i)]
                 # Flagging outliers for reference data and all sensors
                 op <- par(no.readonly = TRUE)
                 # number of plot according to the number of iterations
@@ -5587,9 +5510,9 @@ server <- function(input, output, session) {
                               imageUrl          = "",
                               animation         = FALSE)
             # Opening the Filtering TabSet for GUI consistency
-            isolate({
-                if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
-                if (input$Treatments != "Reference") updateTabsetPanel(session, inputId = "Treatments", selected = "Reference")})
+            # isolate({
+            #     if (input$Calib_data != "Filtering") updateTabsetPanel(session, inputId = "Calib_data", selected = "Filtering")
+            #     if (input$Treatments != "Reference") updateTabsetPanel(session, inputId = "Treatments", selected = "Reference")})
             # returning plot
             if (exists("plot_outli")) return(plot_outli)
         })
@@ -5672,8 +5595,8 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # In case of update filtering (at the end of any update of filtering there is a Cal$Forced)
-            #Cal$Forced
             # In case of change of dates for plotting
             unlist(sapply(seq_along(isolate(list.name.sensor())), function(i) input[[paste0("Date",i)]]))
             # In case of change of list of parameters to plot
@@ -5690,7 +5613,7 @@ server <- function(input, output, session) {
             futile.logger::flog.info("[ASE_App, ts_Cov_dygraphs] INFO, plotting time series of validated data with covariates")
             # Checking that there are data to plot
             if (!all(input[[paste0("Sens",CalSet()$k)]] %in% names(DF$General)) || all(is.na(DF$General[, .SD, .SDcols = input[[paste0("Sens",CalSet()$k)]]]))) {
-                Cal$Forced <- TRUE
+                Cal$Forced <<- TRUE
                 my_message <- paste0("[ASE_App, ts_Cov_dygraphs] ERROR, All or some sensor time series are empty, not plotting any times series, missing:\n",
                                      input[[paste0("Sens",CalSet()$k)]][which(!input[[paste0("Sens",CalSet()$k)]] %in% names(DF$General))])    
                 cat(my_message)
@@ -5740,17 +5663,18 @@ server <- function(input, output, session) {
                         dySeries(label = Name.pol[i], color = colour_vector[i]) %>%
                         dyAxis("y", label = Name.pol[i]) %>%
                         dyRangeSelector(height = 10) %>%
-                        dyOptions(labelsUTC = T) # plot in UTC
+                        dyOptions(useDataTimezone = TRUE)
+                    #dyOptions(labelsUTC = T) %>%  set time zone to UTC
                     plot_Cov_list[[i]] <- plot_Cov  #add each element to list
                 }
                 # save html to png
                 # check if PhantomJS is installed in C:\Users\karaf\AppData\Roaming\PhantomJS, else "install_phantomjs()"
                 if (input$SavePlot) {
                     WDoutput <- file.path(input$Selected, "Verification_plots")
-                    filename_html <- file.path(WDoutput,paste0(CalSet()$name.sensor,"_ts_",
+                    filename_html <- file.path(WDoutput,paste0(input$Sensors,"_ts_",
                                                                format(input[[paste0("Date",CalSet()$k)]][1],"%Y%m%d"),"_",
                                                                format(input[[paste0("Date",CalSet()$k)]][2],"%Y%m%d"),"temp.html"))
-                    filename_png <- file.path(WDoutput,paste0(CalSet()$name.sensor,"_ts_",
+                    filename_png <- file.path(WDoutput,paste0(input$Sensors,"_ts_",
                                                               format(input[[paste0("Date",CalSet()$k)]][1],"%Y%m%d"),"_",
                                                               format(input[[paste0("Date",CalSet()$k)]][2],"%Y%m%d"),".png"))
                     save_html(plot_Cov_list, filename_html)
@@ -5774,6 +5698,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # In case of update filtering (at the end of any update of filtering there is a Cal$Forced)
             Cal$Forced
             # In case of change of dates
@@ -5791,7 +5716,7 @@ server <- function(input, output, session) {
             futile.logger::flog.info("[ASE_App, Plot.ValidCovarMatrix ] INFO, plotting correlation matrix of validated data with covariates")
             
             if (all(is.na(DF$General[,input[[paste0("Sens",CalSet()$k)]], with = FALSE]))) {
-                Cal$Forced <- TRUE
+                Cal$Forced <<- TRUE
                 my_message <- "[[ASE_App, Plot.ValidCovarMatrix ] ERROR, All sensor time series are empty, not plotting any correlation matrix\n"
                 cat(my_message)
                 shinyalert(title = "ERROR no data to plot",
@@ -5840,14 +5765,14 @@ server <- function(input, output, session) {
                     WDoutput <- file.path(input$Selected, "Verification_plots")
                     dev.copy(png,
                              filename = file.path(WDoutput,
-                                                  paste0(CalSet()$name.sensor,"_pairs_",
+                                                  paste0(input$Sensors,"_pairs_",
                                                          format(min(DF$General$date, na.rm = TRUE),"%Y%m%d"),"_",
                                                          format(max(DF$General$date, na.rm = TRUE),"%Y%m%d"),".png")),
                              #units = "cm", width = 35.55, height = 20,
                              res = 300
                     )
                     dev.off()
-                    futile.logger::flog.info(paste0("[ASE_App] INFO, ", CalSet()$name.sensor,"_pairs_",
+                    futile.logger::flog.info(paste0("[ASE_App] INFO, ", input$Sensors,"_pairs_",
                                format(min(DF$General$date, na.rm = TRUE),"%Y%m%d"),"_",
                                format(max(DF$General$date, na.rm = TRUE),"%Y%m%d"),".png saved in ", WDoutput, "\n" ))
                     updateCheckboxInput(session, inputId = "SavePlot", value = FALSE)
@@ -6072,15 +5997,15 @@ server <- function(input, output, session) {
                                         file.remove(name.Model.i)
                                         # Updating the selected model
                                         Newchoices <- substr(list.files(path    = CalSet()$WDoutputMod,
-                                                                        pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*"))),
-                                                             start = nchar(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__")) + 1,
+                                                                        pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__*"))),
+                                                             start = nchar(paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__")) + 1,
                                                              stop  = nchar(list.files(path    = CalSet()$WDoutputMod,
-                                                                                      pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",CalSet()$name.sensor,"*")))))
+                                                                                      pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",input$Sensors,"*")))))
                                         # Current model
                                         NewModel  <-  name.Model.i %>%
                                             basename(.) %>%
                                             sub(pattern = ".rds", replacement = ".rdata", x = .) %>%
-                                            sub(pattern = paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__"), replacement = "", x = .)
+                                            sub(pattern = paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__"), replacement = "", x = .)
                                         updateSelectInput(session, inputId = paste0("Cal", CalSet()$k), choices = Newchoices, selected = NewModel[1])}
                                     # sensor gas in volt or nA or Count
                                     nameGasVolt <- CalSet()$nameGasVolt
@@ -6141,7 +6066,7 @@ server <- function(input, output, session) {
                                                               row.names = row.names(DF$General[is.not.NA.y,]),
                                                               stringsAsFactors = FALSE)
                                         names(Matrice) <- c("Temperature", "Atmospheric_pressure")
-                                    } else if (Mod_type %in% c("Kohler")) {
+                                    } else if (Mod_type %in% c("Kohler", "Kohler_only")) {
                                         # take only the one that is nor NA of y = DF$General[!is.na(DF$General[, nameGasVolt]), nameGasVolt]
                                         is.not.NA.y <- which(complete.cases(DF$General[, .SD, .SDcols = c(nameGasVolt, "Relative_humidity")]))
                                         is.NA.y     <- setdiff(1:nrow(DF$General), is.not.NA.y)
@@ -6184,10 +6109,10 @@ server <- function(input, output, session) {
                                                imageUrl          = "",
                                                animation         = FALSE)
                                     NewModel <- substr(list.files(path = file.path(input$Selected,"Models"),
-                                                                  pattern = glob2rx(paste0(ASE_name(),"__",CalSet()$name.sensor,"__*"))),
-                                                       start = nchar(paste0(ASE_name(),"__",CalSet()$name.sensor,"__")) + 1,
+                                                                  pattern = glob2rx(paste0(ASE_name(),"__",input$Sensors,"__*"))),
+                                                       start = nchar(paste0(ASE_name(),"__",input$Sensors,"__")) + 1,
                                                        stop  = nchar(list.files(path = file.path(input$Selected,"Models"),
-                                                                                pattern = glob2rx(paste0(ASE_name(),"__",CalSet()$name.sensor,"__*")))))
+                                                                                pattern = glob2rx(paste0(ASE_name(),"__",input$Sensors,"__*")))))
                                     if (length(NewModel) > 0) {
                                         updateSelectInput(session, inputId = paste0("Cal", CalSet()$k), choices = NewModel, selected = NewModel[1]) # label = "Select a previous calibration",
                                     }
@@ -6777,7 +6702,7 @@ server <- function(input, output, session) {
         observeEvent({
             sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateCALCal",i)]])
         }, {
-            Splitted.Cal <- unlist(strsplit(x = paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__",input[[paste0("Cal",CalSet()$k)]]), split = "__"))
+            Splitted.Cal <- unlist(strsplit(x = paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__",input[[paste0("Cal",CalSet()$k)]]), split = "__"))
             # JRC_02__COMF200__nA__Linear.Robust__20170109__20170113__.rds
             Start <- strptime(Splitted.Cal[5], format = "%Y%m%d", tz = threadr::time_zone(DF$General$date[1]))
             End   <- strptime(Splitted.Cal[6], format = "%Y%m%d", tz = threadr::time_zone(DF$General$date[1]))
@@ -6849,7 +6774,7 @@ server <- function(input, output, session) {
                 futile.logger::flog.info(paste0("[ASE_App] New Calibration Function for ", input$Sensors))
                 # 1.1 Check that the model does not already exist for the same sensor, model type, unit, dateIN/date/END
                 # List of files for current AirSensEUR name, sensor name, unit, model type, start and end dates
-                ModelFiles <- List_models(ASEDir = dirname(CalSet()$WDoutputMod), name.sensor = CalSet()$name.sensor)
+                ModelFiles <- List_models(ASEDir = dirname(CalSet()$WDoutputMod), name.sensor = input$Sensors)
                 ModelFiles <- ModelFiles[grep(paste0("__", CalSet()$Sens.raw.unit,"__", CalSet()$mod.eta.model.type,"__",
                                                      format(CalSet()$Cal.DateIN ,"%Y%m%d"),"__",format(CalSet()$Cal.DateEND ,"%Y%m%d"),"__"), ModelFiles)]
                 # Not considering models with __Median whcih are produce outside ASE_App
@@ -6911,7 +6836,7 @@ server <- function(input, output, session) {
                     General.df <- DF$General[date >= CalSet()$Cal.DateIN & date <= CalSet()$Cal.DateEND + 1]
                     if (all(is.na(General.df[[CalSet()$nameGasRef]])) || all(is.na(General.df[[CalSet()$nameGasVolt]]))) {
                         # Message missing data
-                        my_message <- paste0("[ASE_App, Plot.Calibration] ERROR, No data for calibration for sensor ", CalSet()$name.sensor,
+                        my_message <- paste0("[ASE_App, Plot.Calibration] ERROR, No data for calibration for sensor ", input$Sensors,
                                              " in  the \"Range of date for calibration:\" under \"SetTime\". Change date or use \"New calibration with current data\".\n")
                         cat(my_message)
                         shinyalert(title = "ERROR missing data",
@@ -6934,7 +6859,7 @@ server <- function(input, output, session) {
                             namesCovariates = "Temperature"  
                         } else if (CalSet()$mod.eta.model.type %in% c("BeerLambert")) {
                             namesCovariates = c("Temperature", "Atmospheric_pressure")  
-                        } else if (CalSet()$mod.eta.model.type %in% c("Kohler")) {
+                        } else if (CalSet()$mod.eta.model.type %in% c("Kohler", "Kohler_only")) {
                             namesCovariates = c("Relative_humidity")  
                         } else namesCovariates <- unlist(strsplit(split = "&",CalSet()$CovMod))
                         is.Cov.Ok  <- TRUE
@@ -6984,7 +6909,7 @@ server <- function(input, output, session) {
                                             Sens.raw.unit      = CalSet()$Sens.raw.unit,
                                             Reference.name     = CalSet()$Reference.name,
                                             AirSensEur.name    = CalSet()$AirSensEur.name,
-                                            name.sensor        = CalSet()$name.sensor,
+                                            name.sensor        = input$Sensors,
                                             timeseries.display = timeseries.display ,
                                             WDoutputMod        = CalSet()$WDoutputMod,
                                             WDoutput           = CalSet()$WDoutput,
@@ -7001,10 +6926,10 @@ server <- function(input, output, session) {
                             updateRadioButtons(session, inputId = paste0("Cal.Line", CalSet()$k), selected = "Prediction with previous calibration")
                             # Removing the name of AirSensEUR from the model because there may be a confusion between Influx name and SOS name
                             Newchoices <- substr(list.files(path    = CalSet()$WDoutputMod,
-                                                            pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*"))),
-                                                 start = nchar(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__")) + 1,
+                                                            pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__*"))),
+                                                 start = nchar(paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__")) + 1,
                                                  stop  = nchar(list.files(path    = CalSet()$WDoutputMod,
-                                                                          pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__*")))))
+                                                                          pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__*")))))
                             # Current model
                             # Use separator "__" because the character "_" maybe be used in the name of ASE
                             if (CalSet()$mod.eta.model.type %in% c("MultiLinear", "exp_kT_NoC")) {
@@ -7023,7 +6948,7 @@ server <- function(input, output, session) {
                                 namesCovariates = "Temperature" 
                             } else if (CalSet()$mod.eta.model.type %in% c("BeerLambert")) {
                                 namesCovariates = c("Temperature","Atmospheric_pressure")
-                            } else if (CalSet()$mod.eta.model.type %in% c("Kohler")) {
+                            } else if (CalSet()$mod.eta.model.type %in% c("Kohler", "Kohler_only")) {
                                 namesCovariates = c("Relative_humidity")
                             } else namesCovariates = "" 
                             NewModel  <-  paste0(CalSet()$Sens.raw.unit, "__",CalSet()$mod.eta.model.type, "__",
@@ -7130,9 +7055,8 @@ server <- function(input, output, session) {
                             # 2.3.1 correct dates
                             if (grepl(pattern = glob2rx(paste0("*_",
                                                                format(input[[paste0("DateCal",CalSet()$k)]][1],"%Y%m%d"),"*_*",
-                                                               format(input[[paste0("DateCal",CalSet()$k)]][2],"%Y%m%d"), "*")),
-                                      x = CalSet()$Cal)
-                            ) {
+                                                               format(input[[paste0("DateCal",CalSet()$k)]][2],"%Y%m%d"), "*")), 
+                                      x = CalSet()$Cal)) {
                                 # 2.4
                                 futile.logger::flog.info(paste0("[ASE_App, Plot.Calibration] using previous calibration ",CalSet()$Cal, " with ",
                                            CalSet()$NewCalSet, " calibration method"))
@@ -7151,15 +7075,15 @@ server <- function(input, output, session) {
                                         file.remove(name.Model.i)
                                         # Updating the selected model
                                         Newchoices <- substr(list.files(path    = CalSet()$WDoutputMod,
-                                                                        pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",CalSet()$name.sensor,"*"))),
-                                                             start = nchar(paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__")) + 1,
+                                                                        pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",input$Sensors,"*"))),
+                                                             start = nchar(paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__")) + 1,
                                                              stop  = nchar(list.files(path    = CalSet()$WDoutputMod,
-                                                                                      pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",CalSet()$name.sensor,"*")))))
+                                                                                      pattern = glob2rx(paste0(CalSet()$AirSensEur.name,"*",input$Sensors,"*")))))
                                         # Current model
                                         NewModel  <-   name.Model.i %>%
                                             basename(.) %>%
                                             sub(pattern = ".rds", replacement = ".rdata", x = .) %>%
-                                            sub(pattern = paste0(CalSet()$AirSensEur.name,"__",CalSet()$name.sensor,"__"), replacement = "", x = .)
+                                            sub(pattern = paste0(CalSet()$AirSensEur.name,"__",input$Sensors,"__"), replacement = "", x = .)
                                         updateSelectInput(session, inputId = paste0("Cal", CalSet()$k), choices = Newchoices, selected = NewModel[1])}} # label = "Select a previous calibration",
                                 # Plotting
                                 x <- Model.i$Augment$x
@@ -7169,11 +7093,11 @@ server <- function(input, output, session) {
                                 if (nrow(Pattern) > 0) A.Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = CalSet()$nameGasRef)
                                 if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) A.Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = A.Labels)
                                 if (any(CalSet()$mod.eta.model.type %in% "gam")) {
-                                    A.Labels.X <- paste0( CalSet()$AirSensEur.name, ", raw data of ", CalSet()$name.sensor," in ",CalSet()$Sens.raw.unit)
+                                    A.Labels.X <- paste0( CalSet()$AirSensEur.name, ", raw data of ", input$Sensors," in ",CalSet()$Sens.raw.unit)
                                     A.Labels.Y <- paste0(A.Labels ," in ",CalSet()$unit.ref, " at ",CalSet()$Reference.name)
                                 } else {
                                     A.Labels.X <- paste0(A.Labels ," in ",CalSet()$unit.ref, " at ",CalSet()$Reference.name)
-                                    A.Labels.Y <- paste0( CalSet()$AirSensEur.name, ", raw data of ", CalSet()$name.sensor," in ",CalSet()$Sens.raw.unit)
+                                    A.Labels.Y <- paste0( CalSet()$AirSensEur.name, ", raw data of ", input$Sensors," in ",CalSet()$Sens.raw.unit)
                                 }
                                 EtalLim <- Etalonnage( x = x,
                                                        s_x = NULL,
@@ -7191,43 +7115,36 @@ server <- function(input, output, session) {
                                                        digitround = c(2,3),
                                                        marges = c(4,4,3,0.5)
                                 )
-                                if (!(CalSet()$NewCalSet %in% c("ExpGrowth",
-                                                                "exp_kT_NoC",
-                                                                "exp_kT",
-                                                                "exp_kK",
-                                                                "T_power",
-                                                                "K_power",
-                                                                "BeerLambert",
-                                                                "Kohler",
-                                                                "MultiLinear"))) Cal_Line(x             = x,
-                                                                                          s_x           = NULL,
-                                                                                          y             = y,
-                                                                                          s_y           = NULL,
-                                                                                          Mod_type      = isolate(CalSet()$NewCalSet),
-                                                                                          Matrice       = NULL,
-                                                                                          line_position = 0,
-                                                                                          Couleur       = "red",
-                                                                                          Sensor_name   = NULL,
-                                                                                          f_coef1       = "%.3e",
-                                                                                          f_coef2       = "%.3e",
-                                                                                          f_R2          = "%.4f",
-                                                                                          lim           = EtalLim,
-                                                                                          marges        = NULL,
-                                                                                          Covariates    = NULL,
-                                                                                          Weighted      = TRUE,
-                                                                                          Lag_interval  = (max(x, na.rm = T) - min(x, na.rm = T)) / 15,
-                                                                                          Auto.Lag      = CalSet()$Sync.Pred)
+                                if (!(CalSet()$NewCalSet %in% c("ExpGrowth", "exp_kT_NoC", "exp_kT", "exp_kK", "T_power", "K_power", "BeerLambert", "Kohler", "Kohler_only","MultiLinear"))) {
+                                    Cal_Line(x             = x,
+                                             s_x           = NULL,
+                                             y             = y,
+                                             s_y           = NULL,
+                                             Mod_type      = isolate(CalSet()$NewCalSet),
+                                             Matrice       = NULL,
+                                             line_position = 0,
+                                             Couleur       = "red",
+                                             Sensor_name   = NULL,
+                                             f_coef1       = "%.3e",
+                                             f_coef2       = "%.3e",
+                                             f_R2          = "%.4f",
+                                             lim           = EtalLim,
+                                             marges        = NULL,
+                                             Covariates    = NULL,
+                                             Weighted      = TRUE,
+                                             Lag_interval  = (max(x, na.rm = T) - min(x, na.rm = T)) / 15,
+                                             Auto.Lag      = CalSet()$Sync.Pred)} 
                             } else {
                                 # 2.3.2 start/end dates
-                                futile.logger::flog.error("[ASE_App, Plot.Calibration] \"Range of date for calibration:\" or \"Range for plotting calibration\" not consistent with \"Selected previous calibration\". Change \"Range of date for calibration:\" or select  another previous calibration.")
+                                my_message <- "[ASE_App, Plot.Calibration] \"Range of date for calibration:\" or \"Range for plotting calibration\" not consistent with \"Selected previous calibration\". Change \"Range of date for calibration:\" or select another previous calibration."
+                                futile.logger::flog.error(my_message)
                                 plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                                text(1,1,"[ASE_App, Plot.Calibration] ERROR, \"Range of date for calibration:\" or \"Range for plotting calibration\" not consistent with \"Selected previous calibration\". Change \"Range of date for calibration:\" or select  another previous calibration.\n")
-                            }
+                                text(1,1,my_message)}
                         } else {
                             # 2.3.1 Incorrect covariate lists
                             my_message <- paste0("[ASE_App, Plot.Calibration] ERROR, \"List of covariates to calibrate\" or the \"degrees of covariates\" not consistent with \"Selected previous calibration\".
                                                  Change \"List of covariates to calibrate\" or select  another previous calibration.\n")
-                            cat(my_message)
+                            futile.logger::flog.error(my_message)
                             shinyalert(title = "ERROR list of covariates is inconsistent with Model name",
                                        text = my_message,
                                        closeOnEsc = TRUE,
@@ -7242,8 +7159,7 @@ server <- function(input, output, session) {
                                        imageUrl          = "",
                                        animation         = FALSE)
                             plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                            text(1,1,my_message)
-                        }
+                            text(1,1,my_message)}
                     } else {
                         # 2.2 Units and model type
                         futile.logger::flog.error("[ASE_App, Plot.Calibration] \"Raw unit of sensor data\" or \" Model for calibration\" not consistent with \"Selected previous calibration\". Click on \"New calibration with current data\" or select another previous calibration.")
@@ -7329,6 +7245,7 @@ server <- function(input, output, session) {
             input$Selected
             input$Merge
             input$Reference.name
+            input$SavePlot
             # if CalSet() is used it becomes reactive every something changes in CalSet()
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateCal",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateCalMeas",i)]]))
@@ -7337,34 +7254,27 @@ server <- function(input, output, session) {
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Cal_Line",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Ref.unit",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Sens.unit",i)]]))
-            input$Reference.name
-            DF.aggregated.Avg()
             Cal$Forced
         },{
             # Plotting calibrated data
-            
-            # Create a Progress object
-            progress <- shiny::Progress$new()
-            progress$set(message = "[ASE_App, Plot.Calibrated] INFO,  plotting calibration of sensor", value = 0.5)
-            # Make sure it closes when we exit this reactive, even if there's an error
-            on.exit(progress$close())
-            cat("\n")
-            cat("-----------------------------------------------------------------------------------\n")
-            futile.logger::flog.info(paste0("[ASE_App, Plot.Calibrated] plotting calibration of sensor ", input$Sensors))
-            op <- par(no.readonly = TRUE)
-            
-            # Restoring graphical parameters on exit of function
-            par(mfrow = c(1,1))
-            on.exit(par(op))
-            
-            if (CalSet()$Cal_Line == "Prediction with previous calibration") {
+            if (CalSet()$Cal_Line == "Prediction with previous calibration" && !Cal$Forced) {
+                # Create a Progress object
+                progress <- shiny::Progress$new()
+                progress$set(message = "[ASE_App, Plot.Calibrated] INFO,  plotting calibration of sensor", value = 0.5)
+                on.exit(progress$close())
+                cat("\n")
+                cat("-----------------------------------------------------------------------------------\n")
+                futile.logger::flog.info(paste0("[ASE_App, Plot.Calibrated] plotting calibration of sensor", input$Sensors))
+                op <- par(no.readonly = TRUE)
+                # Restoring graphical parameters on exit of function
+                par(mfrow = c(1,1))
+                on.exit(par(op))
                 # 2
                 # plotting "Prediction with previous calibration" if CalSet()$Cal exists, the same CalSet()$Sens.raw.unit, same CalSet()$mod.eta.model.type,
-                # We keep floating DateIN and DateEnd to be able to play with them in SetTime
                 # 2.1 Null calibration model
                 if (CalSet()$Cal != "") {
                     # 2.2 Correct units and model type
-                    if (grepl(pattern = glob2rx(paste0("*_",CalSet()$Sens.raw.unit,"*_",CalSet()$mod.eta.model.type,"_*")), x = CalSet()$Cal)) {
+                    #if (grepl(pattern = glob2rx(paste0("*_",CalSet()$Sens.raw.unit,"*_",CalSet()$mod.eta.model.type,"_*")), x = CalSet()$Cal)) {
                         # 2.3.2 Checking Correct covariates for model with covariates
                         # Covariates in the selected model
                         Splitted.Cal      <- unlist(strsplit(x = CalSet()$Cal, split = "__"))
@@ -7372,7 +7282,7 @@ server <- function(input, output, session) {
                         Covariates.Cal    <- unlist(strsplit(x = Covariates.Cal , split = "&"))
                         # Co-Variates selected in UI
                         Covariates.CovMod <- unlist(strsplit(x = CalSet()$CovMod, split = "&"))
-                        if (file.exists(CalSet()$Multi.File)) {
+                        if (file.exists(CalSet()$Multi.File) && CalSet()$mod.eta.model.type == "MultiLinear") {
                             # read Multi.File
                             Multi.File.df <-  read.table(file             = CalSet()$Multi.File,
                                                          header           = TRUE,
@@ -7384,17 +7294,12 @@ server <- function(input, output, session) {
                             Covariates.CovMod <-  paste(Multi.File.df$Covariates, Multi.File.df$degree, sep = "-")
                         } else if (grepl(pattern = "-", x = Covariates.Cal[1])) {
                             Degrees <-  base::rep(1, times = length(Covariates.CovMod))
-                            Covariates.CovMod <- paste(unlist(strsplit(split = "&", CalSet()$CovMod)), Degrees, sep = "-")
-                        }
+                            Covariates.CovMod <- paste(unlist(strsplit(split = "&", CalSet()$CovMod)), Degrees, sep = "-")}
                         if (!(CalSet()$mod.eta.model.type == "MultiLinear") ||
                             (CalSet()$mod.eta.model.type == "MultiLinear" && all(Covariates.Cal %in% Covariates.CovMod) && all(Covariates.CovMod %in%  Covariates.Cal))) {
                             # Either the model has no covariates or the covariates of the model are correlctly selected in CovMod
                             # 2.3.1 correct dates
-                            if (grepl(pattern = glob2rx(paste0("*_",
-                                                               format(input[[paste0("DateCal",CalSet()$k)]][1],"%Y%m%d"),"*_*",
-                                                               format(input[[paste0("DateCal",CalSet()$k)]][2],"%Y%m%d"), "*")),
-                                      x = CalSet()$Cal)
-                            ) {
+                            #if (grepl(paste0(format(input[[paste0("DateCal",CalSet()$k)]][1],"%Y%m%d"),"__",format(input[[paste0("DateCal",CalSet()$k)]][2],"%Y%m%d")), CalSet()$Cal)) {
                                 # 2.4
                                 futile.logger::flog.info(paste0("[ASE_App, Plot.Calibrated] using previous calibration ",CalSet()$Cal, " with ",
                                            CalSet()$NewCalSet, " calibration method"))
@@ -7407,7 +7312,7 @@ server <- function(input, output, session) {
                                     if (nrow(Pattern) > 0) A.Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = CalSet()$nameGasRef)
                                     if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) A.Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = A.Labels)
                                     A.Labels.X <- paste0(A.Labels ," in ",CalSet()$unit.ref, " at ",CalSet()$Reference.name)
-                                    A.Labels.Y <- paste0( CalSet()$AirSensEur.name, ", Calibrated data of ", CalSet()$name.sensor," in ",CalSet()$unit.sensor)
+                                    A.Labels.Y <- paste0( CalSet()$AirSensEur.name, ", Calibrated data of ", input$Sensors," in ",CalSet()$unit.sensor)
                                     EtalLim <- Etalonnage( x = x, s_x = NULL, y = y, s_y = NULL,
                                                            AxisLabelX = A.Labels.X, AxisLabelY = A.Labels.Y,
                                                            Title = CalSet()$Cal,
@@ -7439,32 +7344,19 @@ server <- function(input, output, session) {
                                     if (input$SavePlot) {
                                         dev.copy(png,
                                                  filename = file.path(CalSet()$WDoutput,
-                                                                      paste0(CalSet()$Cal,"_Calibrated_",
-                                                                             format(CalSet()$Cal.DateIN, "%Y%m%d"),"_",
-                                                                             format(CalSet()$Cal.DateEND,"%Y%m%d"),".png")),
-                                                 units = "cm",
-                                                 width = 20,
-                                                 height = 20,
-                                                 res = 300
-                                        )
+                                                                      paste0(CalSet()$Cal,"_Calibrated_", format(CalSet()$Cal.DateIN, "%Y%m%d"),"_", format(CalSet()$Cal.DateEND,"%Y%m%d"),".png")),
+                                                 units = "cm", width = 20, height = 20, res = 300)
                                         dev.off()
                                         futile.logger::flog.info(paste0("[ASE_App] ", CalSet()$Cal,"_Calibrated_",
                                                    format(CalSet()$Cal.DateIN, "%Y%m%d"),"_",
                                                    format(CalSet()$Cal.DateEND,"%Y%m%d"),".png saved in ", CalSet()$WDoutput, "\n" ))
-                                        updateCheckboxInput(session, inputId = "SavePlot", value = FALSE)
-                                    }
+                                        updateCheckboxInput(session, inputId = "SavePlot", value = FALSE)}
                                 }
-                            } else {
-                                # 2.3.2 start/end dates
-                                futile.logger::flog.error("[ASE_App, Plot.Calibrated] \"Range of date for calibration:\" or \"Range for plotting calibration\" not consistent with \"Selected previous calibration\". Change \"Range of date for calibration:\" or select  another previous calibration.")
-                                plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                                text(1,1,"[ASE_App, Plot.Calibrated] ERROR, \"Range of date for calibration:\" or \"Range for plotting calibration\" not consistent with \"Selected previous calibration\". Change \"Range of date for calibration:\" or select  another previous calibration.\n")
-                            }
                         } else {
                             # 2.3.1 Incorrect covariate lists
                             my_message <- paste0("[ASE_App, Plot.Calibrated] ERROR, \"List of covariates to calibrate\" not consistent with \"Selected previous calibration\".
                                                  Change \"List of covariates to calibrate\" or select  another previous calibration.\n")
-                            cat(my_message)
+                            futile.logger::flog.error(my_message)
                             shinyalert(
                                 title = "ERROR list of covariates is inconsistent with Model name",
                                 text = my_message,
@@ -7480,27 +7372,19 @@ server <- function(input, output, session) {
                                 imageUrl          = "",
                                 animation         = FALSE)
                             plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                            text(1,1,my_message)
-                        }
-                    } else {
-                        # 2.2 Units and model type
-                        futile.logger::flog.error("[ASE_App, Plot.Calibrated] \"Raw unit of sensor data\" or \" Model for calibration\" not consistent with \"Selected previous calibration\". Click on \"New calibration with current data\" or select another previous calibration.")
-                        plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                        text(1,1,"[ASE_App, Plot.Calibrated] ERROR, \"Raw unit of sensor data\" or \" Model for calibration\" not consistent with \"Selected previous calibration\". Click on \"New calibration with current data\" or select another previous calibration.\n")
-                    }
+                            text(1,1,my_message)}
                 } else {
                     # 2.1 NULL calibration model
                     futile.logger::flog.error("[ASE_App, Plot.Calibrated] \" Model for calibration\" is empty, select a model o choose \"New calibration with current data\".")
                     plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
-                    text(1,1,"[ASE_App, Plot.Calibrated] ERROR, \" Model for calibration\" is empty, select a model o choose \"New calibration with current data\".\n")
-                }
+                    text(1,1,"[ASE_App, Plot.Calibrated] ERROR, \" Model for calibration\" is empty, select a model o choose \"New calibration with current data\".\n")}
+                cat("-----------------------------------------------------------------------------------\n")
+                cat("\n")
+                progress$set(message = "[ASE_App, Plot.Calibrated] INFO,  plotting calibration of sensor", value = 1)
+                on.exit(progress$close())
             } else if (CalSet()$Cal_Line == "Calibration with slope and intercept") {
                 #### TO BE CODED
-            }
-            cat("-----------------------------------------------------------------------------------\n")
-            cat("\n")
-            progress$set(message = "[ASE_App, Plot.Calibrated] INFO,  plotting calibration of sensor", value = 1)
-            on.exit(progress$close())
+                }
             if (exists("Comparison")) return(Comparison)
         })
         # NavBar"Data Treatment", mainTabPanel TimeSeries - Calibration ----
@@ -7510,6 +7394,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # if CalSet() is used it becomes reactive every something changes in CalSet()
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateCal",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DatePlotCal",i)]]))
@@ -7537,7 +7422,7 @@ server <- function(input, output, session) {
                                   c("ppm",""), c("ppb",""),
                                   c("Ref.", paste0("Ref., ", CalSet()$unit.ref, ", ")),
                                   c("_volt", paste0(", ",CalSet()$Sens.raw.unit)),
-                                  c(CalSet()$gas.sensor, paste0(CalSet()$name.sensor)),
+                                  c(CalSet()$gas.sensor, paste0(input$Sensors)),
                                   c("_modelled",paste0(", ",CalSet()$unit.sensor)),
                                   c("_"," "))
                 Name.pol <- c(CalSet()$nameGasRef, CalSet()$nameGasMod)
@@ -7557,8 +7442,8 @@ server <- function(input, output, session) {
                     dyAxis("y", label = Name.pol[2]) %>%
                     dyLegend(show = "always", hideOnMouseOut = FALSE, width = 500) %>%
                     dyRangeSelector(height = 40) %>%
-                    dyOptions(labelsUTC = T) # plot in UTC
-                #dyOptions(useDataTimezone = TRUE) # do not use the local time zone
+                    dyOptions(useDataTimezone = TRUE)
+                #dyOptions(labelsUTC = T) # plot in UTC
                 # Saving plot if requested
                 # check if PhantomJS is installed in C:\Users\karaf\AppData\Roaming\PhantomJS, else "install_phantomjs()"
                 if (input$SavePlot) {
@@ -7586,6 +7471,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # In case of update filtering (at the end of any update of filtering there is a Cal$Forced)
             Cal$Forced
             # In case of change of dates
@@ -7596,7 +7482,7 @@ server <- function(input, output, session) {
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Sens",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("Cal",i)]]))
         },{
-            # Plotting correalation matrix using pairs()
+            # Plotting correlation matrix using pairs()
             
             # Create a Progress object
             progress <- shiny::Progress$new()
@@ -7636,7 +7522,7 @@ server <- function(input, output, session) {
                                   c("ppm",""), c("ppb",""),
                                   c("Ref.", paste0("Ref., ", CalSet()$unit.ref, " ")),
                                   c("_volt", paste0(", ",CalSet()$Sens.raw.unit)),
-                                  c(CalSet()$gas.sensor, paste0(CalSet()$name.sensor)),
+                                  c(CalSet()$gas.sensor, input$Sensors),
                                   c("_modelled",paste0(", ",CalSet()$unit.sensor)),
                                   c("_"," "))
                 if (nrow(Pattern) > 0) Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = Relationships)
@@ -7747,27 +7633,16 @@ server <- function(input, output, session) {
                     progress$set(message = "[ASE_App] INFO, averaging Summary table of calibration model", value = 0.2)
                     
                     # only keeping the complete cases by pairs of reference and sensor data
-                    # set(DF$General, j = names(DF$General)[-which(names(DF$General) == "date")], value = lapply(DF$General[,..Cols.for.Avg], nan.to.na))
                     # Selecting columns for averaging
-                    # Cols.for.Avg <- c(intersect(c("date","gpsTimestamp","altitude","latitude","longitude",
-                    #                               INFLUX()[[2]],"Absolute_humidity", "Td_deficit", "boardTimeStamp",
-                    #                               "Ref.Long","Ref.Lat"), names(DF$General)),
-                    #                   paste0("Out.",list.gas.sensor()), paste0("Out.", list.gas.reference2use()),
-                    #                   grep(pattern = paste(c("_volt", "_modelled"), collapse = "|"), x = names(DF$General), value = TRUE))
                     Cols.for.Avg <- intersect(c("date","gpsTimestamp","altitude","latitude","longitude",
                                                 INFLUX()[[2]],"Absolute_humidity", "Td_deficit", "boardTimeStamp",
                                                 "Ref.Long","Ref.Lat",
                                                 paste0("Out.",list.gas.sensor()), paste0("Out.", list.gas.reference2use()),
                                                 grep(pattern = paste(c("_volt", "_modelled"), collapse = "|"), x = names(DF$General), value = TRUE)), 
                                               names(DF$General))
-                    
-                    # removing nan if any
-                    #if (any(sapply(DF$General[,..Cols.for.Avg], function(i) any(is.nan(i))))) set(DF$General, j = Cols.for.Avg, value = lapply(DF$General[,..Cols.for.Avg], nan.to.na))
-                    
                     # Averaging
                     DF.aggregated <- DF_avg(DF$General[,..Cols.for.Avg], width = as.numeric(input$UserMinsAvg))
                     progress$set(message = "[ASE_App] INFO, averaging Summary table of calibration model", value = 1.0)
-                    
                     return(DF.aggregated)}
             } else return()
         })
@@ -7933,6 +7808,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # if CalSet() is used it becomes reactive every something changes in CalSet()
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateMeas",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DatePlotMeas",i)]]))
@@ -7960,11 +7836,11 @@ server <- function(input, output, session) {
             
             cat("\n")
             cat("-----------------------------------------------------------------------------------\n")
-            futile.logger::flog.info(paste0("[ASE_App, Plot.Prediction] Plotting Predicted data for ", isolate(CalSet()$name.sensor)))
+            futile.logger::flog.info(paste0("[ASE_App, Plot.Prediction] Plotting Predicted data for ", isolate(input$Sensors)))
             # next in case no data to be calibrated
             if (is.null(General.df[[c(CalSet()$nameGasMod)]]) || all(is.na(General.df[[CalSet()$nameGasVolt]]))) {
                 Cal$Forced <<- TRUE
-                my_message <- paste0("[ASE_App, Plot.Prediction] ERROR, No predicted data for sensor ",CalSet()$name.sensor, "\n")
+                my_message <- paste0("[ASE_App, Plot.Prediction] ERROR, No predicted data for sensor ",input$Sensors, "\n")
                 cat(my_message)
                 shinyalert(title = "ERROR Predication data",
                            text = my_message,
@@ -7996,7 +7872,7 @@ server <- function(input, output, session) {
                     }
                 }
                 Name.pol[1] <- paste0(Name.pol[1] ," in ",CalSet()$unit.ref, " at ",CalSet()$Reference.name)
-                Name.pol[2] <- paste0(Name.pol[2] ,paste0(", calibrated data of ", CalSet()$name.sensor," sensor, ",CalSet()$unit.sensor))
+                Name.pol[2] <- paste0(Name.pol[2] ,paste0(", calibrated data of ", input$Sensors," sensor, ",CalSet()$unit.sensor))
                 x <- General.df[[c(CalSet()$nameGasRef)]]
                 y <- General.df[[c(CalSet()$nameGasMod)]]
                 if (is.null(y)) {
@@ -8122,6 +7998,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # if CalSet() is used it becomes reactive every something changes in CalSet()
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateMeas",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DatePlotMeas",i)]]))
@@ -8150,7 +8027,7 @@ server <- function(input, output, session) {
                                   c("ppm",""), c("ppb",""),
                                   c("Ref.", paste0("Ref., ", CalSet()$unit.ref, ", ")),
                                   c("_volt", paste0(", ",CalSet()$Sens.raw.unit)),
-                                  c(CalSet()$gas.sensor, paste0(CalSet()$name.sensor)),
+                                  c(CalSet()$gas.sensor, input$Sensors),
                                   c("_modelled",paste0(", ",CalSet()$unit.sensor)),
                                   c("_"," "))
                 Name.pol <- c( CalSet()$nameGasRef, CalSet()$nameGasMod)
@@ -8172,8 +8049,8 @@ server <- function(input, output, session) {
                     dyAxis("y", label = Name.pol[2]) %>%
                     dyLegend(show = "always", hideOnMouseOut = FALSE, width = 500) %>%
                     dyRangeSelector(height = 40) %>%
-                    dyOptions(labelsUTC = T) # plot in UTC
-                #     dyOptions(useDataTimezone = TRUE) %>% # do not use the local time zone
+                    dyOptions(useDataTimezone = TRUE)
+                #dyOptions(labelsUTC = T) # plot in UTC
                 # Saving plot if requested
                 if (input$SavePlot) {
                     filename_html <- file.path(CalSet()$WDModelled_gas, paste0(CalSet()$Cal,"_Calibration_ts_",
@@ -8202,6 +8079,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # In case of update filtering (at the end of any update of filtering there is a Cal$Forced)
             Cal$Forced
             # In case of change of dates
@@ -8255,7 +8133,7 @@ server <- function(input, output, session) {
                                   c("ppm",""), c("ppb",""),
                                   c("Ref.", paste0("Ref., ", CalSet()$unit.ref, " ")),
                                   c("_volt", paste0(", ",CalSet()$Sens.raw.unit)),
-                                  c(CalSet()$gas.sensor, paste0(CalSet()$name.sensor)),
+                                  c(CalSet()$gas.sensor, input$Sensors),
                                   c("_modelled",paste0(", ",CalSet()$unit.sensor)),
                                   c("_"," "))
                 if (nrow(Pattern) > 0) Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = Relationships)
@@ -8265,7 +8143,7 @@ server <- function(input, output, session) {
                 on.exit(par(op))
                 par(mfrow = c(1,1))
                 # in panel smooth() change pch and cex, in panel.cor() change digits and cex.cor, in pairs() change cex.labels to fit the plots
-                pairs(General.df[, .SD, .SDcols = c(Relationships)],
+                pairs(General.df[, .SD, .SDcols = Relationships],
                       lower.panel = panel.smooth,
                       upper.panel = panel.cor,
                       diag.panel  = panel.hist,
@@ -8361,7 +8239,7 @@ server <- function(input, output, session) {
             Units     = CalSet()$unit.sensor
             Dir       = CalSet()$WDModelled_gas
             nameModel = CalSet()$Cal
-            Sensor_name    = CalSet()$name.sensor
+            Sensor_name    = input$Sensors
             f_coef1        = "%.3f"
             f_coef2        = "%.3f"
             f_R2           = "%.4f"
@@ -8439,7 +8317,7 @@ server <- function(input, output, session) {
             Units     = CalSet()$unit.sensor
             Dir       = CalSet()$WDModelled_gas
             nameModel = CalSet()$Cal
-            Sensor_name    = CalSet()$name.sensor
+            Sensor_name    = input$Sensors
             f_coef1        = "%.3f"
             f_coef2        = "%.3f"
             f_R2           = "%.4f"
@@ -8645,7 +8523,7 @@ server <- function(input, output, session) {
             #if (!file.exists(u.Target.File) || file.size(u.Target.File) == 0 || input$SavePlot)
             pdf(file = file.path(u.Target.File), width = 8, height = 7, paper = "special", pagecentre = FALSE)
             # Plotting Modified Target Diagram
-            Target.Diagram(Sensor_name = CalSet()$name.sensor,
+            Target.Diagram(Sensor_name = input$Sensors,
                            Mat         = U.orth.List()[["Mat"]],
                            ubsRM       = as.numeric(CalSet()$ubsRM),
                            ubss        = as.numeric(CalSet()$ubss),
@@ -8732,6 +8610,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # if CalSet() is used it becomes reactive every something changes in CalSet()
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateMeas",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DatePlotMeas",i)]]))
@@ -8838,6 +8717,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # if CalSet() is used it becomes reactive every something changes in CalSet()
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateMeas",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DatePlotMeas",i)]]))
@@ -8938,6 +8818,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # if CalSet() is used it becomes reactive every something changes in CalSet()
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateMeas",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DatePlotMeas",i)]]))
@@ -9043,6 +8924,7 @@ server <- function(input, output, session) {
             input$Sensors
             input$Selected
             input$Merge
+            input$SavePlot
             # if CalSet() is used it becomes reactive every something changes in CalSet()
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DateMeas",i)]]))
             unlist(sapply(seq_along(list.name.sensor()), function(i) input[[paste0("DatePlotMeas",i)]]))

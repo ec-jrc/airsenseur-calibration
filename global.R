@@ -1,5 +1,5 @@
 #================================================================CR
-# Licence: ====
+# License: ====
 # Copyright 2018 EUROPEAN UNION
 # Licensed under the EUPL, Version 1.2 or subsequent versions of the EUPL (the "License");
 # You may not use this work except in compliance with the License.
@@ -91,8 +91,10 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # computation of dew points (humidity.to.dewpoint)                      --> weathermetrics
 # extension()                                                           --> raster
 # package needed to install Github rundel/timezone                      --> proj4
-list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broomExtra"           , "stringi"         ,
-                   "lubridate"       , "zoo"             , "xts"             ,
+# matrix statistic,e.g., colMedian, rowMedian etc                       --> matrixStats
+# where() to look for environment                                       --> pryr
+list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broomExtra"      , "stringi"         ,
+                   "lubridate"       , "zoo"             , "xts"             ,"matrixStats"      , "pryr"            ,
                    "futile.options"  , "lambda.r"        , "futile.logger"   , "geosphere"       ,
                    "curl"            , "RCurl"           , "httr"            , "devtools"        , "processx"        , "sp"              ,
                    "quantreg"        , "minpack.lm"      , "limSolve"        , "mgcv"            , "polynom"         , "Hmisc"           , "HH"               ,

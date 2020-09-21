@@ -654,10 +654,17 @@ U.orth.DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
 ### f_Kohler: Function Fitting a Kohler model
 #================================================================CR
 f_Kohler <- function(x, a0, a1, K, RH) {
-    return(a0 + a1 * (x * (1 + (K/1.65)/((RH/100)^-1 - 1))))
+    C <- 1 + (K/1.65/(100/RH - 1))
+    return(a0 + a1 * x * C)
+    #return(a0 + a1 * (x * (1 + (K/1.65)/((RH/100)^-1 - 1))))
     # Sensors 2018, 18(9), 2790; https://doi.org/10.3390/s18092790
-    # is no information regarding the efflorescence point of the compound with ???? = 0.4, we have assumed it to be the same as Ammonium Sulphate (RH = 35%). Also shown are particle volumes as functions of particle size for
-    # is no information regarding the efflorescence point of the compound with ???? = 0.4, we have assumed it to be the same as Ammonium Sulphate (RH = 35%). Also shown are particle volumes as functions of particle size for
+    # is no information regarding the efflorescence point of the compound with K = 0.4, we have assumed it to be the same as Ammonium Sulphate (RH = 35%). Also shown are particle volumes as functions of particle size for
+}
+f_Kohler_only <- function(x, K, RH) {
+    C <- 1 + (K/1.65/(100/RH - 1))
+    return((x * C))
+    # Sensors 2018, 18(9), 2790; https://doi.org/10.3390/s18092790
+    # is no information regarding the efflorescence point of the compound with K = 0.4, we have assumed it to be the same as Ammonium Sulphate (RH = 35%). Also shown are particle volumes as functions of particle size for
 }
 #================================================================CR
 ### f_log: Function Fitting a logarithmic model
@@ -955,7 +962,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             if (is.data.table(DataXY)) DataXY[, Temperature := Matrice[["Temperature"]]] else if (is.data.frame(DataXY)) DataXY$Temperature <- Matrice[["Temperature"]]
         } else if (is.data.table(DataXY)) DataXY[, (Covariates) := Matrice[,..Covariates]] else if (is.data.frame(DataXY)) DataXY[, Covariates] <- Matrice[,..Covariates]}
     if (any(Mod_type %in% c("BeerLambert"))) DataXY[, Atmospheric_pressure := Matrice[["Atmospheric_pressure"]]]
-    if (any(Mod_type %in% c("Kohler"))) DataXY[, Relative_humidity := Matrice[["Relative_humidity"]]]
+    if (any(Mod_type %in% c("Kohler", "Kohler_only"))) DataXY[, Relative_humidity := Matrice[["Relative_humidity"]]]
     # removing NA of any variables in DATAXY
     DataXY <- DataXY[complete.cases(DataXY[, .SD])]
     # Creating weights from the standard deviations within lags
@@ -1373,8 +1380,8 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     } else if (Mod_type == 'Kohler') {
         # Setting Initial values of Kohler Model
         Start <- list(a0 = 0, a1 = 1, K = 0.41)
-        Lower <- c(-10, 0.75, 0.35)
-        Upper <- c(+10, 1.25, 0.45)
+        Lower <- c(-50, 0.1, -1)
+        Upper <- c(+50, 5  , 2)
         # Fitting model
         if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
             Model <- minpack.lm::nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = DataXY, start = Start, model = TRUE,
@@ -1388,6 +1395,22 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Equation <- sprintf(Equation,
                             coef(Model)[1],coef(Model)[2],coef(Model)[3],
                             sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
+    } else if (Mod_type == 'Kohler_only') {
+        # Setting Initial values of Kohler_only Model
+        Start <- list(K = 0.41)
+        Lower <- -5
+        Upper <- 5
+        # Fitting model
+        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+            Model <- minpack.lm::nlsLM(y ~ f_Kohler_only(x, K, RH = Relative_humidity), data = DataXY, start = Start, model = TRUE,
+                                       control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                                       lower = Lower, upper = Upper)
+        } else Model <- minpack.lm::nlsLM(y ~ f_Kohler_only(x, K, RH = Relative_humidity), data = Start, model = TRUE, weights = wi,
+                                          control = nls.lm.control(maxiter = 1024, maxfev = 10000),
+                                          lower = Lower, upper = Upper)
+        # display equations and R^2
+        Equation <- paste0(Sensor_name, "Kohler: y =  x * (1+(",f_coef2,"/1.65)/(1/RH-1) ), RMSE=",f_coef1,", AIC= %.1f")
+        Equation <- sprintf(Equation, coef(Model)[1], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Verbose) cat("[Cal_Line] unknown calibration model\n")
     # Adding printing summary of Model
     if (Verbose) print(summary(Model))
@@ -1568,9 +1591,13 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
         #return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]] + Model$Coef[4]) / (273.15 + Matrice[["Temperature"]])^Model$Coef[3]))
         return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]]) / ((273.15 + Matrice[["Temperature"]])/Model$Coef[2])^Model$Coef[3]))
     } else if (Mod_type == 'Kohler') {
-        # model return (y - a0) / (a1 * (1 + (K/1.65)/(RH/100 - 1)))
-        #return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]] + Model$Coef[4]) / (273.15 + Matrice[["Temperature"]])^Model$Coef[3]))
-        return(as.vector((y - Model$Coef[1]) / (Model$Coef[2] * (1 + (Model$Coef[2]/1.65)/((Matrice[["Relative_humidity"]]/100)^-1 - 1) ))))
+        # model return C <- 1 + (K/1.65/(100/RH - 1)) return(a0 + a1 * (x /C))
+        C <- 1 + (Model$Coef[3]/1.65/(100/Matrice[["Relative_humidity"]] - 1))
+        return(as.vector((y - Model$Coef[1]) /(Model$Coef[2] * C)))
+    } else if (Mod_type == 'Kohler_only') {
+        # model return C <- 1 + (K/1.65/(100/RH - 1)) return((x /C))
+        C <- 1 + (Model$Coef[1]/1.65/(100/Matrice[["Relative_humidity"]] - 1))
+        return(as.vector(y / C))
     } else if (Mod_type == 'Michelis') {
         # model f_Michelis: return(Vmax*x/(km +x) + intercept)
         if (any(!is.na(y) & y < Model$Coef[3] ) | any(!is.na(y) & y > Model$Coef[1])) { # in case value out of bound and value is not NA
