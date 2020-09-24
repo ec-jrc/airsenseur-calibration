@@ -1,40 +1,17 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
-# New release V0.21, Not yet released
-#            N134 - When using button Ready SOS. the App check that all calibration models exist.
-#            N135 - insert function TRH_index into the App in order to simplify coding
-#             E95 - bug correction: When detecting data with temperature or humidity out of tolerance interval, data were were not discarded if temperature or humidity were NA. Now corrected
-#             E96 - bug correction: in plotting data filtered for temperature and humidity, sensor data with RH higher than limit were plotted as sensor data with RH lower than limit. Now Corrected.
-#                                   At the same time the time zone of data was not correctly plotted in the DyGraphs. Now corrected using whatever time zone of data for all DyGraphs.
-#             E97 - bug correction: in influx.downloadAndPredict: general rewritting of this function using functions: Warm_Index, TRh_Index, Inv_Index, Outliers_Sens, Sens_Conv and Apply_Model.
-#                                    additionally List.gas.sensor, list.name.sensor, list.name.gas was limited to gas sensors, now all sensors are considered.
-#                                    in Outliers_Sens: Bug on the deleting of high iterations filtering of outliers. Corrected and ThresholdMin confused with Sens.threshold when 
-#                                                      filtering outliers in function My.rm.Outliers
-#             E98 - bug correction: wrong conversion to POSIXct for Init.DB in function INFLUXDB. Corrected
-#            N136 - in Down_Influx about 10 sec faster per ASE box by avoiding asking for Influx.Total.N that was not used and avoid determining the table of sensors and channels at every start if 
-#                   no sensor is added. This table is now saved and loaded from airsensEUR.db.
-#            N137 - Adding text input "Project" to organise better ASE boxes in project. For now it is disabled and only "ASE_Boxes" is set.
-#
-# New release V0.20, 2020-08-21
-#             E93 - bug correction: major bug in the determination of the Gain of the chemical shield. We forgot that the external resistance of 1 Mohm
-#                                   was kept always in parallel of the internal 350kOhm of the internal resistance resulting in a Resistance of 260 kOhm
-#                                   . It is now corrected but all calibration model shall be deleted and fitted again. What a hell!
-#             E94 - bug correction: when entering reference data, a confusion of names could take place between NO-NO2 and CO-CO2. Corrected in function Down_ref()
-#            N128 - Changes in Global.R and Gloabal4Shiny.R. Now the packages are not loaded, ony list of packages are returned. The packages are installed and loaded into in App.R
-#            N129 - Changes in Function4ASE.R: a set of new functions for the automatic calibrations awere added: List_models, Identify_ASE, Identify_ASE_Dir, Apply_Model, Fit_New_Model
-#                   Roll_Fit_New_Model, Compare_Models, Confidence_Coeffs, List_All_Compare, Median_Model, List_Covariates, Auto.Cal, Register.Model and AutoCal.Boxes.Sensor. These shall be still
-#                   included in the ASE-App.R.
-#            N130 - Changes in Function4ASE.R: 2 functions were added to simplify downloading of influx data and computation of predicted models: influx.getConfig and influx.downloadAndPredict.
-#                   These functions were developed in collaboration with Eike Hinderk Jürrens (52North)
-#            N131 - Changes in Function4ASE.R: new functions for the filtering of sensor and reference were added: Warm_Index, TRh_Index, Inv_Index, Outliers_Sens, Sens_Conv, Filter.Sensor.Data, 
-#                   Filter.Ref.Data. these functions are used for the automatic calibration but shall be integrated into App.R and influx.downloadAndPredict.
-#            N132 - Two new scripts were added: Compare model download_predict.R, the first one allow setting calibration models for a list of ASE boxes per type of sensors
-#                   and the second one allow the automatic downalod of sensor data applying the configured calibraion models.
-#             E95 - bug correction: when selecting a 2nd ASE box, the RHandSomeTable "FilteringMain", "CalibMain" and "SetTimeMain" in Menu "Data Treatment" are now updated.
-#  ----#TO BE DONE  : ----
+# New release V0.22, 2020-09-24
+#             E99 - bug correction: When cloning an ASE box, the name of box was not updated in ASE_Server.cfg and the calibration models used  within ASE.cfg where not exported. 
+#                                   Corrected using function Create_ASE
+#            E100 - Bug correction: the App crashes if there are no Reference data. Corrected Ref$Data sets to NULL if there are no reference data
+#            N138 - Warming time is now detected with function Warm_Index() that try to use the Board registry of ASE box if available (>faster)
+#            E101 - Bug correction: in influx.downloadAndPredict() + Apply_Mode(), Identify_ASE(), Identify_ASE_Dir(), Complete_General() avoiding repetition of unnecessary 
+#                                   filtering of sensors and reference data. It is now much faster. I also deleted setwd() step to avoid an error if the code is stopped 
+#                                   in the middle of function influx.downloadAndPredict().
+#              E4 - Bug correction: It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user.
+#                                   With the help of Eike, I try using a combination of interactive(), rstudioapi::getActiveDocumentContext() and manual setting.
 # BUG CORRECTIONS
-#              E4 - It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user
 #              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA.
 #                   Change substraction to V or nA
 #             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers
@@ -80,6 +57,39 @@
 #            N107 - Add the possibility to fit RSS when computing uncertainty ("RSS.fitted")
 #            N108 - Allow to select only data with GPStimestamp and GPS coordinates
 #            N133 - use the information in the new version of AirSensEUR regarding reset to filter data for warming time
+#            
+# New release V0.21, 2020-09-21
+#            N134 - When using button Ready SOS. the App check that all calibration models exist.
+#            N135 - insert function TRH_index into the App in order to simplify coding
+#             E95 - bug correction: When detecting data with temperature or humidity out of tolerance interval, data were were not discarded if temperature or humidity were NA. Now corrected
+#             E96 - bug correction: in plotting data filtered for temperature and humidity, sensor data with RH higher than limit were plotted as sensor data with RH lower than limit. Now Corrected.
+#                                   At the same time the time zone of data was not correctly plotted in the DyGraphs. Now corrected using whatever time zone of data for all DyGraphs.
+#             E97 - bug correction: in influx.downloadAndPredict: general re-writting of this function using functions: Warm_Index, TRh_Index, Inv_Index, Outliers_Sens, Sens_Conv and Apply_Model.
+#                                    additionally List.gas.sensor, list.name.sensor, list.name.gas was limited to gas sensors, now all sensors are considered.
+#                                    in Outliers_Sens: Bug on the deleting of high iterations filtering of outliers. Corrected and ThresholdMin confused with Sens.threshold when 
+#                                                      filtering outliers in function My.rm.Outliers
+#             E98 - bug correction: wrong conversion to POSIXct for Init.DB in function INFLUXDB. Corrected
+#            N136 - in Down_Influx about 10 sec faster per ASE box by avoiding asking for Influx.Total.N that is not used and avoid determining the table of sensors and channels at every start if 
+#                   no sensor is added. This table is now saved and loaded from airsensEUR.db.
+#            N137 - Adding text input "Project" in the 1st window to organise better ASE boxes in project. For now it is disabled and only "ASE_Boxes" is set.
+#
+# New release V0.20, 2020-08-21
+#             E93 - bug correction: major bug in the determination of the Gain of the chemical shield. We forgot that the external resistance of 1 Mohm
+#                                   was kept always in parallel of the internal 350kOhm of the internal resistance resulting in a Resistance of 260 kOhm
+#                                   . It is now corrected but all calibration model shall be deleted and fitted again. What a hell!
+#             E94 - bug correction: when entering reference data, a confusion of names could take place between NO-NO2 and CO-CO2. Corrected in function Down_ref()
+#            N128 - Changes in Global.R and Gloabal4Shiny.R. Now the packages are not loaded, ony list of packages are returned. The packages are installed and loaded into in App.R
+#            N129 - Changes in Function4ASE.R: a set of new functions for the automatic calibrations awere added: List_models, Identify_ASE, Identify_ASE_Dir, Apply_Model, Fit_New_Model
+#                   Roll_Fit_New_Model, Compare_Models, Confidence_Coeffs, List_All_Compare, Median_Model, List_Covariates, Auto.Cal, Register.Model and AutoCal.Boxes.Sensor. These shall be still
+#                   included in the ASE-App.R.
+#            N130 - Changes in Function4ASE.R: 2 functions were added to simplify downloading of influx data and computation of predicted models: influx.getConfig and influx.downloadAndPredict.
+#                   These functions were developed in collaboration with Eike Hinderk Jürrens (52North)
+#            N131 - Changes in Function4ASE.R: new functions for the filtering of sensor and reference were added: Warm_Index, TRh_Index, Inv_Index, Outliers_Sens, Sens_Conv, Filter.Sensor.Data, 
+#                   Filter.Ref.Data. these functions are used for the automatic calibration but shall be integrated into App.R and influx.downloadAndPredict.
+#            N132 - Two new scripts were added: Compare model download_predict.R, the first one allow setting calibration models for a list of ASE boxes per type of sensors
+#                   and the second one allow the automatic downalod of sensor data applying the configured calibraion models.
+#             E95 - bug correction: when selecting a 2nd ASE box, the RHandSomeTable "FilteringMain", "CalibMain" and "SetTimeMain" in Menu "Data Treatment" are now updated.
+#  ----#TO BE DONE  : ----
 # New release V0.19, 2020-05-27
 #             E82 - bug correction: In function SETTIME, General.TZ was wrongly estimated. Corrected using function lubridate::tz
 #            N120 - The ASE-App will can now be used to calibrate PM10 sensors from OPC-N3 and PMS5003, reported as OPCN3PM10 sensor by AirSensEUR in InfluxDB. 

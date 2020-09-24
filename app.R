@@ -83,10 +83,34 @@ list.Packages <- c("envDocument", "rstudioapi")
 if (exists("list.Packages") && list.Packages != "") {
     librarian::shelf(list.Packages)
     rm(list.Packages)} 
-if (!exists("DisqueFieldtest")) {
-    if (rstudioapi::isAvailable()) DisqueFieldtest  <- dirname(rstudioapi::getActiveDocumentContext()$path) else futile.logger::flog.error("[ASE_App] please run the ASE_App in Rstudio")} 
-# if Script_Dir does not work, e. g. when deploying the app then force to "/home/shinyadmin/App"
-if (is.null(DisqueFieldtest)) DisqueFieldtest <- "/home/shinyadmin/App"
+Script_Dir <- function() {
+    # Return the path of current script
+    # trying function getScriptPath of package envDocument
+    env_doc <- env_doc(output = c("return", "print", "table"), system = TRUE,
+                       version = TRUE, packages = TRUE, script = FALSE, git = FALSE,
+                       domino = c("auto", "on", "off"))
+    print(env_doc)
+    DisqueFieldtest <- as.character(env_doc[env_doc$Name == "Directory", "Value"])
+    if (is.null(DisqueFieldtest)) DisqueFieldtest <- getSrcDirectory(function(x) {x})
+    if (is.null(DisqueFieldtest)) DisqueFieldtest <- sys.calls()[[1]] [[2]]
+    if (is.null(DisqueFieldtest)) {
+        # Searching in the directory where the script is run
+        if (!is.null(kimisc::thisfile())) {
+            cat(paste0("[app.R] INFO, app.R is run from ", dirname(kimisc::thisfile()), "\n"))
+            DisqueFieldtest <- dirname(kimisc::thisfile())
+        } else {
+            cat(paste0("[app.R] ERROR, kimisc::thisfile() unable to detect the directory from where is run app.R. Returning NULL.\n"))
+            DisqueFieldtest <- NULL}}
+    # This work only if we never change of working directory.
+    # In fact we really change of working directory once an AirSensEUR is selected
+    if (is.null(DisqueFieldtest)) DisqueFieldtest <- setwd(".")
+    return(DisqueFieldtest)}
+if (interactive()) {
+    if (rstudioapi::isAvailable()) DisqueFieldtest  <- dirname(rstudioapi::getActiveDocumentContext()$path)
+} else {
+    DisqueFieldtest <- Script_Dir()
+    # if Script_Dir does not work, e. g. when deploying the app then force to "/home/shinyadmin/App"
+    if (!dir.exists(DisqueFieldtest) || !"app.R" %in% list.files(path = DisqueFieldtest)) DisqueFieldtest <- "/home/shinyadmin/App"}
 DirShiny        <- DisqueFieldtest
 futile.logger::flog.info(paste0("[ASE_App] directory from where the script is run: ", DisqueFieldtest))
 # Set working directory to directory where is App.R
@@ -136,7 +160,7 @@ choices.shield    <- list.files(path = file.path(getwd(), "Shield_Files"), patte
 choices.Ref.unit  <- c("ppb", "ppm", "ug/m3", "mg/m3", "counts", "Celsius", "K", "percent", "hPa", "m/s", "degrees", "W/m2","mm")
 Models            <- c("Linear", "Linear.Robust","MultiLinear", "exp_kT_NoC", "exp_kT", "exp_kK", "T_power", "K_power", "BeerLambert", "Kohler", "Kohler_only","RH_Hysteresis","gam", "Quadratic", "Cubic", "Michelis", "Sigmoid")
 # ui =============================================================
-ui <- navbarPage(title = "ASE_App v0.21", id = "ASE", theme = shinytheme("cerulean"), selected = "SelectASE",
+ui <- navbarPage(title = "ASE_App v0.22", id = "ASE", theme = shinytheme("cerulean"), selected = "SelectASE",
                  # shinyjs must be initialized with a call to useShinyjs() in the app's ui.
                  useShinyjs(),
                  extendShinyjs(text = jscode, functions = c("closeWindow")),
@@ -160,7 +184,7 @@ ui <- navbarPage(title = "ASE_App v0.21", id = "ASE", theme = shinytheme("cerule
                                   #textInput(inputId = "NewFile", label = "New config file (ASEconfig*, * = SOS id)", value = "ASEconfig"),
                                   textInput(inputId = "NewFile", label = "New AirSensEUR (SOS id)"),
                                   actionButton(inputId = "Create.New", label = "Add new AirSensEUR by cloning the one on the list", icon = icon("plus-circle")),
-                                  actionButton(inputId = "Create.Zip", label = "Add new AirSensEUR with zip file", icon = icon("plus-circle")),
+                                  actionButton(inputId = "Create.Zip", label = "Add new AirSensEUR by with zip file", icon = icon("plus-circle")),
                                   hr(),
                                   actionButton(inputId = "Quit"   , label = "Quit", icon = icon("power-off"))
                                   , width = 3),
@@ -751,77 +775,17 @@ server <- function(input, output, session) {
         return(Com[(length(Com) - 1000):length(Com)])
     })
     # NavBar"SelectASE", Button Create.New and Create.Zip,  ----
-    # After a click on button "Create New AirSensEUR"
+    # After a click on button "Create New AirSensEUR" ----
     observeEvent(input$Create.New, {
         # Create a Progress object
         progress <- shiny::Progress$new()
         # Make sure it closes when we exit this reactive, even if there's an error
         on.exit(progress$close())
         progress$set(message = "Creating New Config File of AirSensEUR Box", value = 0.5)
-        if (!dir.exists(file.path(DirShiny, input$Project, input$NewFile))) {
-            #----------------------------------------------------------CR
-            #  1.c Create file system structure. check for General.Rdata availability, sourcing ASEConfig_xx.R ####
-            #----------------------------------------------------------CR
-            # Check directories existence or create , create log file
-            # Setting the current directory to the root of the file system with the name of The AirSensEUR
-            old_ASE_name       <- basename(input$Config_Files)
-            if (input$NewFile != "") {
-                DisqueFieldtestDir <- file.path(DirShiny, input$Project, input$NewFile)
-                # Creating the the working directory of the AirSensEUR box
-                cat("-----------------------------------------------------------------------------------\n")
-                futile.logger::flog.info(paste0("[ASE_App, Create.New] Creating the directory: ",DisqueFieldtestDir, ". Setting it as working directory."))
-                if (!dir.exists(DisqueFieldtestDir)) dir.create(DisqueFieldtestDir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
-                # Creating File structure
-                cat("-----------------------------------------------------------------------------------\n")
-                futile.logger::flog.info(paste0("[ASE_App, Create.New] creating the file system for data treatment at ", DisqueFieldtestDir))
-                List.Dirs <- c("Calibration","Configuration","Drift","Estimated_coef","General_data","Models","Modelled_gas","Outliers","scriptsLog",
-                               "SensorData","Retrieved_plots","Statistics","Verification_plots", "MarkDown")
-                for (i in List.Dirs) {
-                    if (!dir.exists(file.path(DisqueFieldtestDir, i))) {
-                        dir.create(file.path(DisqueFieldtestDir, i), showWarning = TRUE, recursive = TRUE, mode = "0777")
-                        futile.logger::flog.info(paste0("[ASE_App, Create.New] Dir. created: ", file.path(DisqueFieldtestDir,i)), sep = "\n\r")
-                    } else futile.logger::flog.info(paste0("[ASE_App, Create.New] Dir. already exists: ", file.path(DisqueFieldtestDir,i)))
-                }
-                # Populating the configuration intormation with cfg and effect files
-                New_General_dir <- file.path(DisqueFieldtestDir, "Configuration")
-                cfg_Files       <- list.files(path = file.path(input$Config_Files), pattern = ".cfg", recursive = TRUE)
-                cfg_Files       <- cfg_Files[-grep(pattern= paste(c("Boards.cfg", "Sensors.cfg"), collapse = "|"), cfg_Files)]
-                for (i in cfg_Files) {
-                    futile.logger::flog.info(paste0("[ASE_App, Create.New] copying ", basename(i), " at ", New_General_dir))
-                    file.copy(from = file.path(input$Config_Files,i), to = file.path(DisqueFieldtestDir, "Configuration",gsub(pattern = old_ASE_name, replacement = input$NewFile, basename(i))),
-                              overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)}
-                # Updating list of ASE boxes and select the newly created one
-                Newchoices      <- list.dirs(path = file.path(DirShiny, input$Project), recursive = FALSE)
-                updateSelectInput( session = session, inputId = "Config_Files", choices = Newchoices,
-                                   selected = DisqueFieldtestDir)
-            } else shinyalert(
-                title = "ERROR ASE box name",
-                text = "ERROR the same AirSensEUR box name cannot be empty",
-                closeOnEsc = TRUE,
-                closeOnClickOutside = TRUE,
-                html = FALSE,
-                type = "error",
-                showConfirmButton = TRUE,
-                showCancelButton = FALSE,
-                confirmButtonText = "OK",
-                confirmButtonCol = "#AEDEF4",
-                timer = 4000,
-                imageUrl = "",
-                animation = FALSE)
-        } else shinyalert(
-            title = "ERROR ASE box already exist",
-            text = "ERROR it is not possible to use twice the same AirSensEUR box name. Change name or delete directory in ../Shiny/ASE_Boxes if needed",
-            closeOnEsc = TRUE,
-            closeOnClickOutside = TRUE,
-            html = FALSE,
-            type = "error",
-            showConfirmButton = TRUE,
-            showCancelButton = FALSE,
-            confirmButtonText = "OK",
-            confirmButtonCol = "#AEDEF4",
-            timer = 4000,
-            imageUrl = "",
-            animation = FALSE)
+        Created <- Create_ASE(DirShiny = DirShiny, Project = input$Project, New.ASE.Name = input$NewFile, Cloning.path = input$Config_Files, Shiny = TRUE)
+        if (Created) {
+            Newchoices      <- list.dirs(path = file.path(DirShiny, input$Project), recursive = FALSE)
+            updateSelectInput( session = session, inputId = "Config_Files", choices = Newchoices, selected = file.path(DirShiny, input$Project, input$NewFile))}    
         progress$set(message = "[ASE_App, Create.New] INFO, Creating New Config File of AirSensEUR Box", value = 1)
     })
     observeEvent(input$Create.Zip, {
@@ -919,6 +883,7 @@ server <- function(input, output, session) {
         updateTextInput(session, inputId = "Selected", value = input$Config_Files)
         #shinyjs::disable("NewFile")
     })
+    # Click on Select ====
     observeEvent(input$Selected, {
         # not run without clicking once on button "Select ASE"
         # browser()
@@ -949,6 +914,7 @@ server <- function(input, output, session) {
             # Config$all[["sens2ref"]] : cfg parameters
             # Config$all[["CovPlot"]]  : covariates for plotting
             # Config$all[["CovMod"]]   : covariates for calibrating
+            # Config$all[["Shield"]]   : shield configuration
             # Config$all[["Boards"]]   : info from grafana dashboards
             # Config$all[["Sensors"]]  : info from grafana dashboards
             # Initial values and reactives ----
@@ -984,29 +950,24 @@ server <- function(input, output, session) {
                     if (!"" %in% Config$all$Server$ref.tzone) {
                         data.table::set(Ref$DATA, j = "date", value =  ymd_hms(Ref$DATA[["date"]], tz = Config$all$Server$ref.tzone))
                     } else data.table::set(Ref$DATA, j = "date", value =  ymd_hms(Ref$DATA[["date"]], tz = "UTC"))
-                } else if (extension(SOSData.file()) == ".Rdata") {
+                } else if (extension(RefData.file()) == ".Rdata") {
                     Ref <<- reactiveValues(DATA = load_obj(RefData.file()))
-                    if (!"data.table" %in% class(Ref$DATA)) Ref$DATA <- data.table(Ref$DATA, key = "date")
-                }
+                    if (!"data.table" %in% class(Ref$DATA)) Ref$DATA <- data.table(Ref$DATA, key = "date")}
                 if ("V1" %in% names(Ref$DATA)) Ref$DATA[, V1 := NULL]
                 # Message in case coordinates are not included
-                if (!all(c("Ref.Long",  "Ref.Lat") %in% names(Ref$DATA))) shinyalert(
-                    title = "ERROR Coordinates of reference station missing",
-                    text = "You should delete RefData.csv, General.csv and all .RDS files\n
-                            in directory General_data and reload reference data",
-                    closeOnEsc = TRUE,
-                    closeOnClickOutside = TRUE,
-                    html = FALSE,
-                    type = "error",
-                    showConfirmButton = TRUE,
-                    showCancelButton = FALSE,
-                    confirmButtonText = "OK",
-                    confirmButtonCol = "#AEDEF4",
-                    timer = 3000,
-                    imageUrl = "",
-                    animation = FALSE
-                )
-            }
+                if (!all(c("Ref.Long",  "Ref.Lat") %in% names(Ref$DATA))) shinyalert(title = "ERROR Coordinates of reference station missing",
+                                                                                     text = "You should delete RefData.csv, General.csv and all .RDS files\n in directory General_data and reload reference data",
+                                                                                     closeOnEsc = TRUE,
+                                                                                     closeOnClickOutside = TRUE,
+                                                                                     html = FALSE,
+                                                                                     type = "error",
+                                                                                     showConfirmButton = TRUE,
+                                                                                     showCancelButton = FALSE,
+                                                                                     confirmButtonText = "OK",
+                                                                                     confirmButtonCol = "#AEDEF4",
+                                                                                     timer = 3000,
+                                                                                     imageUrl = "",
+                                                                                     animation = FALSE)} else Ref <<- reactiveValues(DATA = NULL)
             if (file.exists(General.file())) {
                 if (extension(General.file()) == ".csv") {
                     DF <<- reactiveValues(General = data.table::fread(General.file())) #, na.strings = getOption("","NA"))
@@ -1045,7 +1006,7 @@ server <- function(input, output, session) {
                         DF$General[Ref.both.Temp.Hum, Ref.Td_deficit := DF$General[["Ref.Temp"]][Ref.both.Temp.Hum] - Td]}}
                 progress$set(message = "[ASE_App] INFO, Loading General data", value = 0.3)
                 # se c'e' General.Rdata ma alcuni sensori o referenze di Ref$DATA e Influx$DATA non sono in DF$General le si combina
-                if (!all(c(names(Ref$DATA)[grep(pattern = paste(c("Bin.", "boardTimeStamp", "gpsTimestamp"), collapse = "|"), x = names(Ref$DATA), invert = T)], names(Influx$DATA)) %in% names(DF$General))) {
+                if (!is.null(Ref$DATA) && !all(c(names(Ref$DATA)[grep(pattern = paste(c("Bin.", "boardTimeStamp", "gpsTimestamp"), collapse = "|"), x = names(Ref$DATA), invert = T)], names(Influx$DATA)) %in% names(DF$General))) {
                     DF$General   <<- NULL
                     DF.NULL$Init <<- TRUE}
             } else {
@@ -2871,7 +2832,7 @@ server <- function(input, output, session) {
         # Goto GetData in NavBar
         if (input$ASE != "DataTreatment") updateNavbarPage(session, "ASE", selected = "DataTreatment")
     })
-    # NavBar"Data Treatment", SideBar Button "Merge" ----
+    # NavBar"Data Treatment", SideBar Button "Merge" ####
     # The "Merge" button is not enable if sideBar tabPanel "Calib" and "SetTime" are not opened
     # https://cran.r-project.org/web/packages/shinyjs/vignettes/shinyjs-example.html
     observe({
@@ -2938,7 +2899,7 @@ server <- function(input, output, session) {
                 shinyjs::disable(paste0("Cal.Line", CalSet()$k))
             }
         })
-        # Declare Ready for SOS Download
+        # Declare Ready for SOS Download ====
         observeEvent(input$Ready.SOS, {
             if (input$Ready.SOS == "Ready") {
                 # Check if calibration function exists
@@ -4407,55 +4368,18 @@ server <- function(input, output, session) {
             #   input$UserMins             : integer number of minutes to average raw data
             # output: a list of 4 character vectors, corresponding to sensors with row index of DF$General corresponding to warming time of sensor data,
             #       the names of the 4 elements are the ones of list.gas.sensor()   in the same order
+            # Create a Progress object
             if (Warm$Forced) {
-                # Create a Progress object
                 progress <- shiny::Progress$new()
                 # Make sure it closes when we exit this reactive, even if there's an error
                 on.exit(progress$close())
                 progress$set(message = "[ASE_App, ind.warm] INFO,Setting the index of dates for sensor warming time", value = 0.33)
                 futile.logger::flog.info("[ASE_App, ind.warm]  Setting index of sensor data during warming period.")
-                # setting index for warming
-                if (!is.null(DF$General[,"boardTimeStamp"]) ) { # use to be class(DF$General) == "data.frame"
-                    # http://r.789695.n4.nabble.com/Replace-zeroes-in-vector-with-nearest-non-zero-value-td893922.html
-                    # https://stackoverflow.com/questions/26414579/r-replacing-zeros-in-dataframe-with-last-non-zero-value
-                    # replace everythin boardTimeStamp which does not change with NA so na.locf will works
-                    # Index of boardtimeStamp similar for consecutive boardtimeStamp
-                    Consecutive <- which(diff(DF$General$boardTimeStamp, lag = 1) == 0)
-                    # Values of indexes whith previous values that are non consecutive (Re-start)
-                    Re_start <- Consecutive[diff(Consecutive, lag = 1) > 1]
-                    # Setting NA boardTimeStamp to the last non-NA boardTimeStamp
-                    data.table::set(DF$General,  j = "boardTimeStamp", value = na.locf(DF$General[["boardTimeStamp"]], na.rm = FALSE, fromLast = FALSE))
-                    # detecting when boardTimeStamp decreases suddenly (re-boot)
-                    Re_boot <- which(diff(DF$General$boardTimeStamp, lag = 1) < 0)
-                    # Combining Re_start and reboot
-                    ind <- unique(c(Re_start, Re_boot))
-                } else {
-                    # This is for SOS
-                    ind <- apply(DF$General[, list.gas.sensor(), with = FALSE  ], 1, function(i) !all(is.na(i)))
-                    ind <- which(ind[2:length(ind)] & !ind[1:(length(ind) - 1 )])
-                }
-                ind = ind + 1
-                # Adding the first switch-on
-                ind <- c(1,ind)
-                progress$set(message = "[ASE_App, ind.warm] INFO, Setting the index of dates for sensor warming time", value = 0.66)
-                for (n in seq_along(list.gas.sensor())) {
-                    indfull <- integer(length(ind)*input[[paste0("Warming",n)]] * 60 / as.integer(input$UserMins))
-                    # developing IndFull
-                    for (i in seq_along(ind)) {
-                        indfull[((i - 1) * input[[paste0("Warming",n)]]*60/as.integer(input$UserMins) + 1):((i)*input[[paste0("Warming",n)]]*60 / as.integer(input$UserMins))] <- ind[i]:(ind[i] + input[[paste0("Warming",n)]] * 60 / as.integer(input$UserMins) - 1)
-                    }
-                    # removing  indexes outside the number of rows of DF$General
-                    indfull <- indfull[indfull <= length(DF$General[[list.gas.sensor()[n]]])]
-                    if (exists("return.ind.warm")) return.ind.warm[[n]] <- indfull else return.ind.warm <- list(indfull)
-                }
-                names(return.ind.warm) <- list.gas.sensor()
-                ind.warm$out <<- return.ind.warm
-                # Setting TRh$Forced to TRUE to be sure that it is done before ind.Sens
-                TRh$Forced <<- TRUE
-                progress$set(message = "[ASE_App, ind.warm] INFO, Setting the index of dates for sensor warming time", value = 1)
-            }
-        },
-        priority = 195)
+                ind.warm$out <<- Warm_Index(Warm.Forced  = Warm$Forced, General.DT = DF$General, list.gas.sensor  = list.gas.sensor(), boxConfig = Config$all, 
+                                            ASEDir = file.path(DirShiny, input$Project, ASE_name()))
+                TRh$Forced <- TRUE  
+                progress$set(message = "[ASE_App, ind.warm] INFO, Setting the index of dates for sensor warming time", value = 1)} 
+        }, priority = 195)
         # NavBar"Data Treatment", MainTabPanel "Warming" - "PlotFiltering"  ----
         output$DY_Warming <- renderDygraph(Plot.Warming()) 
         # NavBar"Data Treatment", Reactive Plot.Warming

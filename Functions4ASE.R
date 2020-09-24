@@ -5993,7 +5993,7 @@ Warm_Index <- function(Warm.Forced  = TRUE, General.DT, list.gas.sensor, boxConf
         if ("board.cfg" %in% names(boxConfig)) {
             # reboot times in board.cfg converted to next minute
             reboot <- lubridate::ceiling_date(unique(boxConfig$board.cfg$time), unit = "minute")
-            ind <- which(General.DT$date %in% reboot)
+            ind <- which(General.DT$date %in% (reboot + 60))
             # add first date in case it is not included
             if (!1 %in% ind) ind <- c(1, ind)
         } else {
@@ -8013,7 +8013,7 @@ Create_Table_comparison <- function(Table, New.names.coeffs = c("a0, nA", "a1, n
 #' @param New.ASE.Name A character vector with name of new ASE box.
 #' @param Cloning.path A file path of ASE box from which configuration files and calibration models will be copied
 #' @param Shiny A logical, default is FALSE If TRUE shiny alert message are displayed
-#' @return Only return messages
+#' @return TRUE if a ASE boxe is created, FALSE otherwise
 Create_ASE <- function(DirShiny, Project = "ASE_Boxes", New.ASE.Name, Cloning.path, Shiny = FALSE) {
     if (!dir.exists(file.path(DirShiny, Project, New.ASE.Name))) {
         # Create file system structure. check for General.Rdata availability, sourcing ASEConfig_xx.R ####
@@ -8065,10 +8065,8 @@ Create_ASE <- function(DirShiny, Project = "ASE_Boxes", New.ASE.Name, Cloning.pa
                         file.copy(from = file.path(Cloning.path, "Models", Cal.func), 
                                   to   = file.path(New.File.Mod, gsub(pattern = old_ASE_name, replacement = New.ASE.Name, Cal.func)),
                                   overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)}}}
-            # Updating list of ASE boxes and select the newly created one
-            if (Shiny) {
-                Newchoices      <- list.dirs(path = file.path(DirShiny, Project), recursive = FALSE)
-                updateSelectInput( session = session, inputId = "Config_Files", choices = Newchoices, selected = New.Dir)}
+            # Returning success
+            return(TRUE)
         } else if (Shiny) {
             shinyalert(
                 title = "ERROR ASE box name",
@@ -8084,7 +8082,10 @@ Create_ASE <- function(DirShiny, Project = "ASE_Boxes", New.ASE.Name, Cloning.pa
                 timer = 4000,
                 imageUrl = "",
                 animation = FALSE)
-        } else futile.logger::flog.error(paste0("[Create_ASE] AirSensEUR box name cannot be empty"))
+            return(FALSE)
+        } else {
+            futile.logger::flog.error(paste0("[Create_ASE] AirSensEUR box name cannot be empty"))
+            return(FALSE)} 
     } else if (Shiny) {
         shinyalert(
             title = "ERROR ASE box already exist",
@@ -8100,5 +8101,7 @@ Create_ASE <- function(DirShiny, Project = "ASE_Boxes", New.ASE.Name, Cloning.pa
             timer = 4000,
             imageUrl = "",
             animation = FALSE)
-    } else futile.logger::flog.error(paste0("[Create_ASE]ASE box already exist. ", New.ASE.Name))
-}
+        return(FALSE)
+    } else {
+        futile.logger::flog.error(paste0("[Create_ASE]ASE box already exist. ", New.ASE.Name))
+        return(FALSE)} }
