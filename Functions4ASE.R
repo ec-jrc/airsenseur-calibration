@@ -1262,7 +1262,7 @@ Json_To_df <- function(JSON, Numeric = NULL, verbose = FALSE, Discard = NULL) {
 #' @param name.SQLite.old: character, backup of name.SQLite. No more used, set to NULL.
 #' @param Db             : character, name of the database at the Influx server, e.g. jrc = "jrcispra",
 #' @param Dataset        : character, name of the table(Dataset) in the database Db that you want to download, e. g. "ASE_45058D"
-#' @param Influx.TZ      : character, default value NULL. If NULL or "local time", the function Down_Influx will try to determine the time zone otherwise Influx.TZ will be used
+#' @param Influx.TZ      : character, default value NULL. If NULL or "local time", the function Down_Influx will try to determine the time zone otherwise Influx.TZ ("UTC") will be used
 #' @param Page           : numeric, default value 200 (LImit Influx_query). If Null the size of the page of data to download from the influx server is : LIMIT 10000, as requested in the Influx
 #' @param Mean           : numeric, default value 1 (Group by time(1m)), time average for the download of Influx data,
 #' @param use_google     : logical: default = TRUE, if TRUE the google API is used for detecting time zone from coordinates (require port 443)
@@ -1529,7 +1529,7 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
         fwrite(Sensors, file.path(dirname(dirname(SQLite.con@dbname)), "Configuration","Sensors.cfg"))}
     # Disconnect SQLite.con
     dbDisconnect(conn = SQLite.con)
-    futile.logger::flog.info(paste0("[Down_Influx] the dates airsenseur.db go until ", format(LastDate, "%Y-%m-%d %H:%M"), ", with ", Dataset.N, " records for the table ", paste0(Dataset,"_cast")))
+    futile.logger::flog.info(paste0("[Down_Influx] dates in airsenseur.db go until ", format(LastDate, "%Y-%m-%d %H:%M"), ", with ", Dataset.N, " records for the table ", paste0(Dataset,"_cast")))
     cat("-----------------------------------------------------------------------------------\n")
     cat("\n")
     return(list(Influx.TZ = Influx.TZ,LastDate = LastDate))
@@ -3039,6 +3039,7 @@ INFLUXDB <- function(WDoutput, DownloadSensor, UserMins,
                      PROXY, URL, PORT, LOGIN, PASSWORD,
                      Down.Influx = FALSE, Host, Port, User , Pass, name.SQLite, name.SQLite.old, Db, Dataset, Influx.TZ = NULL,
                      sens2ref, asc.File=NULL, InfluxData = NULL) {
+    # WDoutput          : char   - directory to save InfluxData.csv
     # DownloadSensor    : output of function Check_Download
     # Parameters PROXY  :  PROXY, URL, PORT, LOGIN, PASSWORD see Down_INflux()
     # Parameters Influx : Down.Influx, Host, Port, User, Pass, name.SQLite, name.SQLite.old, Db, Dataset, Influx.TZ
@@ -5904,6 +5905,8 @@ List_models <- function(ASEDir, name.sensor = "ALL", DIR_Config = "Configuration
 #' @param DIR_Config File path of the subdirectory of ASEDir where is the file ASE.name.cfg.
 #' @param DIR_Models File path of the subdirectory of ASEDir where are the calibration models.
 #' @param DIR_General File path of the subdirectory of ASEDir where is the file General.csv.
+#' @param Filter.Sens logical default is TRUE. If FALSE  filtering of sensor data is not performed.
+#' @param Filter.Ref logical default is TRUE. If FALSE  filtering of reference data is not performed.
 #' @return a list of charateristics of a sensor in ASE box with data.table General.DT, config data.table ASE.cfg, k the index of sensor in the kist of sensors,
 # the dates of calibration Cal.DateIN  and Cal.DateEND = Cal.DateEND, full date interval of measurements Meas.DateIN and Meas.DateEND, column names of 
 # sensor raw data (nameGasVolt), sensor predicted data (nameGasMod), corresponding reference data (nameGasRef), sensor raw unit (Sens.raw.unit)
@@ -5911,7 +5914,7 @@ List_models <- function(ASEDir, name.sensor = "ALL", DIR_Config = "Configuration
 #' @examples
 #' Identify.ASE(Model = Model)
 Identify_ASE <- function(Model, name.sensor = NULL, General.DT = NULL, ASE.cfg = NULL, SetTime = NULL, Config = NULL, Shield = NULL,
-                         DIR_Config = "Configuration", DIR_Models = "Models", DIR_General = "General_data") {
+                         DIR_Config = "Configuration", DIR_Models = "Models", DIR_General = "General_data", Filter.Sens = TRUE, Filter.Ref = TRUE) {
     # name of ASE box
     Stripped.Model <- unlist(strsplit(Model, split = "__"))
     # Extract ASE.name
@@ -5959,7 +5962,7 @@ Identify_ASE <- function(Model, name.sensor = NULL, General.DT = NULL, ASE.cfg =
         data.table::set(General.DT, j = "date", value =  ymd_hms(General.DT[["date"]], tz = "UTC"))}
     # Complete General DT with columns for filtered sesnors if needed
     General.DT <- Complete_General(f.list.name.sensor = list.sensors, f.list.gas.sensor = list.gas.sensor, f.General.DT = General.DT, f.Config = Config, 
-                                   f.ASEDir = ASEDir, f.Shield = Shield, f.list.reference = list.reference, f.ASE.cfg = ASE.cfg)
+                                   f.ASEDir = ASEDir, f.Shield = Shield, f.list.reference = list.reference, f.ASE.cfg = ASE.cfg, Filter.Sens = Filter.Sens, Filter.Ref = Filter.Ref)
     # returning
     return(list(General.DT = General.DT, ASE.cfg = ASE.cfg, SetTime = SetTime, k = k, Config = Config,
                 Cal.DateIN = Cal.DateIN, Cal.DateEND = Cal.DateEND, Meas.DateIN = Meas.DateIN, Meas.DateEND = Meas.DateEND, 
@@ -5987,28 +5990,35 @@ Warm_Index <- function(Warm.Forced  = TRUE, General.DT, list.gas.sensor, boxConf
     # setting index for warming, reset ind.warm.out
     if (Warm.Forced) {
         ind.warm.out <- NULL
-        if (!is.null(General.DT[,"boardTimeStamp"]) ) { 
-            # http://r.789695.n4.nabble.com/Replace-zeroes-in-vector-with-nearest-non-zero-value-td893922.html
-            # https://stackoverflow.com/questions/26414579/r-replacing-zeros-in-dataframe-with-last-non-zero-value
-            # replace every boardTimeStamp which does not change with NA so na.locf will works
-            # Index of boardtimeStamp similar for consecutive boardtimeStamp
-            Consecutive <- which(diff(General.DT$boardTimeStamp, lag = 1) == 0)
-            # Values of indexes whith previous values that are non consecutive (Re-start)
-            Re_start    <- Consecutive[diff(Consecutive, lag = 1) > 1]
-            # Setting NA boardTimeStamp to the last non-NA boardTimeStamp
-            data.table::set(General.DT,  j = "boardTimeStamp", value = na.locf(General.DT[["boardTimeStamp"]], na.rm = FALSE, fromLast = FALSE))
-            # detecting when boardTimeStamp decreases suddenly (re-boot)
-            Re_boot     <- which(diff(General.DT$boardTimeStamp, lag = 1) < 0)
-            # Combining Re_start and reboot
-            if (length(Re_start) > 0 | length(Re_boot) > 0) ind <- unique(c(Re_start, Re_boot)) else ind = numeric(0)
+        if ("board.cfg" %in% names(boxConfig)) {
+            # reboot times in board.cfg converted to next minute
+            reboot <- lubridate::ceiling_date(unique(boxConfig$board.cfg$time), unit = "minute")
+            ind <- which(General.DT$date %in% reboot)
+            # add first date in case it is not included
+            if (!1 %in% ind) ind <- c(1, ind)
         } else {
-            # This is for SOS
-            ind <- apply(General.DT[, list.gas.sensor, with = FALSE  ], 1, function(i) !all(is.na(i)))
-            ind <- which(ind[2:length(ind)] & !ind[1:(length(ind) - 1 )])}
-        # Set the first discarded value as the value restarting from 0
-        ind = ind + 1
-        # Adding the first switch-on
-        ind <- unique(c(1,ind))
+            if (!is.null(General.DT[,"boardTimeStamp"]) ) { 
+                # http://r.789695.n4.nabble.com/Replace-zeroes-in-vector-with-nearest-non-zero-value-td893922.html
+                # https://stackoverflow.com/questions/26414579/r-replacing-zeros-in-dataframe-with-last-non-zero-value
+                # replace every boardTimeStamp which does not change with NA so na.locf will works
+                # Index of boardtimeStamp similar for consecutive boardtimeStamp
+                Consecutive <- which(diff(General.DT$boardTimeStamp, lag = 1) == 0)
+                # Values of indexes whith previous values that are non consecutive (Re-start)
+                Re_start    <- Consecutive[diff(Consecutive, lag = 1) > 1]
+                # Setting NA boardTimeStamp to the last non-NA boardTimeStamp
+                data.table::set(General.DT,  j = "boardTimeStamp", value = na.locf(General.DT[["boardTimeStamp"]], na.rm = FALSE, fromLast = FALSE))
+                # detecting when boardTimeStamp decreases suddenly (re-boot)
+                Re_boot     <- which(diff(General.DT$boardTimeStamp, lag = 1) < 0)
+                # Combining Re_start and reboot
+                if (length(Re_start) > 0 | length(Re_boot) > 0) ind <- unique(c(Re_start, Re_boot)) else ind = numeric(0)
+            } else {
+                # This is for SOS
+                ind <- apply(General.DT[, list.gas.sensor, with = FALSE  ], 1, function(i) !all(is.na(i)))
+                ind <- which(ind[2:length(ind)] & !ind[1:(length(ind) - 1 )])}
+            # Set the first discarded value as the value restarting from 0
+            ind = ind + 1
+            # Adding the first switch-on
+            ind <- unique(c(1,ind))} 
         # Creating a list of  vector of index of value to discard in a list including all names of sensors
         ind.warm.out <- lapply(list.gas.sensor, function(n) {
             unique(unlist(sapply(ind, function(i) {
@@ -6355,29 +6365,34 @@ Filter_Ref_Data <- function(ASE.ID = NULL, General.DT = NULL, list.reference = N
 #' Completing General.DT with columns related to filtering data for sensors ("sensor_volt") and reference data ("Out.gas") 
 #' and filetering if any index file for warming, TRh, Invalid and sensor, refernce outlier is missing
 #' 
-#' @param f.list.name.sensor a vector of sensors to be completed if needed with columns for filtering data
+#' @param f.list.name.sensor a vector of sensor names to be completed if needed with columns for filtering data
 #' @param f.list.sensors a vector of sensors to be completed if needed with columns for filtering data
 #' @param f.General.DT the data.table to be completed
+#' @param Filter.Sens logical default is TRUE. If FALSE  filtering of sensor data is not performed.
+#' @param Filter.Ref logical default is TRUE. If FALSE  filtering of reference data is not performed.
 #' @return : f.General.DT the data.table with new columns for filtering of data if needed
-Complete_General <- function(f.list.name.sensor, f.list.gas.sensor, f.General.DT, f.Config, f.ASEDir, f.Shield, f.list.reference, f.ASE.cfg, DIR_General = "General_data") {
-    Save.General <- FALSE
-    Missing.Sensor      <- which(!paste0(f.list.name.sensor, "_volt") %in% names(f.General.DT))
-    index.files         <- file.path(f.ASEDir, DIR_General,c("ind_warm.RDS","ind_TRh.RDS","ind_Invalid.RDS","ind_sens_out.RDS","ind_ref_out.RDS"))
+Complete_General <- function(f.list.name.sensor, f.list.gas.sensor, f.General.DT, f.Config, f.ASEDir, f.Shield, f.list.reference, f.ASE.cfg, DIR_General = "General_data", Filter.Sens = TRUE, Filter.Ref = TRUE) {
+    Save.General   <- FALSE
+    # be sure that sensor data are filtered if needed
+    Missing.Sensor <- which(!paste0(f.list.name.sensor, "_volt") %in% names(f.General.DT))
+    index.files    <- file.path(f.ASEDir, DIR_General,c("ind_warm.RDS","ind_TRh.RDS","ind_Invalid.RDS","ind_sens_out.RDS"))
     Missing.index.files <- which(!sapply(index.files, file.exists))
-    if (length(Missing.Sensor) > 0 || length(Missing.index.files) > 0) {
+    if (Filter.Sens && (length(Missing.Sensor) > 0 || length(Missing.index.files) > 0)) {
         if (length(Missing.Sensor) > 0) {
-            futile.logger::flog.warn(paste0("[Identify_ASE_Dir] ",paste(paste0("Out.",f.list.name.sensor[Missing.Sensor]), collapse = ", "), " is (are) missing."))}
+            futile.logger::flog.warn(paste0("[Complete_General] ",paste(paste0("Out.",f.list.name.sensor[Missing.Sensor]), collapse = ", "), " is (are) missing."))}
         if (length(Missing.index.files) > 0) {
-            futile.logger::flog.warn(paste0("[Identify_ASE_Dir] ", basename(index.files)[Missing.index.files], " file is (are) missing."))}
-        futile.logger::flog.info("[Identify_ASE_Dir] the Filtering of sensor data is going to be carried out.")
+            futile.logger::flog.warn(paste0("[Complete_General] ", basename(index.files)[Missing.index.files], " file is (are) missing."))}
+        futile.logger::flog.info("[Complete_General] the Filtering of sensor data is going to be carried out.")
         f.General.DT <- Filter_Sensor_Data(General.DT = f.General.DT, list.gas.sensor = f.list.gas.sensor, list.name.sensor = f.list.name.sensor, 
                                            boxConfig = f.Config, ASEDir = f.ASEDir, Shield = f.Shield)$General.DT
         Save.General <- TRUE}
-    # be sure that sensor and reference data are filtered
-    if (!all(paste0("Out.",f.list.reference) %in% names(f.General.DT))) {
-        Missing.reference <- which(!paste0("Out.",f.list.reference) %in% names(f.General.DT))
-        futile.logger::flog.warn(paste0("[Identify_ASE_Dir] ",paste(paste0("Out.",f.list.reference[Missing.reference]), collapse = ", "), " are missing. Reference data data are not filtered."))
-        futile.logger::flog.info("[Identify_ASE_Dir] The Filtering of reference data is going to be carried out.")
+    # be sure that reference data are filtered if needed
+    Missing.Ref <- which(!paste0("Out.",f.list.reference) %in% names(f.General.DT))
+    index.files    <- file.path(f.ASEDir, DIR_General,c("ind_ref_out.RDS"))
+    Missing.index.files <- which(!sapply(index.files, file.exists))
+    if (Filter.Ref && (length(Missing.Ref) > 0 || length(Missing.index.files) > 0)) {
+        futile.logger::flog.warn(paste0("[Complete_General] ",paste(paste0("Out.",f.list.reference[Missing.Ref]), collapse = ", "), " are missing. Reference data data are not filtered."))
+        futile.logger::flog.info("[Complete_General] The Filtering of reference data is going to be carried out.")
         f.General.DT <- Filter_Ref_Data(General.DT = f.General.DT, list.reference = f.list.reference, list.name.sensor = f.list.name.sensor, ASEDir = f.ASEDir, ASE.cfg = f.ASE.cfg)
         Save.General <- TRUE}
     if (Save.General) {
@@ -6393,8 +6408,10 @@ Complete_General <- function(f.list.name.sensor, f.list.gas.sensor, f.General.DT
 #' @param DIR_Config File path of the subdirectory of ASEDir where is the file ASE.name.cfg.
 #' @param DIR_Models File path of the subdirectory of ASEDir where are the calibration models.
 #' @param DIR_General File path of the subdirectory of ASEDir where is the file General.csv.
+#' @param Filter.Sens logical default is TRUE. If FALSE  filtering of sensor data is not performed.
+#' @param Filter.Ref logical default is TRUE. If FALSE  filtering of reference data is not performed.
 Identify_ASE_Dir <- function(ASEDir, name.sensor = NULL, General.DT = NULL, ASE.cfg = NULL, SetTime = NULL, Config = NULL, Shield = NULL,
-                             DIR_Config = "Configuration", DIR_Models = "Models", DIR_General = "General_data") {
+                             DIR_Config = "Configuration", DIR_Models = "Models", DIR_General = "General_data", Filter.Sens = TRUE, Filter.Ref = TRUE) {
     # name of ASE box
     ASE.name <- basename(ASEDir)
     # Extracting data 
@@ -6432,7 +6449,7 @@ Identify_ASE_Dir <- function(ASEDir, name.sensor = NULL, General.DT = NULL, ASE.
     }
     # Complete General DT with columns for filtered sesnors if needed
     General.DT <- Complete_General(f.list.name.sensor = list.sensors, f.list.gas.sensor = list.gas.sensor, f.General.DT = General.DT, f.Config = Config, 
-                                   f.ASEDir = ASEDir, f.Shield = Shield, f.list.reference = list.reference, f.ASE.cfg = ASE.cfg)
+                                   f.ASEDir = ASEDir, f.Shield = Shield, f.list.reference = list.reference, f.ASE.cfg = ASE.cfg, Filter.Sens = Filter.Sens, Filter.Ref = Filter.Ref)
     return(list(General.DT = General.DT, ASE.cfg = ASE.cfg, SetTime = SetTime, k = k, Config = Config, Shield = Shield, 
                 Cal.DateIN = Cal.DateIN, Cal.DateEND = Cal.DateEND, Meas.DateIN = Meas.DateIN, Meas.DateEND = Meas.DateEND, 
                 nameGasVolt = nameGasVolt, nameGasMod = nameGasMod, nameGasRef = nameGasRef,
@@ -6450,15 +6467,18 @@ Identify_ASE_Dir <- function(ASEDir, name.sensor = NULL, General.DT = NULL, ASE.
 #' @param General.DT a data.table with all ASE Box and reference data. Default is NULL. if NULL, Generalcsv loaded with Identify_ASE is loaded
 #' @param ASE.cfg A data.table with all ASE box configuration. Default is null. If NULL the ASE.cfg file is loaded
 #' @param SetTime A data.table with all ASE box SetTime configuration. Default is null. If NULL the ASE_SETTIME.cfg file is loaded
+#' @param Filter.Sens logical, default is TRUE. If FALSE  filtering of sensor data is not performed.
+#' @param Filter.Ref logical, default is TRUE. If FALSE  filtering of reference data is not performed.
 #' @return a list of charateristics of a sensor in ASE box with data.table General.DT = General.DT, config data.table ASE.cfg, k = k, 
 # dates of calibration Cal.DateIN  and Cal.DateEND = Cal.DateEND, full date interval of measurements Meas.DateIN and Meas.DateEND, column names of 
 # sensor raw data (nameGasVolt), sensor predicted data (nameGasMod), corresponding reference data (nameGasRef), sensor raw unit (Sens.raw.unit)
 # vector of list of sensor (list.sensors), vector of list of meteorological parameters (var.names.meteoDates).
 #' @examples
 #' General.DT <- Apply_Model(Model = Model, General.DT = General.DT, ASE.cfg = ASE.cfg)
-Apply_Model <- function(Model, Mod_type = NULL, name.sensor = NULL, Variables = NULL, General.DT = NULL, ASE.cfg = NULL, SetTime = NULL, Config = NULL, Shield = NULL) {
+Apply_Model <- function(Model, Mod_type = NULL, name.sensor = NULL, Variables = NULL, General.DT = NULL, ASE.cfg = NULL, SetTime = NULL, Config = NULL, Shield = NULL, Filter.Sens = TRUE, Filter.Ref = TRUE) {
     # Identify ASE box charateristics
-    ASE.ID <- Identify_ASE(Model = Model, General.DT = General.DT, ASE.cfg = ASE.cfg, SetTime = SetTime, Config = Config, Shield = Shield)
+    ASE.ID <- Identify_ASE(Model = Model, General.DT = General.DT, ASE.cfg = ASE.cfg, SetTime = SetTime, Config = Config, Shield = Shield, 
+                           Filter.Sens = Filter.Sens, Filter.Ref = Filter.Ref)
     # Extract Mod_type
     if (is.null(Mod_type)) Mod_type <- ASE.ID$Mod_type
     # Extract name.sensor
@@ -6474,7 +6494,8 @@ Apply_Model <- function(Model, Mod_type = NULL, name.sensor = NULL, Variables = 
             Degrees <- Model.CovMod[ seq(from = 2, to = length(Model.CovMod), by = 2) ]
         }
         # take only the one that is not NA of y = General.DT[!is.na(General.DT[, nameGasVolt]), nameGasVolt]
-        if (any(!CovMod %in% names(General.DT))) futile.logger::flog.error(paste0("[Meas_Func] ", name.Temperature, " is not included into General.DT. Please check names of covariates."))
+        No.CovMod <- which(!CovMod %in% names(General.DT))
+        if (length(No.CovMod) > 0) futile.logger::flog.error(paste0("[Meas_Func] ", paste0(CovMod[No.CovMod], collapse = ", "), " is not included into General.DT. Please check names of covariates."))
         is.not.NA.y <- which(complete.cases(General.DT[, .SD, .SDcols = c(ASE.ID$nameGasVolt, CovMod)]))}
     # Extract General.DT
     if (is.null(General.DT)) General.DT <- ASE.ID$General.DT
@@ -7594,7 +7615,7 @@ influx.getConfig <- function(boxName, Project = "ASE_Boxes") {
 #' download of AirSensEUR raw data at Influx server and application of calibration function (Prediction of AirSensEUR data)
 #'
 #' @param boxName A character vector, the name of AirSenEUR box.
-#' @param Project a subdirectory where to AirSensEUR configuration and data
+#' @param Project a subdirectory where to insert AirSensEUR configuration and data
 #' @param boxConfig A list as created using function influx.getConfig
 #' @param subDirConfig File path of the subdirectory of boxName where is the file ASE.name.cfg. Default value: "Configuration".
 #' @param subDirModels File path of the subdirectory of boxName where are the calibration models. Default value: "Models".
@@ -7604,8 +7625,7 @@ influx.getConfig <- function(boxName, Project = "ASE_Boxes") {
 #'                                   2 the data.table SetTime created with function SETTIME for boxName
 #' @examples
 #' influx.downloadAndPredict(boxName = station, boxConfig = config)
-influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes", subDirData = "General_data", subDirModels = "Models", subDirConfig = "Configuration", 
-                                      Add.Ref = FALSE) {
+influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes", subDirData = "General_data", subDirModels = "Models", subDirConfig = "Configuration", Add.Ref = FALSE) {
     # remove Sos, Ref, isensors, list.gas.reference, list.gas.reference2use variables
     # resume inital directory at the end of the function
     # saving all RDS filtering list files and DT.General after each changes.
@@ -7618,6 +7638,8 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
     DT.NULL    <- FALSE
     DT.General <- NULL
     Influx     <- NULL
+    Ref        <- NULL
+    Sos        <- NULL
     General.file            <- file.path(boxDirectory, subDirData, "General.csv")
     InfluxData.file         <- file.path(boxDirectory, subDirData, "InfluxData.csv")
     RefData.file            <- file.path(boxDirectory, subDirData, "RefData.csv")
@@ -7644,7 +7666,7 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
                 boxConfig$Server$ref.tzone <- "UTC"
                 futile.logger::flog.warn("[influx.downloadAndPredict] ref.tzone is not defined and set to \"UTC\"")}
             data.table::set(Ref, j = "date", value =  ymd_hms(Ref[["date"]], tz = boxConfig$Server$ref.tzone))
-        } else if (extension(SOSData.file()) == ".Rdata") {
+        } else if (extension(RefData.file()) == ".Rdata") {
             Ref <- load_obj(RefData.file)
             if (!"data.table" %in% class(Ref)) Ref <- data.table(Ref, key = "date")}
         if ("V1" %in% names(Ref)) Ref[, V1 := NULL]}
@@ -7689,9 +7711,9 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
                                       WDinput     = file.path(boxDirectory, subDirData),
                                       UserMins    = if (!is.null(boxConfig$Server$UserMins)) boxConfig$Server$UserMins else boxConfig$Server$UserMins,
                                       General.df  = if (!is.null(DT.General))  DT.General else NA,
-                                      RefData     = if (exists("Ref") && !is.null(Ref)) Ref else NULL,
+                                      RefData     = if (exists("Ref") && !is.null(Ref)) Ref else NA,
                                       InfluxData  = if (!is.null(Influx)) Influx else NA,
-                                      SOSData     = if (exists("Sos") && !is.null(Sos)) Sos else NULL)
+                                      SOSData     = if (exists("Sos") && !is.null(Sos)) Sos else NA)
     futile.logger::flog.info("[influx.downloadAndPredict] Initial SetTime")
     Set.Time <- SETTIME(DisqueFieldtestDir = boxDirectory,
                         General.t.Valid    = DT.General,
@@ -7735,14 +7757,13 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
                                                              boxConfig[["sens2ref"]]$name.sensor != ""]
 
     # setting the current directory to the root of the file system with the name of the AirSensEUR
-    wd <- getwd()
-    setwd(boxDirectory)
+    #setwd(boxDirectory)
     # InfluxDB ----
     # var.names.meteo     <- INFLUX[[2]]
     # var.name.GasSensors <- INFLUX[[3]]
     # var.names.sens      <- INFLUX[[4]]
     # InfluxData          <- INFLUX[[1]]
-    futile.logger::flog.info(paste0("[influx.downloadAndPredict] Setting downloading of Influx data is set to ", Download.Sensor$Retrieve.data.Influx, " if needed."))
+    futile.logger::flog.info(paste0("[influx.downloadAndPredict] Setting downloading of Influx data is set to ", Download.Sensor$Retrieve.data.Influx, "if needed."))
     if (!is.null(Influx)) InfluxData <- Influx[] else InfluxData <- NA_real_
     if (Download.Sensor$Retrieve.data.Influx) {
         INFLUX <- INFLUXDB(
@@ -7773,9 +7794,9 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
                                           WDinput     = file.path(boxDirectory, subDirData),
                                           UserMins    = if (!is.null(boxConfig$Server$UserMins)) boxConfig$Server$UserMins else 1,
                                           General.df  = if (!is.null(DT.General))  DT.General else NA,
-                                          RefData     = if (exists("Ref") && !is.null(Ref))    Ref else NULL,
+                                          RefData     = if (exists("Ref") && !is.null(Ref))    Ref else NA,
                                           InfluxData  = if (!is.null(Influx)) Influx else NA,
-                                          SOSData     = if (exists("Sos") && !is.null(Sos))    Sos else NULL)}
+                                          SOSData     = if (exists("Sos") && !is.null(Sos))    Sos else NA)}
     # Creating General Data
     # Checking that parameters for sensor download are complete or that they are new data
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Creating or updating of General Data set to ", 
@@ -7889,18 +7910,14 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
                         name.Model.i <- file.path(boxDirectory,subDirModels, paste0(boxName,"__",list.name.sensor[k],"__",boxConfig$sens2ref$Cal.func[k]))
                         if (file.exists(name.Model.i)) {
                             DT.General <- Apply_Model(Model = name.Model.i, name.sensor = list.name.sensor[k],General.DT = DT.General, ASE.cfg = ASE.cfg, 
-                                                      SetTime = Set.Time, Config =  boxConfig, Shield =  Shield)
+                                                      SetTime = Set.Time, Config =  boxConfig, Shield =  Shield, Filter.Sens = FALSE, Filter.Ref = FALSE)
                         } else futile.logger::flog.warn(paste0("[influx.downloadAndPredict] calibration file missing: ", name.Model.i))
-                    } else futile.logger::flog.warn(paste0("[influx.downloadAndPredict] there is no calibration file for sensors: ", list.name.sensor[k]))
-                }
-            }
+                    } else futile.logger::flog.warn(paste0("[influx.downloadAndPredict] there is no calibration file for sensors: ", list.name.sensor[k]))}}
             fwrite(DT.General, file = General.file, na = "NA")
-            futile.logger::flog.info("[influx.downloadAndPredict] A new General.csv was saved with calibrated sensor.")
-        }
-    } else futile.logger::flog.error("[influx.downloadAndPredict] There is no General.df or no sensor data converted.")
-    setwd(wd)
-    return(list(data = DT.General, timeConfig = Set.Time))
-}
+            futile.logger::flog.info("[influx.downloadAndPredict] A new General.csv was saved with calibrated sensor.")}
+    } else futile.logger::flog.warn("[influx.downloadAndPredict] Calibration is not requested. There may be no new data.")
+    #setwd(rootWorkingDirectory)
+    return(list(data = DT.General, timeConfig = Set.Time))}
 
 #' Adding several parameters to caption for table in the report of evaluation of calibration models
 #'
@@ -7988,4 +8005,100 @@ Create_Table_comparison <- function(Table, New.names.coeffs = c("a0, nA", "a1, n
         cols <- New.names.coeffs[i]
         Table.report[,(cols) := round(.SD,Digits[i]), .SDcols=cols]}
     return(Table.report)}
-
+#' Inserting new ASE box in DirShiny
+#' 
+#'
+#' @param DirShiny A datatable with row of compared models with coefficients of models between columns "Variables" and "R2raw"
+#' @param Project a subdirectory name where to insert AirSensEUR configuration and data
+#' @param New.ASE.Name A character vector with name of new ASE box.
+#' @param Cloning.path A file path of ASE box from which configuration files and calibration models will be copied
+#' @param Shiny A logical, default is FALSE If TRUE shiny alert message are displayed
+#' @return Only return messages
+Create_ASE <- function(DirShiny, Project = "ASE_Boxes", New.ASE.Name, Cloning.path, Shiny = FALSE) {
+    if (!dir.exists(file.path(DirShiny, Project, New.ASE.Name))) {
+        # Create file system structure. check for General.Rdata availability, sourcing ASEConfig_xx.R ####
+        # Check directories existence or create , create log file
+        # Setting the current directory to the root of the file system with the name of The AirSensEUR
+        old_ASE_name       <- basename(Cloning.path)
+        if (New.ASE.Name != "") {
+            New.Dir <- file.path(DirShiny, Project, New.ASE.Name)
+            # Creating the the working directory of the AirSensEUR box
+            cat("-----------------------------------------------------------------------------------\n")
+            futile.logger::flog.info(paste0("[ASE_App, Create.New] Creating the directory: ",New.Dir))
+            if (!dir.exists(New.Dir)) dir.create(New.Dir, showWarnings = TRUE, recursive = FALSE, mode = "0777")
+            # Creating File structure
+            cat("-----------------------------------------------------------------------------------\n")
+            futile.logger::flog.info(paste0("[ASE_App, Create.New] creating the file system for data treatment at ", New.Dir))
+            List.Dirs <- c("Calibration","Configuration","Drift","Estimated_coef","General_data","Models","Modelled_gas","Outliers","scriptsLog",
+                           "SensorData","Retrieved_plots","Statistics","Verification_plots", "MarkDown")
+            for (i in List.Dirs) {
+                if (!dir.exists(file.path(New.Dir, i))) {
+                    dir.create(file.path(New.Dir, i), showWarnings = TRUE, recursive = TRUE, mode = "0777")
+                    futile.logger::flog.info(paste0("[ASE_App, Create.New] Dir. created: ", file.path(New.Dir,i)), sep = "\n\r")
+                } else futile.logger::flog.info(paste0("[ASE_App, Create.New] Dir. already exists: ", file.path(New.Dir,i)))
+            }
+            # Populating the configuration intormation with cfg and effect files
+            New.File.Conf   <- file.path(New.Dir, "Configuration")
+            cfg_Files       <- list.files(path = file.path(Cloning.path), pattern = ".cfg", recursive = TRUE)
+            cfg_Files       <- cfg_Files[-grep(pattern= paste(c("Boards.cfg", "Sensors.cfg"), collapse = "|"), cfg_Files)]
+            for (i in cfg_Files) {
+                futile.logger::flog.info(paste0("[ASE_App, Create.New] copying ", basename(i), " at ", New.File.Conf))
+                file.copy(from = file.path(Cloning.path,i), 
+                          to = file.path(New.Dir, "Configuration",gsub(pattern = old_ASE_name, replacement = New.ASE.Name, basename(i))),
+                          overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)}
+            # Update xx_Server.cfg with name of the new ASE box
+            File_Server_cfg <- file.path(New.File.Conf, paste0(New.ASE.Name,"_Servers.cfg"))
+            cfg <- data.table::transpose(fread(file = File_Server_cfg, header = FALSE, na.strings=c("","NA", "<NA>")), fill = NA, make.names = 1)
+            set(cfg, j = "AirSensEur.name", value = New.ASE.Name)
+            set(cfg, j = "Dataset"        , value = paste0("ASE",New.ASE.Name))
+            fwrite(setDT(as.data.frame(t(cfg)), keep.rownames = "name.gas")[], file = File_Server_cfg, row.names = FALSE,col.names = FALSE)
+            # copy models
+            File_cfg <- file.path(New.File.Conf, paste0(New.ASE.Name,".cfg"))
+            if (file.exists(File_cfg)) {
+                sens2ref     <- data.table::transpose(fread(file = File_cfg, header = FALSE, na.strings = c("","NA", "<NA>"), fill = TRUE), fill = NA, make.names = 1)
+                New.File.Mod <- file.path(New.Dir, "Models")
+                List.Models  <- sens2ref$Cal.func
+                for (i in seq(List.Models)) {
+                    Cal.func <- paste0(old_ASE_name,"__",sens2ref$name.sensor[i],"__",List.Models[i])
+                    if (file.exists(file.path(Cloning.path, "Models", Cal.func))) {
+                        futile.logger::flog.info(paste0("[ASE_app] copying ", List.Models[i], " to ", New.File.Mod))
+                        file.copy(from = file.path(Cloning.path, "Models", Cal.func), 
+                                  to   = file.path(New.File.Mod, gsub(pattern = old_ASE_name, replacement = New.ASE.Name, Cal.func)),
+                                  overwrite = TRUE, copy.mode = TRUE, copy.date = FALSE)}}}
+            # Updating list of ASE boxes and select the newly created one
+            if (Shiny) {
+                Newchoices      <- list.dirs(path = file.path(DirShiny, Project), recursive = FALSE)
+                updateSelectInput( session = session, inputId = "Config_Files", choices = Newchoices, selected = New.Dir)}
+        } else if (Shiny) {
+            shinyalert(
+                title = "ERROR ASE box name",
+                text = "ERROR the same AirSensEUR box name cannot be empty",
+                closeOnEsc = TRUE,
+                closeOnClickOutside = TRUE,
+                html = FALSE,
+                type = "error",
+                showConfirmButton = TRUE,
+                showCancelButton = FALSE,
+                confirmButtonText = "OK",
+                confirmButtonCol = "#AEDEF4",
+                timer = 4000,
+                imageUrl = "",
+                animation = FALSE)
+        } else futile.logger::flog.error(paste0("[Create_ASE] AirSensEUR box name cannot be empty"))
+    } else if (Shiny) {
+        shinyalert(
+            title = "ERROR ASE box already exist",
+            text = "ERROR it is not possible to use twice the same AirSensEUR box name. Change name or delete directory in ../Shiny/ASE_Boxes if needed",
+            closeOnEsc = TRUE,
+            closeOnClickOutside = TRUE,
+            html = FALSE,
+            type = "error",
+            showConfirmButton = TRUE,
+            showCancelButton = FALSE,
+            confirmButtonText = "OK",
+            confirmButtonCol = "#AEDEF4",
+            timer = 4000,
+            imageUrl = "",
+            animation = FALSE)
+    } else futile.logger::flog.error(paste0("[Create_ASE]ASE box already exist. ", New.ASE.Name))
+}
