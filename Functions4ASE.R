@@ -7647,6 +7647,13 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
     ind.TRh.file            <- file.path(boxDirectory, subDirData, "ind_TRh.RDS"  )
     ind.Invalid.file        <- file.path(boxDirectory, subDirData, "ind_Invalid.RDS")
     ind.sens.out.file       <- file.path(boxDirectory, subDirData, "ind_sens_out.RDS")
+    futile.logger::flog.debug("file-metadata:", file.info(General.file), capture = TRUE)
+    futile.logger::flog.debug("file-metadata:", file.info(InfluxData.file), capture = TRUE)
+    futile.logger::flog.debug("file-metadata:", file.info(RefData.file), capture = TRUE)
+    futile.logger::flog.debug("file-metadata:", file.info(ind.warm.file), capture = TRUE)
+    futile.logger::flog.debug("file-metadata:", file.info(ind.TRh.file), capture = TRUE)
+    futile.logger::flog.debug("file-metadata:", file.info(ind.Invalid.file), capture = TRUE)
+    futile.logger::flog.debug("file-metadata:", file.info(ind.sens.out.file), capture = TRUE)
     futile.logger::flog.info("[influx.downloadAndPredict] loading initial Influx data if any")
     if (file.exists(InfluxData.file)) {
         if (extension(InfluxData.file) == ".csv") {
@@ -7701,10 +7708,12 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
         # if some sensors of Influx are not included in DT.General, DT.General is re-created
         if (!all(names(Influx) %in% names(DT.General)) ) {
             DT.General <- NULL
-            DT.NULL    <- TRUE}
+            DT.NULL    <- TRUE
+        }
     } else {
         DT.General <- NULL
-        DT.NULL    <- TRUE}
+        DT.NULL    <- TRUE
+    }
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] loading initial DT.General data if any, DT.NULL is set to ", DT.NULL))
     futile.logger::flog.info("[influx.downloadAndPredict] Initial DownloadSensor parameters")
     Download.Sensor <- Check_Download(Influx.name = boxConfig$Server$Dataset,
@@ -7725,24 +7734,37 @@ influx.downloadAndPredict <- function(boxName, boxConfig, Project = "ASE_Boxes",
                         sens2ref.shield    = boxConfig$sens2ref.shield,
                         shiny              = FALSE)
     Warm.Forced <- FALSE
-    if (file.exists(ind.warm.file)) ind.warm.out <- list.load(ind.warm.file) else {
+    if (file.exists(ind.warm.file)) {
+        ind.warm.out <- list.load(ind.warm.file)
+    } else {
         ind.warm.out <- NULL
-        Warm.Forced  <- TRUE}
+        Warm.Forced  <- TRUE
+    }
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Indexes of data discarded during warming time of sensors, setting Warm.Forced to ", Warm.Forced))
     TRh.Forced <- FALSE
-    if (file.exists(ind.TRh.file)) ind.TRh.out <- list.load(ind.TRh.file) else {
+    if (file.exists(ind.TRh.file)) {
+        ind.TRh.out <- list.load(ind.TRh.file)
+    } else {
         ind.TRh.out <- NULL
-        TRh.Forced  <- TRUE}
+        TRh.Forced  <- TRUE
+    }
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Indexes of data discarded outside temperature and humidity tolerance, setting TRh.Forced to ", TRh.Forced))
     Inv.Forced <- FALSE
-    if (file.exists(ind.Invalid.file)) ind.Invalid.out <- list.load(ind.Invalid.file) else {
+    futile.logger::flog.debug("File ind.Invalid.file '%s' exists? '%s'", ind.Invalid.file, file.exists(ind.Invalid.file))
+    if (file.exists(ind.Invalid.file)) {
+        ind.Invalid.out <- list.load(ind.Invalid.file)
+    } else {
         ind.Invalid.out <- NULL
-        Inv.Forced      <- TRUE}
+        Inv.Forced      <- TRUE
+    }
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Flagging the sensor data for Invalid sensor data, setting Inv.Forced to ", Inv.Forced))
     Outliers.Sens.Forced <- FALSE
-    if (file.exists(ind.sens.out.file)) ind.sens.out <- list.load(ind.sens.out.file) else {
+    if (file.exists(ind.sens.out.file)) {
+        ind.sens.out <- list.load(ind.sens.out.file)
+    } else {
         ind.sens.out <- NULL
-        Outliers.Sens.Forced <- TRUE}
+        Outliers.Sens.Forced <- TRUE
+    }
     futile.logger::flog.info(paste0("[influx.downloadAndPredict] Indexes of outliers for sensor data, setting Outliers.Sens.Forced to ", Outliers.Sens.Forced))
     # Initialising for conversion and calibration
     futile.logger::flog.info("[influx.downloadAndPredict] Setting initial Conv.Forced and Cal.Forced to FALSE")
@@ -8104,4 +8126,7 @@ Create_ASE <- function(DirShiny, Project = "ASE_Boxes", New.ASE.Name, Cloning.pa
         return(FALSE)
     } else {
         futile.logger::flog.error(paste0("[Create_ASE]ASE box already exist. ", New.ASE.Name))
-        return(FALSE)} }
+        return(FALSE)
+    }
+}
+
