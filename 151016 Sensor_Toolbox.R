@@ -127,7 +127,7 @@
 ### Estimated.y: Function Plot estimated function
 ### Cal_Line: Function calibration function and plot calibration line (VS 170428)
 #================================================================CR
-### Function Load_Packages (170420)
+### Function Load_Packages (170420) ====
 #================================================================CR
 Load_Packages <- function(list.Packages, verbose = FALSE) {
     # This function install packages if needed and load them
@@ -155,7 +155,7 @@ Load_Packages <- function(list.Packages, verbose = FALSE) {
     if (verbose) cat("-----------------------------------------------------------------------------------\n")
 }
 #=====================================================================================CR
-# 170609 MG : dirCurrent, returning the Current directory of a script
+# 170609 MG : dirCurrent, returning the Current directory of a script ====
 #=====================================================================================CR
 CurrentDir <- function(Verbose = FALSE) {
     # This function returns the directory from where the current R script is run.
@@ -245,7 +245,7 @@ Script_Dir <- function(isRStudio, isInternet = TRUE) {
     return(DisqueFieldtest)
 }
 #================================================================CR
-### resetPar: Function reset graphical parameters
+### resetPar: Function reset graphical parameters ====
 #================================================================CR
 resetPar <- function() {
     # http://stackoverflow.com/questions/5789982/reset-par-to-the-default-values-at-startup
@@ -256,7 +256,7 @@ resetPar <- function() {
     op
 }
 #================================================================CR
-### sink.reset: Function reset sink number
+### sink.reset: Function reset sink number ====
 #================================================================CR
 sink.reset <- function() {
     for (i in seq_len(sink.number())) {
@@ -264,7 +264,7 @@ sink.reset <- function() {
     }
 }
 #================================================================CR
-### stopWhenError: Function reset sink and device errors
+### stopWhenError: Function reset sink and device errors ====
 #================================================================CR
 stopWhenError <- function(FUN) {
     # stopWhenError(sink) # for sink.
@@ -280,7 +280,7 @@ stopWhenError <- function(FUN) {
     })
 }
 #================================================================CR
-### slope_orth: Function Orthogonal regression
+### slope_orth: Function Orthogonal regression ====
 #================================================================CR
 slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL,
                        DQO.1 = NA, LV = NA, Units = NULL, Disk = NA, WD = NA, Dir = NA,
@@ -497,61 +497,105 @@ slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL,
     return(calib)
 }
 #================================================================CR
-### U.orth.DF: Function Orthogonal regression without plotting (Vs 180505)
+### U_orth_DF: Function Orthogonal regression without plotting (Vs 180505) ====
 #================================================================CR
-U.orth.DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, variable.ubss = FALSE, Fitted.RS = FALSE) {
-    # Mat            : Data.table or DataFrame of data including Case number, Date, x And y + optional ubsRM if ubsRM is not constant for all reference values.
-    #                  Idem for ubs.
-    # Mat            : DataFrame of data including Case number, Date, x And y + optional ubsRM if ubsRM is not constant for all reference values
-    # ubsRM            : numeric (default = NULL ), random standard uncertainty of the results of the reference method, xis, given as a constant value for all xis reference values
-    # variable.ubsRM   : logical, if FALSE (default = FALSE ), ubsRM is used as constant random standard uncertainties for all xis reference values.
-    #                  If TRUE ubsRM given in Mat and is used for each reference values
-    # Fitted.RS      : logical, default is FALSE. If TRUE the square residuals (RS) can be fitted using a General Additive Model, provided that the probability that the
-    #                  correlation between xis and RS is null is lower than 0.01, (p < 0.01)
-    # return a list with the orthogonal regression:
-    #                 "mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD",
-    #                 and "Mat": "case", "Date", "xis", "yis","ubsRM", "RS", "Ur", "U", "Rel.bias", "Rel.RSS"
-    #
-    # Homogeneity of variance is tested For the calculation of RSS
-    # adding Ur In a New field of Mat
-    # returning a list with slope (b and ub), intercept (a and ua), the sum of square of residuals (RSS),
-    # the root means square of error (RMSE), the mean bias error (mbe), the coefficeint of correlation (Correlation),
-    # the number of valid measurment (nb), the centred rout mean square of error (CRMSE), the normalised mean standard deviation (NMSD)
-    # and Mat with relative expanded uncertainty
-    #checking that the mat dataFrame is not empty
+#' Function Orthogonal regression without plotting
+#'
+#' @param Mat : Data.table or DataFrame of data including Case number, Date, x, y + optional ubsRM and/or ubss if ubsRM and/or ubss are not constant for all xi. The columns
+#' shall be in the order: "case", "Date", "xis", "yis","ubsRM", "ubss" with whatever column names.
+#' @param ubsRM : numeric (default = NULL ), random standard uncertainty of reference measurements, xis, given as a constant value for all xis reference values.
+#' @param variable.ubsRM : logical, default is FALSE. If FALSE, ubsRM is used as constant random standard uncertainties for all xis reference values. If TRUE ubsRM given in Mat and is used for each reference value
+#' @param ubss : numeric (default = NULL ), random standard uncertainty of sensor measurements, yis, given as a constant value for all yis sensor values
+#' @param variable.ubss : logical, default is FALSE. If FALSE, ubss is used as constant random standard uncertainties for all yis sensor values. If TRUE ubss given in Mat and is used for each sensor value
+#' @param Fitted.RS : logical, default is FALSE. If TRUE the square residuals (RS) can be fitted using a General Additive Model, according to the result of provided that the probability that the correlation between xis and RS is null is lower than 0.01, (p < 0.01)
+#' @param Regression character, default is "Orthogonal", possible values are "OLS" ,"Deming" and "Orthogonal". For Orthogonal Delta  is 1 and for "Deming" Delta is ubss^2/ubsRM^2. See https://en.wikipedia.org/wiki/Deming_regression
+#' @param Add.ubss : logical, default is TRUE If TRUE ubss is added to  Mat$Rel.RSS. If FALSE ubss is not added to  Mat$Rel.RSS.
+#' @param Verbose : logical, default is FALSE. If TRUE messages are displayed during execution.
+#' @return a list with parameters: "mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD" and "Mat": "case", "Date", "xis", "yis","ubsRM", "RS", "Ur", "U", "Rel.bias", "Rel.RSS"
+#' @details: Homogeneity of variance is tested For the calculation of RSS adding Ur In a New field of Mat
+#' returning a list with slope (b and ub), intercept (a and ua), the sum of square of residuals (RSS),
+#' the root means square of error (RMSE), the mean bias error (mbe), the coefficeint of correlation (Correlation),
+#' the number of valid measurements (nb), the centred rout mean square of error (CRMSE), the normalised mean standard deviation (NMSD)
+#' and Mat with relative expanded uncertainty
+#' Negative Mat$RS - Mat$ubsRM^2) are set to 0
+
+#' @examples: empty
+U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, variable.ubss = FALSE, Fitted.RS = FALSE, Regression = "Orthogonal", Verbose = FALSE, Add.ubss = TRUE) {
+    #checking that the Mat  is not empty
     if (exists("Mat") && !is.null(Mat) && nrow(Mat)>0) {
+        
         # Setting column names and adding ubsRM and ubss as constant values
         colnames(Mat) <- c("case", "Date", "xis", "yis","ubsRM", "ubss")[1:length(colnames(Mat))]
+        
+        # Convert Mat to data.table if needed
         if (!"data.table" %in% class(Mat)) Mat <- data.table(Mat, key = "Date")
-        if (!variable.ubsRM) {
-            if (!is.null(ubsRM)) {
-                Mat$ubsRM <- rep(ubsRM, nrow(Mat))
-            } else {
-                if ("ubsRM" %in% names(Mat)) return("[U.orth.DF] ERRROR, value of u(ubsRM) not given. Stopping the function. \n")
-            }
-        }
-        if (!variable.ubss) {
-            if (!is.null(ubss)) {
-                Mat$ubss   <- rep(ubss, nrow(Mat))
-            } else {
-                if (!"ubs" %in% names(Mat)) return("[slope_orth] ERROR, value of u(ubs) not given. Stopping the function. \n")
-            }
-        }
         # Filtering for the validation data only
         Mat <- Mat[complete.cases(Mat[,.(xis,yis)])]
-        #Orthogonal regression (see annex b of equivalence method)
-        nb     <- nrow(Mat)
-        mo     <- mean(Mat[["xis"]])
-        mm     <- mean(Mat[["yis"]])
-        sdo    <- sd(Mat[["xis"]])
-        sdm    <- sd(Mat[["yis"]])
-        Sxx    <- sum((Mat[["xis"]] - mo)^2)
-        Syy    <- sum((Mat[["yis"]] - mm)^2)
-        Sxy    <- sum((Mat[["xis"]] - mo) * (Mat[["yis"]] - mm))
-        b1     <- (Syy - Sxx + sqrt((Syy- Sxx)^2 + 4*Sxy^2))/(2*Sxy)
-        b0     <- mm - b1 * mo
-        ub1    <- sqrt((Syy - (Sxy^2/Sxx))/((nb-2)*Sxx))
-        ub0    <- sqrt(ub1^2 * sum(Mat$xis^2)/nb)
+        if (!nrow(Mat) > 0) return(futile.logger::flog.error("[U_orth_DF] Mat does not contains any complete rows with xis and yis"))
+        
+        # Setting ubsRM and ubss in Mat
+        if (!variable.ubsRM) {
+            if (!is.null(ubsRM)) {
+                New.ubsRM <- rep(ubsRM, nrow(Mat))
+                Mat[, ubsRM := New.ubsRM]  
+                rm(New.ubsRM)} 
+        } else if (!"ubsRM" %in% names(Mat)) return(futile.logger::flog.error("[U_orth_DF] u(bs,RM) not given in data.table Mat. Stopping the function."))
+        if (!variable.ubss) {
+            if (!is.null(ubss)) {
+                New.ubss <- rep(ubss, nrow(Mat))
+                Mat[, ubss := New.ubss]
+                rm(New.ubss)}
+        } else if (!"ubss" %in% names(Mat)) return(futile.logger::flog.error("[U_orth_DF] u(bs,s) not given in data.table Mat. Stopping the function."))
+        
+        # Determination of delta for Deming or orthogonal regression
+        if (Regression == "Deming") {
+            if (variable.ubsRM || variable.ubss) {
+                return(futile.logger::flog.error("[U_orth_DF] regression cannot be set to \"Deming\" with variable u(bs,RM) and/or variable u(bs,s)"))
+            } else if (is.null(ubsRM) || is.null(ubsRM)) {
+                return(futile.logger::flog.error("[U_orth_DF] with \"Deming\" regression both u(bs,RM) and u(bs,s) cannot be null"))
+            } else {
+              Delta <- (ubss/ubsRM)^2
+              futile.logger::flog.info(paste0("[U_orth_DF] regression type: \"",Regression, "\" with Delta = ", Delta))}
+        } else if (Regression == "Orthogonal") {
+            Delta <- 1
+            futile.logger::flog.info(paste0("[U_orth_DF] regression type: \"",Regression, "\" (Delta = ", Delta,")"))
+        } else if (Regression != "OLS") return(futile.logger::flog.error("[U_orth_DF] unknown regression type. Only \"OLS\",  \"Deming\" (Delta is ubss^2/ubsRM^2) or \"orthogonal\" (Delta is 1) regressions can be used"))
+        
+        # Common parameters
+        nb  <- nrow(Mat)
+        mo  <- mean(Mat[["xis"]])
+        mm  <- mean(Mat[["yis"]])
+        sdo <- sd(Mat[["xis"]])
+        sdm <- sd(Mat[["yis"]])
+        Sxx <- sum((Mat[["xis"]] - mo)^2)
+        Syy <- sum((Mat[["yis"]] - mm)^2)
+        Sxy <- sum((Mat[["xis"]] - mo) * (Mat[["yis"]] - mm))
+        # Linear Regression Orthogonal regression ()
+        if (Regression == "Orthogonal") {
+            # as in annex b of Guide for The Demonstration of Equivalence
+            m2  <- MethComp::Deming(x = Mat[["xis"]], y = Mat[["yis"]], vr = Delta)
+            b1  <- (Syy - Sxx + sqrt((Syy- Sxx)^2 + 4*Sxy^2))/(2*Sxy)
+            b0  <- mm - b1 * mo
+            ub1 <- sqrt((Syy - (Sxy^2/Sxx))/((nb-2)*Sxx))
+            ub0 <- sqrt(ub1^2 * sum(Mat$xis^2)/nb)
+        } else if (Regression == "Deming"){
+            #tls::tls(yis ~ xis, data = Mat[, .(xis, yis)])
+            m2  <- MethComp::Deming(x = Mat[["xis"]], y = Mat[["yis"]], vr = Delta)
+            b0  <- m2[1] 
+            b1  <- m2[2]
+        } else if (Regression == "OLS") {
+            # b1 = Sxy/Sxx
+            # b0 = mm - b1 * mo
+            # Syx = sqrt(sum((Mat[["yis"]] - (b0 + b1 * Mat[["xis"]]))^2)/(nrow(Mat)-2))
+            # ub = Syx/sqrt(Sxx)
+            # ua = Syx * sqrt(sum((Mat[["xis"]]^2)/(nrow(Mat) * Sxx)))
+            m2 <- lm(yis ~ xis, data = Mat)
+            b0  <- coef(m2)[1] 
+            b1  <- coef(m2)[2]
+            st.errors <- sqrt(diag(vcov(m2)))
+            ub0 <- st.errors[1]
+            ub1 <- st.errors[2]}
+            
         # Regression statistics for Target Diagram (see delta tool user guide)
         rmse  <- sqrt((sum((Mat[["yis"]] - (b0 + b1 * Mat[["xis"]]))^2))/(nb-2))
         mbe   <- mean(Mat[["yis"]] - Mat[["xis"]])
@@ -561,97 +605,104 @@ U.orth.DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
         Correlation <- cor(Mat[["xis"]],Mat[["yis"]])
         # Squares of Residuals and bias (vector of values)
         Mat[, fitted := (b0 + b1 * Mat[["xis"]])]
-        Mat[,   bias := (b0 + (b1 - 1) * Mat[["xis"]])] # Bias for x
+        Mat[,   bias := (b0 + (b1 - 1) * Mat[["xis"]])] # Bias from identity line x
+        Mat[, residuals := (Mat[["yis"]] - Mat[["fitted"]])]
         Mat[,     RS := (Mat[["yis"]] - Mat[["fitted"]])^2]
-        # Sum of squares of Residuals (one constant value)
-        RSS     <- sum(Mat$RS)
-        # Checking if ubs^2 + RSS^2 - Mat$ubsRM^2 < 0 that results in an error using sqrt(ubs^2 + RSS^2 - Mat$ubsRM^2) of the ree.RSS. Replacing with 0
-        neg.RSS <- which(Mat$ubss^2 + RSS/(nb - 2) - Mat[["ubsRM"]]^2 + Mat$bias^2 <= 0)
-        if (length(neg.RSS)) {
-            # mat$RS are not changed and they are already calculated
-            cat("The \"ubss^2 + RSS/(nb - 2) - ubsRM^2 + bias^2\" is always negative and its square root cannot be calculated, check in df Mat: x and max(ubsRM).\n")
-            cat("ubsRM is too high and should be modified.\n")
-        } else {
-            if (length(neg.RSS) > 0) {
-                cat("Some \"ubss^2 + RSS/(nb - 2) - ubsRM^2 + bias^2\" are negative.\n")
-                cat("The RS values that give negative uncertainty will be changed to give uncertainties of 0.001 Mat$xis.\n")
-                # adding 0.1 % of min(xis) to avoid problem of 0 with gam fitting
-                Mat$RS[neg.RSS] <- Mat$ubsRM[neg.RSS]^2 + 0.001 * min(Mat$xis[neg.RSS]) - Mat$ubss[neg.RSS]^2 - Mat$bias[neg.RSS]^2
-                # Recalculating RSS when Mat$RS are changed
-                RSS     <- sum(Mat[["xis"]])
-            }  else {
-                # mat$RS are not changed and they are already calculated
-                cat("All uncertainties \"ubss^2 + RSS/(nb - 2) - ubsRM^2 + bias^2\" are postive. ubsRM makes sence.\n")
-            }
-        }
-        # tesing significance of correlation between s and square of absolute reisduals - The calculation does not work only possibility the constrant RSS
-        rtest <- cor.test(Mat$xis, Mat$RS)
-        print(rtest, quote = FALSE)
-        cat(sprintf("probability of H0 (r=0): %f, if <0.05, correlation is demonstrated, if > 0.95 there is no correlation",rtest$p.value), "\n")
+        # # creating an OLS model to apply Breusch Pagan test and to compute ub0 and ub1
+        OLS <- lm(Mat[["yis"]] ~ Mat[["xis"]])
+        OLS$coefficients  <- c(b0,b1)
+        OLS$residuals     <- Mat$residuals
+        OLS$fitted.values <- Mat$fitted
+        if (Regression == "Deming") {
+            # https://bookdown.org/ccolonescu/RPoE4/heteroskedasticity.html
+            ub0 <- lmtest::coeftest(OLS, vcov. = car::hccm(OLS, type = "hc1"))[1, "Std. Error"]
+            ub1 <- lmtest::coeftest(OLS, vcov. = car::hccm(OLS, type = "hc1"))[2, "Std. Error"]}
+        
+        # testing for heteroscedacity with Breusch Pagan test
+        Breusch.Pagan     <- lmtest::bptest(formula = OLS)
+        skedastic::breusch_pagan(OLS)
+        # testing significance of correlation between s and square of absolute residuals - The calculation does not work only possibility the constrant RSS
+        rtest <- Breusch.Pagan
+        #print(rtest, quote = FALSE)
         # if fitting the square of residuals is needed
-        if (!is.na(rtest$statistic) && Fitted.RS && rtest$p.value < 0.01) {
+        if (!is.na(rtest$p.value) && Fitted.RS && rtest$p.value < 0.05) {
+            futile.logger::flog.info("[U_orth_DF] Breusch-Pagan: null hypothesis is constant variance of residuals along x axis (homoscedacity). The hyposthesis is rejected if p-value < 0.05 (heterosccedacity)\n")
+            futile.logger::flog.info(paste0("[U_orth_DF] if Breusch-Pagan lagrange multiplier statistic p-value < 0.05, the null hypothesis (homoscedacity) is rejected, residuals are heteroscedastic with 0.95 level of statistical confidence. p-value =  ",
+                                            format(rtest$p.value, digits = 4)))
             RS.Fitted <- TRUE
-            cat("The residuals are not constant. RSS is calculated after applying a gam fitting .\n")
-            #z <- lm((Mat$yis - (b0 + b1 * Mat$xis))^2 ~ Mat$xis)
+            futile.logger::flog.info("[U_orth_DF] The variance of residuals is not constant. RSS is calculated after applying a General Additive Model fitting.")
             # Fitting with gam
             # if any y value is zero getting Warning: Error in eval: non-positive values not allowed for the 'gamma' family (we had 0.5 % of min(xis) to avoid this
-            z <- gam( Mat$RS ~ s(Mat$xis), family=Gamma(link=log) )
-            Mat$RS <- fitted(z)
-            #### Calculating uncertainty
-            Mat$Ur <- 2 * sqrt(Mat$ubss^2 + Mat$RS - Mat$ubsRM^2 + Mat$bias^2)/Mat$xis * 100
-            Mat$U  <- 2 * sqrt(Mat$ubss^2 + Mat$RS - Mat$ubsRM^2 + Mat$bias^2)
-            #### Calculating parameters for modified Target diagram
-            Mat$Rel.bias <- 2 * (b0/Mat$xis + (b1 - 1))
-            Mat$Rel.RSS  <- 2 * (sqrt(Mat$ubss^2 + Mat$RS - ubsRM^2) / Mat$xis)
+            z <- gam(Mat$RS ~ s(Mat$xis), family=Gamma(link=log) )
+            Mat[, RS := fitted(z)]
+            # Sum of squares of Residuals (one constant value)
+            RSS     <- sum(Mat$RS)
+            #plot(Mat$xis, Mat$residuals); grid()
+            plot(Mat$xis, Mat$residuals^2, type = "p"); points(Mat$xis, Mat$RS, col = "red"); grid()
         } else {
+            if (Fitted.RS) {
+                futile.logger::flog.info(paste0("[U_orth_DF] Argument \"Fitted.RS\" in U_orth_DF(): ", Fitted.RS, ". If FALSE the square residuals are not fitted and constant RSS is computed."))
+                futile.logger::flog.info(paste0("[U_orth_DF] if Breusch-Pagan lagrange multiplier statistic p-value > 0.05, residuals are homoscedastic with 0.95 level of statistical confidence. p -value = ",
+                                                format(rtest$p.value, digits = 4)))}
             RS.Fitted <- FALSE
-            cat("The constant residuals are estimated. RSS is calculated with equation for constant residuals.\n")
-            cat(sprintf("RSS is the square root of sum of squares of Residuals divided by n - 2: %f", sqrt(sum((Mat$yis/(b0+b1*Mat$xis)-1)^2))/nb^2), "\n")
-            # No need to lot a fitted line in this case
-            #### Calculating uncertainty
-            Mat$Ur <- 2 * sqrt(Mat$ubss^2 + RSS/(nb-2) - Mat$ubsRM^2 + Mat$bias^2)/Mat$xis * 100
-            Mat$U  <- 2 * sqrt(Mat$ubss^2 + RSS/(nb-2) - Mat$ubsRM^2 + Mat$bias^2)
-            #### Calculating parameters for modified Target diagram
-            Mat$Rel.bias <- 2 * (b0/Mat$xis + (b1 - 1))
-            Mat$Rel.RSS  <- 2 * (sqrt(Mat$ubss^2 + RSS/(nb - 2) - ubsRM^2) / Mat$xis)
-        }
-        Mat$Max.ubsRM <- sqrt(RSS/(nb-2) + Mat$bias^2)
-        Mat$Max.RSD   <- sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis
+            futile.logger::flog.info("[U_orth_DF] RSS is calculated with equation for constant residuals.")
+            # Sum of squares of Residuals (one constant value)
+            RSS     <- sum(Mat$RS)
+            futile.logger::flog.info(paste0("[U_orth_DF] RSS is the square root of sum of squares of Residuals divided by n - 2 = ", format(sqrt(RSS/(nb-2)), digit = 3)))
+            # No need to fit a line in this case
+            Mat[, RS := rep(RSS/(nb-2), times = .N)]}
+        
+        # Checking if RSS^2 - Mat$ubsRM^2 < 0 that results in an error using sqrt(RSS^2 - Mat$ubsRM^2) of the rs.RSS. Replacing with 0
+        neg.RSS <- which(Mat$RS - Mat[["ubsRM"]]^2 <= 0)
+        if (length(neg.RSS) > 0) {
+            futile.logger::flog.warn("[U_orth_DF] Some \"RSS/(nb - 2) - ubsRM^2\" are negative and square roots cannot be calculated.")
+            futile.logger::flog.info("[U_orth_DF] ubsRM maybe too high and could be modified.")
+            futile.logger::flog.info("[U_orth_DF] The \"RSS/(nb - 2) - ubsRM^2\" that are negative will be set to 0 when computing uncertainties.")
+        }  else {
+            # mat$RS are not changed and they are already calculated
+            futile.logger::flog.info("[U_orth_DF] All \"RSS/(nb - 2) - ubsRM^2\" are positives. ubsRM makes sence.")}
+        #### Calculating parameters for modified Target diagram Rel.bias and Rel.RSS
+        Mat[, Rel.bias := 2 * (b0/Mat$xis + (b1 - 1))]
+        # (Mat$RS - Mat$ubsRM^2) cannot be negative, adding or not ubss
+        if (Add.ubss) Mat[, Rel.RSS := 2 * sqrt(Mat$ubss^2 + max(0,Mat$RS - Mat$ubsRM^2)) / Mat$xis] else Mat[, Rel.RSS := 2 * sqrt(max(0,Mat$RS - Mat$ubsRM^2)) / Mat$xis]
+        #### Calculating uncertainty
+        Mat[, Ur := sqrt(Mat$Rel.bias^2 + Mat$Rel.RSS^2) * 100]
+        Mat[, U  := Mat$Ur / 100 * Mat$xis]
+        # Indicators
+        Mat[, Max.ubsRM := sqrt(RSS/(nb-2) + Mat$bias^2)]
+        Mat[, Max.RSD   := sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis]
         # Printing
-        cat("\n")
-        cat("--------------------------------\n")
-        cat(sprintf("mean of x   : %.1g +/- %.1g",mo,sdo),"\n")
-        cat(sprintf("Intercept b0: %.4g +/- %.4g",mm,sdm), "\n")
-        cat(sprintf("Slope b1    : %.4g +/- %.4g",b1,ub1),"\n")
-        cat(sprintf("Intercept b0: %.4g +/- %.4g",b0,ub0), "\n")
-        cat(sprintf("R2: %.4g",Correlation^2), "\n")
-        if (Fitted.RS && rtest$p.value < 0.01) {
-            cat("The residuals are not constant. RSS are fitted with a general Additive model (k=5) see in returned matrix. \n")
-        } else
-        {
-            cat("The residuals are constant. RSS is calculated with equation for constant residuals:")
-            cat(sprintf("RSS: %.4g ",Mat$RSS[1]), "\n")
-        }
-        cat(sprintf("RMSE : %.4g ",rmse), "\n")
-        cat(sprintf("mbe  : %.4g ",mbe), "\n")
-        cat(sprintf("CRMSE: %.4g ",CRMSE), "\n")
-        cat(sprintf("NMSD : %.4g ",NMSD), "\n")
-        cat(sprintf("n    : %.4g ",nb), "\n")
-        calib <- list(mo,sdo, mm,sdm, b1, ub1, b0, ub0, RSS, rmse, mbe, Correlation, nb, CRMSE, NMSD, Mat, RS.Fitted)
+        if (Verbose) {
+            cat("--------------------------------\n")
+            cat(sprintf("mean of x   : %.1g +/- %.1g",mo,sdo),"\n")
+            cat(sprintf("Intercept b0: %.4g +/- %.4g",mm,sdm), "\n")
+            cat(sprintf("Slope b1    : %.4g +/- %.4g",b1,ub1),"\n")
+            cat(sprintf("Intercept b0: %.4g +/- %.4g",b0,ub0), "\n")
+            cat(sprintf("R2: %.4g",Correlation^2), "\n")
+            if (Fitted.RS && rtest$p.value < 0.01) {
+                cat("The residuals are not constant. RSS are fitted with a general Additive model (k=5) see in returned matrix. \n")
+            } else {
+                cat("The residuals are constant. RSS is calculated with equation for constant residuals:")
+                cat(sprintf("RSS: %.4g ",Mat$RSS[1]), "\n")}
+            cat(sprintf("RMSE : %.4g ",rmse), "\n")
+            cat(sprintf("mbe  : %.4g ",mbe), "\n")
+            cat(sprintf("CRMSE: %.4g ",CRMSE), "\n")
+            cat(sprintf("NMSD : %.4g ",NMSD), "\n")
+            cat(sprintf("n    : %.4g ",nb), "\n")}
+        calib <- list(mo,sdo, mm,sdm, b1, ub1, b0, ub0, RSS, rmse, mbe, Correlation, nb, CRMSE, NMSD, Mat, RS.Fitted, Regression)
     } else {
-        cat("The Mat dataFrame is empty. Returning NAs.")
-        calib <- list(mo = NA,sdo = NA, mm = NA,sdm = NA, b1 = NA, ub1 = NA, b0 = NA, ub0 = NA, RSS = NA,rmse = NA, mbe = NA, Correlation = NA, nb = NA, CRMSE = NA, NMSD = NA, Mat = NA)
-    }
-    names(calib) <- c("mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", "Mat", "RS.Fitted")
-    print(data.frame(x              = Mat$xis,
-                     ubsRM          = Mat$ubsRM,
-                     Max.ubsRM      = sqrt(RSS/(nb-2) + Mat$bias^2),
-                     Max.RSD        = sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis,
-                     Decrease.ubsRM = (Mat$ubsRM - sqrt(RSS/(nb-2) + Mat$bias^2)) > 0))
+        cat("Mat is empty. Returning NAs.")
+        calib <- list(mo = NA,sdo = NA, mm = NA,sdm = NA, b1 = NA, ub1 = NA, b0 = NA, ub0 = NA, RSS = NA,rmse = NA, mbe = NA, Correlation = NA, nb = NA, CRMSE = NA, NMSD = NA, Mat = NA, Regression = Regression)}
+    names(calib) <- c("mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", "Mat", "RS.Fitted", "Regression")
+    if (Verbose) print(data.frame(x              = Mat$xis,
+                                  ubsRM          = Mat$ubsRM,
+                                  Max.ubsRM      = sqrt(RSS/(nb-2) + Mat$bias^2),
+                                  Max.RSD        = sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis,
+                                  Decrease.ubsRM = (Mat$ubsRM - sqrt(RSS/(nb-2) + Mat$bias^2)) > 0))
     return(calib)
 }
 #================================================================CR
-### f_Kohler: Function Fitting a Kohler model
+### f_Kohler: Function Fitting a Kohler model ====
 #================================================================CR
 f_Kohler <- function(x, a0, a1, K, RH) {
     C <- 1 + (K/1.65/(100/RH - 1))
@@ -667,7 +718,7 @@ f_Kohler_only <- function(x, K, RH) {
     # is no information regarding the efflorescence point of the compound with K = 0.4, we have assumed it to be the same as Ammonium Sulphate (RH = 35%). Also shown are particle volumes as functions of particle size for
 }
 #================================================================CR
-### f_log: Function Fitting a logarithmic model
+### f_log: Function Fitting a logarithmic model ====
 #================================================================CR
 f_log <- function(x, a, b) {
     return(y = a + b * log(x))
@@ -678,7 +729,7 @@ f_log <- function(x, a, b) {
     # b controls the rate of growth
 }
 #================================================================CR
-### f_Unitec: Function Fitting a the Unitec model
+### f_Unitec: Function Fitting a the Unitec model ====
 #================================================================CR
 f_Unitec <- function(x, a, b,c) {
     # mVolt <- ((y-a)/b)^(1/c)
@@ -688,7 +739,7 @@ f_Unitec <- function(x, a, b,c) {
     # Equation of Unitec
 }
 #================================================================CR
-### f_Michelis: Function Fitting a Michaelis-Menten kinetics model with intercept
+### f_Michelis: Function Fitting a Michaelis-Menten kinetics model with intercept ====
 #================================================================CR
 f_Michelis <- function(x, Vmax, km, intercept) {
     # Vmax is the max asymtoptic value on y axis
@@ -697,7 +748,7 @@ f_Michelis <- function(x, Vmax, km, intercept) {
     return(Vmax * x / (km  + x) + intercept)
 }
 #================================================================CR
-### f_ExpGrowth: Function Fitting an Exponential Growth model without intercept
+### f_ExpGrowth: Function Fitting an Exponential Growth model without intercept ====
 #================================================================CR
 f_ExpGrowth <- function(x, C, k) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
@@ -710,21 +761,21 @@ f_ExpGrowth <- function(x, C, k) {
 }
 f_exp_kT <- function(x, a0, a1, C, k, Temperature) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
-    # y = a0 + a1 x + e(kT + C), k > 0
+    # y = a0 + a1 x + C exp(kT), k > 0
     # Features
     # Asymptotic to y = 0 to left
-    # Passes through (0,C)
+    # Passes through (0, a0 + C)
     # C is the initial value
-    return(a0 + a1 * x + exp(k * Temperature + C) )
+    return(a0 + a1 * x + C * exp(k * Temperature) )
 }
-f_exp_kT_NoC <- function(x, a0, a1, k, Temperature) {
+f_exp_kT_NoC <- function(x, a1, C, k, Temperature) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
-    # y = a0 + a1 x + e(kT + C), k > 0
+    # y = a1 x + C * e(kT), k > 0
     # Features
     # Asymptotic to y = 0 to left
     # Passes through (0,C)
     # C is the initial value
-    return(a0 * exp(k * Temperature) + a1 * x )
+    return(a1 * x + C * exp(k * Temperature))
 }
 f_T_power <- function(x, a0, a1, a2, n, Temperature) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
@@ -735,6 +786,10 @@ f_T_power <- function(x, a0, a1, a2, n, Temperature) {
     # C is the initial value
     return( a0 + a1 * x + a2 * Temperature^n)
 }
+
+#================================================================CR
+### f_BeerLambert: Beer lambert Law for CO2 sensprors ====
+#================================================================CR
 f_BeerLambert <- function(x, a0, a1, a2, a3, n, Temperature, Atmospheric_pressure){
     # log(I1/I0) = O3 (sigma na L/R) Temperature^n / pressure + a0
     # a1 is a1 (sigma na L/R)
@@ -745,14 +800,9 @@ f_BeerLambert2 <- function(x, a0, aT, n, Temperature, Atmospheric_pressure){
     # log(I1/I0) = O3 (sigma na L/R) Temperature^n / pressure + a0
     # a1 is a1 (sigma na L/R)
     # y = a0 + a1 x * Tempe/ pressure
-    return( a0 + x * (Temperature/aT)^n / (Atmospheric_pressure))
-}
-f_normal <- function(x, mu, sigma) {
-    #return the normal distribution in function of c, mu and sigma
-    return( 1/(sqrt(2*pi * sigma^2)) * exp(-((x - mu)^2)/(2 * sigma^2)))
-}
+    return( a0 + x * (Temperature/aT)^n / (Atmospheric_pressure))}
 #================================================================CR
-### f_ExpDD_Int: Function Fitting an exponential Decay (Decreasing form) model with intercept
+### f_ExpDD_Int: Function Fitting an exponential Decay (Decreasing form) model with intercept ====
 #================================================================CR
 f_ExpDD_Int <- function(x, C, k,intercept) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
@@ -765,7 +815,7 @@ f_ExpDD_Int <- function(x, C, k,intercept) {
     return(C *(exp(-k*x)) + intercept)
 }
 #================================================================CR
-### f_ExpDI: Function Fitting an exponential Decay (Increasing form) model
+### f_ExpDI: Function Fitting an exponential Decay (Increasing form) model ====
 #================================================================CR
 f_ExpDI <- function(x, C, k) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
@@ -778,7 +828,7 @@ f_ExpDI <- function(x, C, k) {
     return(C *(1-exp(-k*x)))
 }
 #================================================================CR
-### f_ExpDI_Int: Function Fitting an exponential Decay (Increasing form) model with intercept (see wikipedia)
+### f_ExpDI_Int: Function Fitting an exponential Decay (Increasing form) model with intercept (see wikipedia) ====
 #================================================================CR
 f_ExpDI_Int <- function(x, C, k,intercept) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
@@ -793,25 +843,23 @@ f_ExpDI_Int <- function(x, C, k,intercept) {
     return(C *(1-exp(-k*x)) + intercept)
 }
 #================================================================CR
-### f_Sigmoid: Function Fitting a Logistic - Sigmoidal function
+### f_Sigmoid: Function Fitting a Logistic - Sigmoidal function ====
 #================================================================CR
 f_Sigmoid <- function(x, MIN, Asym, xmid, Hill) {
-    return(y = MIN + (Asym-MIN) / (1 + (xmid/x)^Hill))
     #, Hill > 0, between 1a dn 10
     #Asymptotic to y = Max at right,
     #Asymptotic to y = Min at left,
     #Passes through (0, a/(1+b) )
     #x50 x value at the inflection point, in this equation x is not log transformed
-}
+    return(y = MIN + (Asym-MIN) / (1 + (xmid/x)^Hill))}
 #================================================================CR
-### # normal distribution (on logarithmic scale) Be careful I think it is a duplicated
+### f_normal: fitting normal distribution ====
 #================================================================CR
 f_normal <- function(x, mu, sigma) {
     #return the normal distribution in function of c, mu and sigma
-    return( 1/( sqrt(2*pi * sigma^2)  ) * exp(-(( x -mu)^2 ) / (2 * sigma^2) ))
-}
+    return( 1/(sqrt(2*pi * sigma^2)) * exp(-((x - mu)^2)/(2 * sigma^2)))}
 #================================================================CR
-# normal distribution (on logarithmic scale), This is for fitting a normal distribution on DMPS and APS
+### f_normal_density: fitting normal distribution (on logarithmic scale), This is for fitting a normal distribution on DMPS and APS ====
 #================================================================CR
 f_normal_density <- function(x, mu, sigma, Density = NULL, Diam_APS = NULL) {
     # x:        numeric vector, log decimal of all bin diameters in micrometer measured bith by the DPS and APS
@@ -828,10 +876,9 @@ f_normal_density <- function(x, mu, sigma, Density = NULL, Diam_APS = NULL) {
     }
     # return(1/(sqrt(2*pi * sigma^2)  ) * exp(-((x - mu)^2) / (2 * sigma^2) ) )
     #Density, distribution function, quantile function and random generation for the normal distribution with mean equal to mean and standard deviation equal to sd.
-    return(dnorm(x, mean = mu, sd = sigma))
-}
+    return(dnorm(x, mean = mu, sd = sigma))}
 #================================================================CR
-# Decimal log normal distribution. This is for fitting a normal distribution on DMPS and APS
+### f_log10normal_density: fitting decimal log normal distribution. This is for fitting a normal distribution on DMPS and APS ====
 #================================================================CR
 f_log10normal_density <- function(x, mu, sigma, Density = NULL) {
     # x:        numeric vector, all bin diameters in micrometer measured bith by the DPS and APS
@@ -848,15 +895,267 @@ f_log10normal_density <- function(x, mu, sigma, Density = NULL) {
     return( dlnorm(x, meanlog = mu, sdlog = sigma) )
 }
 #=================================================================================================CR
-# error function to minimize the differences between APS and DMPS count based on common diameters
+### f_Error: error function to minimize the differences between APS and DMPS count based on common diameters ====
 #==================================================================================================CR
 f_Error <- function(density, DataXY.APS, Model.i){
     DataXY.APS <- DataXY.APS %>% mutate(x = log10(10^x/sqrt(density)))
     DataXY.APS$Predicted_APS <- predict(Model.i$Model, DataXY.APS)
-    return(sum(DataXY.APS$y - DataXY.APS$Predicted_APS)^2)
+    return(sum(DataXY.APS$y - DataXY.APS$Predicted_APS)^2)}
+#================================================================CR
+### Fitting_distrib: fitting distribution to data ====
+#================================================================CR
+Fitting_distrib <- function(Air_Pol, ug, coeff_ppb, Dist_xlab, Dist_range, BandWidth, band, distribution, to_fit, lamb, q) {
+    # fitting distribution manual Non Linear Regression based on the probability distribution funtion with only one parameter: the shape parameter
+    # Air_Pol: variable for which the densit function is calculated
+    # ug: if TRUE transform from ug/m3 to ppb or ppm if FALSE does not transform
+    # coeff_ppb: used if ug = TRUE: conversion factor to divide  ug/m3 to get ppb (ex 1.91 for NO2)
+    # Dist_xlab: Label of X axis of the distribution plot
+    # Dist_range: min and max value for the distribution plot - NO WE USE QUANTILE of 99 %
+    # BandWidth: if TRUE bandwidth is automatically estimated by the R's "density" function. if FALSE the coeff band is used (see below)
+    # band : USed if bandwith is FALSE, If 0 then bw is set to "nrd0" (see help of density function). If anoother values is passed, the bandwidth is set to this value
+    # distribution: type of distribution to be fitted: lognormal ...
+    # to_fit: if TRUE fitted with nls, if FALSE: not fitted - value lamb is used for the shape factor
+    # lamb: initial lambda value for the lognormal distribution
+    # q the limit of possible data of log normal distribution
+    # removing negative values of data
+    # Air_Pol <- subset(Air_Pol, Air_Pol >0)
+    # transforming in ppb
+    if (ug) Air_Pol <- Air_Pol/coeff_ppb
+    #-----------------------------------CR
+    # calculating the reference density
+    #-----------------------------------CR
+    if (BandWidth == TRUE) {
+        # calculating the band width of reference distribution
+        h <- density(Air_Pol, kernel="gaussian")$bw
+        # calculating weight that are higher at 0
+        print(sprintf("Best bandwidth = %.3f", h), quote = FALSE)
+        d_Air_Pol<- density(Air_Pol, bw = h, adjust = 1 , kernel = "gaussian", na.rm = TRUE) # returns the density data
+    }
+    else {
+        if (band == 0) {
+            d_Air_Pol<- density(Air_Pol, bw = "nrd0", adjust = 1 , kernel = "gaussian", na.rm = TRUE) # returns the density data
+            h <- d_Air_Pol$bw
+        }
+        else {
+            d_Air_Pol<- density(Air_Pol, bw = band, adjust = 1 , kernel = "gaussian", na.rm = TRUE) # returns the density data
+            h <- d_Air_Pol$bw
+        }
+    }
+    print(sprintf("Bandwith : %.6f",h))
+    #-----------------------------------CR
+    # Subtracting the minimum d_Air_Pol$x if negative - Defining "Air_Pol_final"
+    #-----------------------------------CR
+    if (min(d_Air_Pol$x, na.rm = T)<-10000) {
+        Air_Pol_final <- Air_Pol - min(d_Air_Pol$x, na.rm = T) + 0.0001
+        print(sprintf("minmum x_density: %.3f was subtracted",min(d_Air_Pol$x, na.rm = T)))
+        d_Air_Pol<- density(Air_Pol_final, bw = h, adjust = 1, kernel = "gaussian", na.rm = TRUE) # returns the density data
+        print(sprintf("minmum x_density: %.3f",min(d_Air_Pol$x, na.rm = T)))
+    }
+    else {
+        print(sprintf("minmum x_density: %.1f was not added",min(d_Air_Pol$x, na.rm = T)))
+        Air_Pol_final <- Air_Pol # do not add anything becasue the minimum value is not negative
+    }
+    #-----------------------------------CR
+    ## density plot of d_Air_Pol - one parameter - reference density plot
+    #-----------------------------------CR
+    par(mar=c(5, 0.5, 0, 0.5))
+    plot(d_Air_Pol, xlim = c(min(0,d_Air_Pol$x, na.rm = T),quantile(Air_Pol, probs = 0.98)), xlab = Dist_xlab, ylab = "", main = "", cex.lab=3, cex.axis=2.5)
+    polygon(c(min(d_Air_Pol$x, na.rm = T),d_Air_Pol$x,quantile(Air_Pol, probs = 0.98)), c(0,d_Air_Pol$y,0), col="red", border="blue")
+    #-----------------------------------CR
+    # calculating the Mode of the data variable
+    ## with the Fit of a log-normal distribution With MASS function fitdistr
+    #-----------------------------------CR
+    f_MASS <- fitdistr(Air_Pol_final, "log-normal")
+    coef(f_MASS)
+    M <- lnormMode(meanlog = coef(f_MASS)['meanlog'], sdlog = coef(f_MASS)['sdlog']) # need package modeest
+    #transforamtion in log
+    Log_Air_Pol_final <- log(Air_Pol_final)
+    #-----------------------------------CR
+    ## Histogram and density plots for the 2 parameters Lognormal distribution
+    #-----------------------------------CR
+    hist(Log_Air_Pol_final)
+    mu <- coef(f_MASS)['meanlog']
+    sigma <- coef(f_MASS)['sdlog']
+    x <- seq( min(Air_Pol_final, na.rm = T), quantile(Air_Pol_final,probs = 0.98), length.out=250)
+    y <- f_lnorm_2Par(x,mu,sigma)
+    par(mar=c(5, 0,0, 0))
+    plot(x,y, xlim = c(min(0,x,na.rm = T),max(x,na.rm = T)), xlab = Dist_xlab, ylab = "", main = "", type = "l", cex.lab=3, cex.axis=2.5)
+    polygon(c(min(x),x,max(x)), c(0,y,0), col="red", border="blue")
+    abline(v = M, lwd =2, col = "Black")
+    print(sprintf("Mu (mean of log): %.3f", mu), quote = FALSE)
+    print(sprintf("Sigma (sd of log): %.3f",sigma), quote = FALSE)
+    print(sprintf("Mode: %.3f",exp(mu-sigma^2)), quote = FALSE)
+    print(sprintf("Median: %.3f",median(x)), quote = FALSE)
+    print(sprintf("u (adding the mode): %.3f",sqrt(exp(mu+1/2*sigma^2)^2 + exp(2*(mu+sigma^2)) - exp(2*mu+sigma^2))), quote = FALSE)
+    # median
+    m <- median(Air_Pol_final)
+    #-----------------------------------CR
+    # Fitting Distribution of NASA
+    #-----------------------------------CR
+    # if (distribution == "lognormal") {
+    #
+    #     # Estimating the Mode as the maximum of the density function - Document NASA
+    #     M <- mlv(Air_Pol_final, method = "parzen", bw = h)
+    #     # Preparing data for fitting the distribution without NA and negative values, adding weights according to distance from 0 to promote data at 0
+    #     DataXY <- na.omit(data.frame(cbind(d_Air_Pol$y, d_Air_Pol$x, d_Air_Pol$y^-1)))
+    #     colnames(DataXY) <- c('referenceY','x_to_fit', "w")
+    #     DataXY$W <- d_Air_Pol$y^-1 / sum(d_Air_Pol$y^-1)
+    #     # Fitting the distribution with non linear regression for NO2
+    #     # initial value of lambda = 1.0
+    #     if (to_fit) {
+    #         fitted_Distribution <- nls(referenceY ~ f_lnormal_1par(x_to_fit, lambda, q, m)
+    #                                    , data=DataXY, start=list(lambda = coef(f_MASS)['sdlog'])) # start=list(lambda = lamb)
+    #         lambda <- coef(fitted_Distribution)
+    #     }
+    #     else {
+    #         lambda <- lamb
+    #     }
+    #     DataXY$Fitted <- f_lnormal_1par(DataXY$x_to_fit, lambda, q, m)
+    #     # if NA are created:
+    #     DataXY <- na.omit(DataXY)
+    #
+    #     #-----------------------------------CR
+    #     # calculating the Mode of the data variable
+    #     ## with the Fit of a log-normal distribution With MASS function fitdistr
+    #     #-----------------------------------CR
+    #     f_MASS <- fitdistr(Air_Pol_final, "log-normal")
+    #     coef(f_MASS)
+    #     M <- lnormMode(meanlog = coef(f_MASS)['meanlog'], sdlog = coef(f_MASS)['sdlog']) # need package modeest
+    #     # Plotting f_MASS
+    #     par(mar=c(5, 0.5, 0, 0.5))
+    #     curve(dlnorm(x, meanlog = coef(f_MASS)["meanlog"], sdlog = coef(f_MASS)["sdlog"]), from = 0, to = quantile(Air_Pol_final, probs = 0.98)
+    #           , xlab = Dist_xlab, ylab = ""
+    #           , main = "",cex.lab=3, cex.axis=2.5)
+    #     abline(v = M, lwd =2, col = "Black")
+    #     par(new=T)
+    #
+    #     # Printing characteristics of the lognormal distribution
+    #     print(sprintf('Mode: M = %.3f', M), quote = FALSE)
+    #     print(sprintf('Median: m = %.3f', m), quote = FALSE)
+    #     print(sprintf('Lower limit of possible values: q = %.3f', q), quote = FALSE)
+    #     print(sprintf('Shape factor: Lambda = %.4f',  lambda), quote = FALSE)
+    #     print(sprintf('Standard uncertainty: u = %.3f',  sqrt(M^2 + (abs(m+q) * exp(lambda^2) * sqrt(exp(lambda^2-1)))^2), quote = FALSE))
+    #     # plotting the refrence distribution and fittecd one
+    #     print(sprintf('Max reference %.1f, max fitted %.1f', max(DataXY$referenceY), max(DataXY$referenceY,DataXY$Fitted)), quote = FALSE)
+    #     ## density plot of d_Air_Pol - one parameter - reference density plot
+    #     par(mar=c(5, 0.5, 0, 0.5))
+    #     Ylim <- c(0, quantile(Air_Pol_final, probs = 0.98))
+    #     plot(DataXY$x_to_fit, DataXY$referenceY
+    #          , type = "l"
+    #          , xlim = c(min(0,d_Air_Pol$x),quantile(Air_Pol, probs = 0.98))
+    #          , ylim = Ylim
+    #          , xlab = Dist_xlab, ylab = ""
+    #          , main = "",cex.lab=3, cex.axis=2.5)
+    #     polygon(c(min(DataXY$x_to_fit),DataXY$x_to_fit,max(DataXY$x_to_fit)), c(0,DataXY$referenceY,0), col="red", border="blue")
+    #     lines(DataXY$x_to_fit, DataXY$Fitted ,
+    #           xlim = Dist_range,
+    #           ylim = c(min(0,d_Air_Pol$x),quantile(Air_Pol, probs = 0.98)),
+    #           xlab = Dist_xlab,
+    #           ylab = "",
+    #           lwd =2,
+    #           col = "Blue"
+    #     )
+    #     abline(v = M, lwd =2, col = "Black")
+    # }
+    #return(lambda)
+    return(c(m, M,sqrt(exp(mu+1/2*sigma^2)^2 + exp(2*(mu+sigma^2)) - exp(2*mu+sigma^2))))
 }
 #================================================================CR
-### Estimated.y: Function Plot estimated function
+### Fit_His: fitting distribution to data ====
+#================================================================CR
+Fit_Hist <- function(Air_Pol, ug, coeff_ppb, Dist_range, bins, distribution, to_fit, Dist_xlab) {
+    # fitting distribution manual Non Linear Regression based on the probability distribution funtion with only one parameter: the shape parameter
+    # data: variable for whcih the densit function is calculated
+    # ug: if TRUE transform from ug/m3 to ppb or ppm if FALSE does not transform
+    # coeff_ppb: used if ug = TRUE: conversion factor to divide  ug/m3 to get ppb (ex 1.91 for NO2)
+    # Dist_range: min and max value for the distribution plot and histogram
+    # bins: number of breaks in the histogram
+    # distribution: type of distribution to be fitted: lognormal ...
+    # to_fit: if TRUE fitted with nls, if FALSE: not fitted
+    # Dist_xlab: Label of X axis of the distribution plot
+    # removing negative values of data - No we do not do it
+    # Air_Pol <- subset(Air_Pol, Air_Pol >0)
+    # transforming in ppb
+    if (ug) Air_Pol <- Air_Pol/coeff_ppb
+    # calculating the reference histrogram
+    par(mar=c(5, 2,0, 0))
+    histogram = hist(Air_Pol, breaks = bins, xlim =c(mini,maxi),xlab = Dist_xlab, ylab = "", main = "", cex.lab=3, cex.axis=2.5)
+    # histogram <- subset(histogram, histogram$mids>0) # removing the negative values
+    ## density plot for the 2 parameters lognormal distribution
+    Log_Air_Pol <- log(Air_Pol)
+    mu <- mean(Log_Air_Pol)
+    sigma <- sd(Log_Air_Pol)
+    x <- seq( min(Air_Pol, na.rm = T), max(Air_Pol), length.out=250)
+    y <- f_lnorm_2Par(x,mu,sigma)
+    par(mar=c(5, 2, 0, 0))
+    plot(x, y, xlim = c(min(0,x),max(x, na.rm = T)), xlab = Dist_xlab, ylab = "", main = "", type = "l", cex.lab=3, cex.axis=2.5)
+    polygon(c(min(x, na.rm = T),x,max(x, na.rm = T)), c(0,y,0), col="red", border="blue")
+    print(sprintf("Mu (mean of log): %.1f", mu), quote = FALSE)
+    print(sprintf("Sigma (sd of log): %.1f",sigma), quote = FALSE)
+    print(sprintf("Mode: %.1f",exp(mu-sigma^2)), quote = FALSE)
+    print(sprintf("Median: %.1f",median(Air_Pol)), quote = FALSE)
+    print(sprintf("u (adding the mode): %.1f",sqrt(exp(mu-sigma^2)^2 + exp(2*(mu+sigma^2)) - exp(2*mu+sigma^2))), quote = FALSE)
+    # Fitting Distribution
+    if (distribution == "lognormal") {
+        # Preparing data for fitting the distribution without NA and negative values, adding weights according to distance from 0 to promote data at 0
+        DataXY <- na.omit(data.frame(cbind(histogram$density, histogram$mids)))
+        colnames(DataXY) <- c('referenceY','x_to_fit')
+        # Fitting the distribution with non linear regression with initial values of mu and sigma
+        if (to_fit) {
+            fitted_Distribution <- nls(referenceY ~ f_lnormal_2par(x_to_fit, m, s)
+                                       , data=DataXY, start=list(m = mu, s = sigma))
+            mu <- coef(fitted_Distribution)[1]
+            sigma <- coef(fitted_Distribution)[2]
+        }
+        else {
+            mu <- mean(Log_Air_Pol)
+            sigma <- sd(Log_Air_Pol)
+        }
+        DataXY$Fitted <- f_lnormal_2par(DataXY$x_to_fit, mu, sigma)
+        # if NA are created:
+        DataXY <- na.omit(DataXY)
+        # calculating the Mode of the data variable
+        M <-  exp(mu - sigma^2)
+        # Printing characteristics of the lognormal distribution
+        # plotting the refrence distribution and fittecd one
+        print(sprintf('Max reference %.1f, max fitted %.1f', max(DataXY$referenceY), max(DataXY$referenceY,DataXY$Fitted)), quote = FALSE)
+        plot(DataXY$x_to_fit, DataXY$referenceY
+             , type = "l"
+             , xlim = Dist_range, ylim = c(0, max(DataXY$referenceY,DataXY$Fitted))
+             , xlab = Dist_xlab, ylab = ""
+             , main = "",cex.lab=3, cex.axis=2.5)
+        lines(DataXY$x_to_fit, DataXY$Fitted , xlim = Dist_range, ylim = c(0, max(DataXY$referenceY,DataXY$Fitted)), xlab = Dist_xlab, ylab = ""
+        )
+        abline(v = M, col = 2)
+    }
+    return(fitted_Distribution)}
+#================================================================CR
+### f_lnormal_1par: fitting probability distribution funtion for Log-Normal distribution 1 parameter ====
+#================================================================CR
+f_lnormal_1par <- function(epsilon, lambda, q, m) {
+    # epsilon: vector data for wwhich the log-normal distribution is fitted
+    # lambda: vector shape parameter
+    # q: lower limiting value
+    # m: median
+    return(1/(sqrt(2*pi)*lambda*abs(epsilon-q)) * exp(-(log((epsilon-q)/(m-q)))^2/(2*lambda^2)))}
+#================================================================CR
+### f_lnorm_2Par: Fitting probability distribution function for Log-Normal distribution 2 parameters ====
+#================================================================CR
+f_lnorm_2Par <- function(x, mu, sigma) {
+    # x: vector data for which the log-normal distribution is calculated
+    # mu: mean of the log of x
+    # x: standard deviation of the log of x)
+    # m: median
+    return(1/(sqrt(2* pi)*sigma*x) * exp(-(log(x)-mu)^2/(2*sigma^2)))}
+#================================================================CR
+### Mode: Function returning mode of a distribution ====
+#================================================================CR
+Mode <- function(x) {
+    ux <- unique(x)
+    ux[which.max(tabulate(match(x, ux)))]
+}
+#================================================================CR
+### Estimated.y: Function Plot estimated function ====
 #================================================================CR
 Estimated.y <- function(x, Model, Length = NULL) {
     # This function estimates the y values at 5000 points of x from min(x) until max(x)
@@ -874,11 +1173,77 @@ Estimated.y <- function(x, Model, Length = NULL) {
     else{
         Estimated$y <- predict(Model, newdata = Estimated)
     }
-    return(Estimated)
-}
+    return(Estimated)}
 #================================================================CR
-### Cal_Line: Function calibration function and plot calibration line (VS 170428)
+### Cal_Line: Function calibration function and plot calibration line (VS 170428) ====
 #================================================================CR
+#' Function to correct for the lag of reference data due to autocorelation of sensor data
+#' @param DT.General Data.table with columns date (POSIXCt), ...
+#' @param ColRef name of column to be delagged
+#' @param ColSens name of colum used to estimate the lag of ColRef
+#' @param DateIN starting date for delagging, default is NULL. If NULL no data interval is selected
+#' @param DateEND ending date for delagging, defautl is NULL.
+#' @param Sync logical, default is TRUE. If TRUE lag time is estimated and corrected. If False, lag time is not estimated, initial ColRef data vector is re-used if available
+#' @param Verbose logical, default is TRUE. If TRUE lag time is estimated and corrected. If False, lag time is not estimated, initial ColRef data vector is resumed if available
+#' @return DT.General with ColRef being corrected for lag with ColSens
+DeLag_Cal <- function(DT.General, ColRef, ColSens, DateIN = NULL, DateEND = NULL, Sync = TRUE, Verbose = TRUE) {
+    if (!is.null(DateIN) && !is.null(DateEND)) Used.date <- which(DT.General$date >= DateIN & DT.General$date <= DateEND + 1) else Used.date <- NULL
+    if (length(Used.date) > 0 && length(DT.General[Used.date][[ColRef]]) > 0 && length(DT.General[Used.date][[ColSens]]) > 0) {
+        if (Sync) {
+            Lag <- Find_Max_CCF(DT.General[Used.date][[ColRef]],DT.General[Used.date][[ColSens]])
+            if (Lag$lag != 0) {
+                if (Verbose) futile.logger::flog.info(paste0("[DeLag_Cal] there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y"))
+                # Saving original data
+                data.table::set(DT.General, i =  Used.date, j = paste0("Lag.", ColRef), value = DT.General[Used.date][[ColRef]])
+                if (Lag$lag > 0) {
+                    data.table::set(DT.General, i =  Used.date, j =  ColRef, value = c(DT.General[Used.date][[ColRef]][(Lag$lag+1):nrow(DT.General[Used.date])], rep(NA, Lag$lag)))
+                } else {
+                    data.table::set(DT.General, i =  Used.date, j =  ColRef, value = c(rep(NA, -Lag$lag), DT.General[Used.date][[ColRef]][1:(nrow(DT.General[Used.date]) - (-Lag$lag))]))}
+                if (Verbose) futile.logger::flog.info(paste0("[DeLag_Cal] the calibration model is established after lag correction."))
+                } else if (Verbose) futile.logger::flog.info(paste0("[DeLag_Cal] there is no lag between x and y"))
+        } else {
+            if (Verbose) futile.logger::flog.info("Lag correction not requested")
+            # Resuming possible original reference data
+            if (paste0("Lag.", ColRef) %in% names(DT.General) && !all(is.na(DT.General[Used.date][[paste0("Lag.", ColRef)]]))) {
+                data.table::set(DT.General, i =  Used.date, j =  ColRef, value = DT.General[Used.date][[paste0("Lag.", ColRef)]])
+                # Lag.[ColRef to NA
+                data.table::set(DT.General, i =  Used.date, j =  paste0("Lag.", ColRef), value = rep(NA, length(Used.date)))
+                if (Verbose) futile.logger::flog.info("[DeLag_Cal] Initial unlagged data are restored")}}}
+    return(DT.General)}
+#' @param Meas.DateIN starting date for delagging, default is NULL. If NULL no data interval is selected
+#' @param Meas.DateEND ending date for delagging, defautl is NULL.
+#' @param CalDateIN starting date for delagging of the calibration interval, default is NULL. If NULL no data interval is selected
+#' @param CalDateEND ending date for delagging of the claibration interval, defautl is NULL.
+#' @param Sync.Pred logical, default is TRUE. If TRUE lag time is estimated and corrected. If False, lag time is not estimated, initial ColRef data vector is re-used if available
+#' @param Sync.Cal logical, default is TRUE. If TRUE lag time is estimated for the prediction period taking out the calibration period. 
+DeLag_Pred <- function(DT.General, ColRef, ColSens, Meas.DateIN = NULL, Meas.DateEND = NULL, Cal.DateIN = NULL, Cal.DateEND = NULL, 
+                       Sync.Pred = TRUE, Sync.Cal = FALSE, Verbose = TRUE) {
+    if (!is.null(Meas.DateIN) && !is.null(Meas.DateEND)) Used.date <- which(DT.General$date >= Meas.DateIN & DT.General$date <= Meas.DateEND + 1) else Used.date <- NULL
+    if (Sync.Cal) {
+        Cal.date  <- which(DT.General$date >= Cal.DateIN & DT.General$date <= Cal.DateEND + 1)
+        Used.date <-setdiff(Used.date,Cal.date)}
+    if (length(Used.date) > 0) {
+        if (Sync.Pred) {
+            Lag <- Find_Max_CCF(DT.General[Used.date][[ColRef]],DT.General[Used.date][[ColSens]])
+            if (Lag$lag != 0) {
+                if (Verbose) futile.logger::flog.info(paste0("[DeLag_Pred] there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y"))
+                # Saving original data
+                data.table::set(DT.General, i =  Used.date, j = paste0("Lag.", ColRef), value = DT.General[Used.date][[ColRef]])
+                if (Lag$lag > 0) {
+                    data.table::set(DT.General, i =  Used.date, j =  ColRef, value = c(DT.General[Used.date][[ColRef]][(Lag$lag+1):nrow(DT.General[Used.date])], rep(NA, Lag$lag)))
+                } else {
+                    data.table::set(DT.General, i =  Used.date, j =  ColRef, value = c(rep(NA, -Lag$lag), DT.General[Used.date][[ColRef]][1:(nrow(DT.General[Used.date]) - (-Lag$lag))]))}
+                if (Verbose) futile.logger::flog.info(paste0("[DeLag_Pred] the sensor and reference data are compared after lag correction."))
+            } else if (Verbose) futile.logger::flog.info(paste0("[DeLag_Pred] there is no lag between x and y"))
+        } else {
+            if (Verbose) futile.logger::flog.info("Lag correction not requested")
+            # Resuming possible original reference data
+            if (paste0("Lag.", ColRef) %in% names(DT.General) && !all(is.na(DT.General[Used.date][[paste0("Lag.", ColRef)]]))) {
+                data.table::set(DT.General, i =  Used.date, j =  ColRef, value = DT.General[Used.date][[paste0("Lag.", ColRef)]])
+                # Lag.[ColRef to NA
+                data.table::set(DT.General, i =  Used.date, j =  paste0("Lag.", ColRef), value = rep(NA, length(Used.date)))
+                if (Verbose) futile.logger::flog.info("[DeLag_Pred] Initial unlagged data are restored")}}}
+    return(DT.General)}
 Find_Max_CCF <- function(x,y) {
     # https://stackoverflow.com/questions/10369109/finding-lag-at-which-cross-correlation-is-maximum-ccf
     # This function will return the maximum CCF value along with corresponding lag value.
@@ -886,7 +1251,7 @@ Find_Max_CCF <- function(x,y) {
     # keep only complete cases
     DataXY <- data.frame(x = x, y = y)
     DataXY <- DataXY[complete.cases(DataXY),]
-    d <- ccf(DataXY$x, DataXY$y, plot = FALSE) # , lag.max = length(x)/2
+    d <- ccf(DataXY$x, DataXY$y, plot = FALSE, lag.max = 120) # , lag.max = length(x)/2
     cor     = d$acf[,,1]
     abscor  = abs(d$acf[,,1])
     lag     = d$lag[,,1]
@@ -906,79 +1271,95 @@ insertRow <- function(existingDF, newrow, r) {
     row.names(existingDF) <- 1:nrow(existingDF)
     return(existingDF)
 }
-Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL, line_position = 0, Couleur = "red", Sensor_name = NULL, 
-                     f_coef1 = "%.3e", f_coef2 = "%.3e", f_R2 = "%.4f", lim = NULL, marges = NULL, 
-                     Covariates = NULL, Weighted = FALSE, Lag_interval = sqrt(max(x, na.rm = T) - min(x, na.rm = T)),
-                     Auto.Lag = FALSE, Plot_Line = TRUE, Verbose = TRUE) {
-    # This Function estimates the calibration function, plots the calibration line and write the equation above the plot at line_position
-    # The regression equation can be weithed (1/sy^2) or not if s_y = Null
-    # Inputs:
-    # x, s_x, y, s_y: x and y values with their standard devation that can be equal to Null
-    # Mod_type      : type of calibration model: linear, ...
-    # Multi.File    : char, default is NULL, path.file of the config file used for calibration with multivariates
-    # Matrice       : Input Matrix of data (e. g. Pre_cal_df)
-    # Covariates    : character vectors with column names of the covariates found in Matrice and needed for calibration model
-    # line position : for mtext of the regression equation
-    # Couleur       : color of the line and color font of the equation
-    # Sensor_name   : name of the sensor to be written in front of the calibration equation. If NULL, sensor name is not printed
-    # f_coef1,
-    # f_coef2,
-    # f_R2          : number of digit for intercept, slope and R2 using sprintf syntax.
-    #                 f_coef1 is used both for intercept and s(Res), f_coef2 is used for all parameters of the model apart from the intercept
-    # lim           : matrix of column vectors Xlim, YLIM: limits of the plots where to add the calibration line. When NULL the lim are automatically calculated.
-    # marges        : margin of graph, if NULL set as c(4,4,3,0.5)). If you don't want to set the margin, set to "NO"
-    # Weighted      : Logical, default is false. If true used weighted fitting base on standard deviations of y for each lag (sd^2/sum(sd^2))
-    # Lag_interval  : numerical, double, default sqrt((max(x, na.rm = T) - min(x, na.rm = T)), width of each lag used for estimating laf interval
-    # Auto.Lag      : logical, default is FaLSE If Auto.Lag is TRUE, y is changed using the lag at which cross correlation between x and y is maximum using ccf( )
-    # Plot_Line     : logical, default is TRUE. If TRUE the calibration line is added using par(new=TRUE) to an existaing scatterplot
-    # Return        : the estimated model , plot a calibration is Plot_Line is TRUE
-    # check autocorelation and Lag of y versus x, adding NAs at the begining or end of x, y, s_y and Matrice
+#' 
+#' @description This Function estimates calibration functions, plots the calibration line and write the equation above the plot at line_position
+#' @description The regression equation can be weigthed (1/sy^2) or not if s_y = Null
+#' @description Lag can be corrected using autocorrelation
+#' @param x, numerical vector, x-axis values
+#' @param s_x, numerical vector, standard deviation of x values. Same lenght as x
+#' @param y, numerical vector, y-axis values
+#' @param s_y, numerical vector, standard deviation of y values. Same lenght as x is mandatory.
+#' @param Mod_type      : type of calibration model: linear, ...
+#' @param Multi.File character vector, default is NULL. If not NULL, File.path of config file used for calibration with "MultiLinear" models
+#' @param Matrice Input Matrix of data (e. g. Pre_cal_df) when Covariates is not NULL
+#' @param Covariates character vector, default is NULL. If not NULL  column names of the covariates found in Matrice and needed for calibration model
+#' @param line_position numeric, deault is 0. Line position in marfing at the top for printing the regression equation
+#' @param Couleur character vector, deault is "red". Color of the line and color font of the equation
+#' @param Sensor_name character vector, default is NULL. Name of the sensor to be written in front of the calibration equation. If NULL, sensor name is not printed
+#' @param f_coef1,f_coef2,f_R2 character vector, defulat are f_coef1 = "%.3e", f_coef2 = "%.3e", f_R2 = "%.4f". Number of digits for intercept, slope and R2 using sprintf syntax. f_coef1 is used both for intercept and s(Res), f_coef2 is used for all parameters of the model apart from the intercept
+#' @param lim matrix of column vectors Xlim, YLIM: limits of the plots where to add the calibration line. When NULL the lim are automatically calculated.
+#' @param marges: margin of graph, default is c(4,4,3,0.5))
+#' @param Weighted      : Logical, default is false. If TRUE used weighted fitting base on standard deviations of y for each lag (sd^2/sum(sd^2))
+#' @param Lag_interval  : numerical, double, default sqrt((max(x, na.rm = T) - min(x, na.rm = T)), width of each lag used for estimating lag interval if weighed is TRUE
+#' 
+#' @param Auto.Lag logical, default is FALSE. If Auto.Lag is TRUE, y is changed using the lag at which cross correlation between x and y is maximum using ccf( ) using auto-correlation and Lag of y versus x, adding NAs at the begining or end of x, y, s_y and Matrice
+#' @param Plot_Line logical, default is TRUE. If TRUE the calibration line is added using par(new=TRUE) to an existing scatterplot
+#' @param Verbose logical, default TRUE. If TRUE print some messages
+#' @return the estimated calibration model and plot a calibration is Plot_Line is TRUE
+Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL, Matrice=NULL, Covariates = NULL, 
+                     line_position = 0, Couleur = "red", Sensor_name = NULL, 
+                     f_coef1 = "%.3e", f_coef2 = "%.3e", f_R2 = "%.4f", lim = NULL, marges = c(4,4,3,0.5), 
+                     Weighted = FALSE, Lag_interval = sqrt(max(x, na.rm = T) - min(x, na.rm = T)),
+                     Auto.Lag = FALSE, Plot_Line = TRUE, Verbose = TRUE, Date = NULL) {
+    # 
     if (Auto.Lag) {
         Lag <- Find_Max_CCF(x,y)
-        if (Verbose) cat(paste0("[Cal_line] INFO, there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y, if lag is <> 0\n"))
         if (Lag$lag != 0) {
+            if (Verbose) futile.logger::flog.info(paste0("[DeLag_Cal] there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y"))
+            if (Verbose) futile.logger::flog.info(paste0("[DeLag_Cal] The lag is corrected before establishing the calibration model."))
             if (Lag$lag > 0) {
-                x <- c(x, rep(NA, Lag$lag))
-                y <- c(rep(NA, Lag$lag), y)
-                if (!is.null(s_y)) s_y <- c(rep(NA, Lag$lag), s_y)
-                if (!is.null(Matrice)) Matrice <- berryFunctions::insertRows(Matrice, seq_along(Lag$lag))
+                x <- c(x[(Lag$lag+1):length(y)], rep(NA, Lag$lag))
             } else {
-                x <- c(rep(NA, Lag$lag, x))
-                y <- c(y, rep(NA, Lag$lag))
-                if (!is.null(s_y)) s_y <- c(s_y, rep(NA, Lag$lag))
-                if (!is.null(Matrice)) Matrice <- berryFunctions::insertRows(Matrice, seq(from = nrow(Matrice) - Lag$lag, to = nrow(Matrice)))}}
-    } else Lag <- "Lag correction not requested"
+                x <- c(rep(NA, -Lag$lag),x[1:(length(y) - (-Lag$lag))])}}
+    } else if (Verbose) futile.logger::flog.info("[Cal_Line] Lag correction not requested")  
     # Put reference and sensor reponses and standard deviation of sensor responses in a matrix remove NA of x and y
     if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) DataXY <- data.table(x = x, y = y) else {
         DataXY    <- data.table(x = x, y = y, s_y = s_y)
-        DataXY[ wi := DataXY$s_y^-2/sum(DataXY$s_y^-2)]
-        # colnames(DataXY) <- c("x","y","s_y","wi")
-    }
+        DataXY[, wi := DataXY$s_y^-2/sum(DataXY$s_y^-2, na.rm = T)]}
     # adding Covariates for multilinear model and multivariate models
-    if (Mod_type == "MultiLinear") DataXY <- cbind(DataXY, Matrice[, ..Covariates])
-    if (any(Mod_type %in% c("exp_kT_NoC","exp_kT", "exp_kK","T_power","K_power", "BeerLambert"))) {
+    # browser()
+    if (Mod_type == "MultiLinear") {
+        DataXY <- cbind(DataXY, Matrice[, ..Covariates])
+    } else if (Mod_type %in% c("Peaks_baseline","exp_kT_NoC","exp_kT", "exp_kK","T_power","K_power", "BeerLambert")) {
         if (is.null(Covariates)) {
-            if (nrow(DataXY != nrow(Matrice))) futile.logger::flog.error(pate0("[Cal_line] x, y an Covariates do not have the same length."))
-            if (is.data.table(DataXY)) DataXY[, Temperature := Matrice[["Temperature"]]] else if (is.data.frame(DataXY)) DataXY$Temperature <- Matrice[["Temperature"]]
-        } else if (is.data.table(DataXY)) DataXY[, (Covariates) := Matrice[,..Covariates]] else if (is.data.frame(DataXY)) DataXY[, Covariates] <- Matrice[,..Covariates]}
-    if (any(Mod_type %in% c("BeerLambert"))) DataXY[, Atmospheric_pressure := Matrice[["Atmospheric_pressure"]]]
-    if (any(Mod_type %in% c("Kohler", "Kohler_only"))) DataXY[, Relative_humidity := Matrice[["Relative_humidity"]]]
+            if (nrow(DataXY != nrow(Matrice))) futile.logger::flog.error(pate0("[Cal_line] x, y and Covariates do not have the same length."))
+            if (is.data.table(DataXY)) DataXY[,Out.Temperature := Matrice[["Out.Temperature"]]] else if (is.data.frame(DataXY)) DataXY$Temperature <- Matrice[["Out.Temperature"]]
+        } else if (is.data.table(DataXY)) DataXY[, (Covariates) := Matrice[,..Covariates]] else if (is.data.frame(DataXY)) DataXY[, Covariates] <- Matrice[,..Covariates]
+    } else if (Mod_type %in% c("BeerLambert")) {
+        DataXY[, Out.Atmospheric_pressure := Matrice[["Out.Atmospheric_pressure"]]]
+    } else if (Mod_type %in% c("Kohler", "Kohler_only")) {
+        DataXY[, Out.Relative_humidity := Matrice[["Out.Relative_humidity"]]]
+    } else if (Mod_type %in% c("Yatkin")) {
+        if (is.data.table(DataXY)) DataXY[,Out.Temperature := Matrice[["Out.Temperature"]]] else if (is.data.frame(DataXY)) DataXY$Temperature <- Matrice[["Out.Temperature"]]
+        DataXY[, Out.Relative_humidity := Matrice[["Out.Relative_humidity"]]]}
+    # Adding date
+    if (!is.null(Date)) DataXY[, date := Date]
     # removing NA of any variables in DATAXY
     DataXY <- DataXY[complete.cases(DataXY[, .SD])]
     # Creating weights from the standard deviations within lags
     if (Weighted) {
         #lag_distance <- round((range(DataXY$x, na.rm = T)[2] - range(DataXY$x, na.rm = T)[1])/Lag_numbers)
-        DataXY[, ID := round(x/Lag_interval)*Lag_interval]
-        setkey(DataXY, ID)
-        DataXY[, c("x", "y", "SD", "Count") := list(mean(x, na.rm = T), mean(y, na.rm = T), sd(y, na.rm = T),.N), by= ID]
+        DataXY$ID.x <- DataXY$x %/% (Lag_interval/2)
+        setkey(DataXY, ID.x)
         # any covariates?
-        if (!is.null(Covariates)) {
-            browser()
-            DataXY[, (Covariates) := mean(.SD, na.rm = T), .SDcols = Covariates, by = ID]} 
-        DataXY <- unique(DataXY[complete.cases(DataXY)])
-        DataXY[, SumWI := sum(SD^2/(Count - 1), na.rm = T)]
-        DataXY[, wi := 1/(SD^2/(Count - 1))]
-        DataXY[, c("ID", "Count","SumWI") := NULL]}
+        if (!is.null(Covariates) && Covariates != "") {
+            ID.Covariates <- sapply(Covariates, function(Param) {sqrt(max(DataXY[[Param]], na.rm = T) - min(DataXY[[Param]], na.rm = T))})
+            for (Param in Covariates) DataXY[[paste0("ID.", Param)]] <- DataXY[[Param]] %/% (ID.Covariates[[Param]]/2)
+            New.Columns <- c("x", "y", Covariates, "s_y", "Count")
+            New.IDs     <- c("ID.x", paste0("ID.",names(ID.Covariates)))
+            DataXY[, s_y := lapply(.SD, sd, na.rm = T), .SDcols = "y", by = New.IDs]
+            DataXY[, Count := .N, by = New.IDs]
+            DataXY[, (New.Columns) := lapply(.SD, mean, na.rm = T), .SDcols = New.Columns, by = New.IDs]
+            #DataXY[, (New.IDs) := NULL]
+        } else {
+            DataXY <- DataXY[, .(x = mean(x, na.rm =T), y = mean(y, na.rm =T), s_y = sd(y, na.rm =T), count = .N), by = ID.x]
+            #DataXY[, ID.x := NULL]
+            }
+        DataXY <- unique(DataXY[complete.cases(DataXY) & s_y > 0])
+        #DataXY[, wi := s_y^-2/sum(DataXY$s_y^-2)]
+        DataXY[, wi := rep(1, times = nrow(DataXY))]
+        #DataXY[, c("Count") := NULL]
+        }
     # Add ", " at the end of Sensor_name to be print with the legend
     if (!is.null(Sensor_name)) Sensor_name <- paste0(Sensor_name, ", ")
     # Fitting Models
@@ -1009,70 +1390,146 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
             Model <- gam(y~s(x), family = Gamma(link = log), data = Estimated)
             #Model <- gam(y~s(x, k=5), family=Gamma(link=log), data = Estimated)
         } else {
-            # Let gam89 decide for k and estimate the best alpha
+            # Let gam decide for k and estimate the best alpha
             #Model <- gam(y~s(x, k=5), family=Gamma(link=log), weights = wi)
             Model <- gam(y~s(x), family = Gamma(link = log), data = Estimated, weights = wi)}
         Equation <- sprintf(paste0("General Additive model"))
-    } else if (Mod_type %in% c('exp_kT_NoC','exp_kT','exp_kK')) {
-        name.Temperature <- ifelse(is.null(Covariates), "Temperature", Covariates)
-        # Setting Initial values
-        Linear.Model <- rq(y ~ x, data = DataXY, tau = c(0.5))
-        A0 <- coef(Linear.Model)[1]
-        A1 <- coef(Linear.Model)[2]
+    } else if (Mod_type %in% c("Yatkin",'MassonO', 'Peaks_baseline','exp_kT_NoC','exp_kT','exp_kK')) {
+        name.Temperature <- ifelse(is.null(Covariates), "Out.Temperature", Covariates)
+        # Setting Initial values of the linear relationship between sensor and reference using the smallest temperatures: T< Qtile(0.33) and T < 20 degrress
+        #High.x <- which(DataXY[,x] > quantile(DataXY[,x], probs = c(0.75)))
+        High.x <- which(DataXY[[name.Temperature]] < quantile(DataXY[[name.Temperature]], probs = c(0.33)) & DataXY[[name.Temperature]] < 20)
+        Linear.Model <- rq(y ~ x, data = DataXY[High.x], tau = c(0.5))
+        A0 <- unname(coef(Linear.Model)[1])
+        A1 <- unname(coef(Linear.Model)[2])
+        plot(DataXY[High.x,c("x","y")], main = "Initial a0 and a1 values");grid(); lines(DataXY[High.x,x], A0 + A1 *DataXY[High.x, x], type = "l", col = "red")
+        Formula         <- as.formula(paste0("y ~ f_ExpGrowth(",name.Temperature,", C, k)"))
+        Starting.values <- list(C = min(DataXY$y, na.rm= T), k = 0.1)
+        I0              <- minpack.lm::nlsLM(Formula, data = DataXY[x < 2], start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
         # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
-        if (Mod_type == 'exp_kT_NoC') {
+        # browser()
+        if (Mod_type == 'Peaks_baseline') {
+            # Baseline correction for temperature effect
             # checking for positives values for the log((RNo - a1 x)/a0)
-            Positives <- which((DataXY$y - A1 * DataXY$x)/A0 > 0)
             # Model in celsius degrees
-            DataXY[Positives,"Init.Coeffs"] <- log((DataXY[Positives,"y"] - A1 * DataXY[Positives,"x"])/A0)
+            Positives <- which((DataXY[High.Temperature]$y - A1 * DataXY[High.Temperature]$x)/A0 > 0)
+            DataXY[High.Temperature[Positives],"Init.Coeffs"] <- log((DataXY[High.Temperature][Positives,"y"] - A1 * DataXY[High.Temperature][Positives,"x"])/A0)
             # Fit without intercept, only the slope k
-            Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[Positives,], tau = c(0.5))
-            k0 <- coef(Model.0)[1]
+            Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[High.Temperature[Positives],], tau = c(0.5))
+            plot(DataXY[High.Temperature][[name.Temperature]], DataXY[High.Temperature,y])
+            grid()
+            DataXY[High.Temperature, Predict := predict(Model.0, DataXY[High.Temperature][[name.Temperature]])]
+            lines(DataXY[High.Temperature, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[High.Temperature][[name.Temperature]])], col = "red")
             # Fitting model
-            f <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a0, a1, k, ",name.Temperature,")"))
-            if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-                Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, k = k0), model = TRUE,
-                               control = nls.lm.control(maxiter = 1024, maxfev = 10000))
-            } else Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, k = k0), model = TRUE, weights = wi,
-                                  control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
+            Formula <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a0, a1, k, ",name.Temperature,") - Y0"))
+            Starting.values <- list(a0 = unname(coef(Model.0)[1]), a1 = A1, k = unname(coef(Model.0)[2]), Y0 = unname(coef(Model.0)[3]))
+            if (Verbose) print(Starting.values, quote = F)
+            if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            } else {
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000), weights = wi) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
+            }
             # display equations and R^2
             Equation <- sprintf(paste0(Sensor_name, "exp_kT_NoC: y = ",f_coef1," exp(",f_coef2," T_Celsius)+ ",f_coef2," x, RMSE=",f_coef1,",AIC= %.1f"),
                                 coef(Model)[1],coef(Model)[3],coef(Model)[2],
                                 sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                                 AIC(Model))
+        } else  if (Mod_type == 'exp_kT_NoC') {
+            # Model in Celsius degrees RNO = a1 NO + C exp(kT)
+            # determining initial K0 values at high temperature
+            if (Weighted) {
+                High.Temperature <- which(DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.25)))
+            } else High.Temperature <- which(DataXY[[name.Temperature]] > quantile(DataXY[[name.Temperature]], probs = c(0.5)) &
+                                              DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.33)))
+            # # checking for positives values for the log((RNo - a1 x)/a0)
+            # Positives        <- which((DataXY[High.Temperature]$y - A1 * DataXY[High.Temperature]$x)/A0 > 0)
+            # DataXY[High.Temperature[Positives],"Init.Coeffs"] <- log((DataXY[High.Temperature][Positives,"y"] - A1 * DataXY[High.Temperature][Positives,"x"])/A0)
+            # # Fit without intercept, only the slope k
+            # Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[High.Temperature[Positives]], tau = c(0.5))
+            Formula <- as.formula(paste0("(y - A1 * x) ~ f_ExpGrowth(",name.Temperature,", C, k)"))
+            Starting.values <- list(C = min(DataXY$y, na.rm = T), k = 0.13)
+            Model.0 <- minpack.lm::nlsLM(Formula, data = DataXY[High.Temperature], start = Starting.values, model = TRUE, 
+                                         control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            plot(DataXY[High.Temperature][[name.Temperature]], DataXY[High.Temperature,y], main = "Initial k0 value")
+            grid()
+            DataXY[High.Temperature, Predict := predict(Model.0, DataXY[High.Temperature][[name.Temperature]])]
+            lines(DataXY[High.Temperature, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[High.Temperature][[name.Temperature]])], col = "red")
+            # Fitting model
+            Formula <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a1, C, k, ",name.Temperature,")"))
+            Starting.values <- list(a1 = A1, C = unname(coef(Model.0)[1]), k = unname(coef(Model.0)[2]))
+            if (Verbose) print(Starting.values, quote = F)
+            if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            } else {
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000), weights = wi) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
+            }
+            # display equations and R^2
+            Equation <- sprintf(paste0(Sensor_name, "exp_kT_NoC: y = ",f_coef2," x + ",f_coef1," exp(",f_coef2," T_Celsius), RMSE=",f_coef1,", AIC= %.1f"),
+                                coef(Model)[1],coef(Model)[2],coef(Model)[3],
+                                sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
+                                AIC(Model))
         } else  if (Mod_type == 'exp_kT') {
-            # Values for which log(DataXY$y - (A0 + A1 * DataXY$x)) can be calculated
-            Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 0)
-            # Model in celsius degrees
-            DataXY[Positives,"Init.Coeffs"] <- log(DataXY[Positives,"y"] - (A0 + A1 * DataXY[Positives,"x"]))
-            Model.0 <- rq(Init.Coeffs ~ get(name.Temperature), data = DataXY[Positives,], tau = c(0.5))
+            # Model in Celsius degrees RNO = a0 + a1 NO + C exp(kT)
+            # determining initial K0 values at high temperature
+            if (Weighted) {
+                High.Temperature <- which(DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.25)))
+            } else High.Temperature <- which(DataXY[[name.Temperature]] > quantile(DataXY[[name.Temperature]], probs = c(0.5)) &
+                                              DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.25)))
+            #Formula <- as.formula(paste0("(y - A1 * x) ~ f_ExpGrowth(",name.Temperature,", C, k) + Y0"))
+            #Starting.values <- list(C = 1, k = 0.13, Y0 = unname(A0))
+            Formula <- as.formula(paste0("(y - (A0 + A1 * x)) ~ f_ExpGrowth(",name.Temperature,", C, k)"))
+            Starting.values <- list(C = 1, k = 0.13)
+            Model.0 <- minpack.lm::nlsLM(Formula, data = DataXY[High.Temperature], start = Starting.values, model = TRUE,
+                                         control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            plot(DataXY[High.Temperature][[name.Temperature]], DataXY[High.Temperature,y], main = "Initial k0 value")
+            grid()
+            DataXY[High.Temperature, Predict := A0 + A1 * x + predict(Model.0, DataXY[High.Temperature][[name.Temperature]])]
+            lines(DataXY[High.Temperature, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[High.Temperature][[name.Temperature]])], col = "red")
+            # # Values for which log(DataXY$y - (A0 + A1 * DataXY$x)) can be calculated
+            # Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 0)
+            # # Model in celsius degrees
+            # DataXY[Positives,"Init.Coeffs"] <- log(DataXY[Positives,"y"] - (A0 + A1 * DataXY[Positives,"x"]))
+            # Model.0 <- rq(Init.Coeffs ~ get(name.Temperature), data = DataXY[Positives,], tau = c(0.5))
             C0 <- coef(Model.0)[1]
             k0 <- coef(Model.0)[2]
+            #A0 <- coef(Model.0)[3]
             # Fitting model
-            f <- as.formula(paste0("y ~ f_exp_kT(x, a0, a1, C, k, ",name.Temperature,")"))
-            if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-                Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE,
-                               control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001)
-            } else Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE, weights = wi, 
-                                  control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
+            Formula <- as.formula(paste0("y ~ f_exp_kT(x, a0, a1, C, k, ",name.Temperature,")"))
+            Starting.values <- list(a0 = unname(A0), a1 = unname(A1), C = unname(C0), k = unname(k0))
+            # Lower = c(0, 0.0000000001, 0, 0.00000000001)
+            if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE,
+                               control = nls.lm.control(maxiter = 1024, maxfev = 10000)) 
+            } else Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE, weights = wi, 
+                                  control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            # if (Unfit) 
             # display equations and R^2
-            Equation <- sprintf(paste0(Sensor_name, "Power: y = ",f_coef1,"+ ",f_coef2," x + exp(",f_coef2," T_Celsius + ", f_coef2,"), RMSE=",f_coef1,",AIC= %.1f"),
+            Equation <- sprintf(paste0(Sensor_name, "exp_kT: y = ",f_coef1,"+ ",f_coef2," x + ", f_coef2," exp(",f_coef2," T_Celsius), RMSE=", f_coef1,",AIC= %.1f"),
                                 coef(Model)[1],coef(Model)[2],coef(Model)[3],coef(Model)[4],
                                 sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                                 AIC(Model))
         } else  if (Mod_type == 'exp_kK') {
+            # Model in Kelvin RNO = a0 + a1 NO + C exp(k K)
             # Values for which log(DataXY$y - (A0 + A1 * DataXY$x)) can be calculated
             Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 0)
             # Model in Kelvin
             DataXY$Kelvin     <- 273.15 + DataXY$Temperature
-            Model.0 <- lm( log(y[Positives] - (A0 + A1 * x[Positives])) ~ Kelvin[Positives], data = DataXY)
-            C0 <- coef(Model.0)[1]
-            k0 <- coef(Model.0)[2]
-            f <- as.formula("y ~ f_exp_kT(x, a0, a1, C, k, Kelvin)")
-            if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-                Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE,
+            Formula <- as.formula(paste0("(y - A1 * x) ~ f_ExpGrowth(",name.Temperature,", C, k) + Y0"))
+            Starting.values <- list(C = 1, k = 0.13, Y0 = unname(A0))
+            Model.0 <- minpack.lm::nlsLM(Formula, data = DataXY[High.Temperature], start = Starting.values, model = TRUE,
+                                         control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            plot(DataXY[High.Temperature][[name.Temperature]], DataXY[High.Temperature,y], main = "Initial k0 value")
+            grid()
+            DataXY[High.Temperature, Predict := predict(Model.0, DataXY[High.Temperature][[name.Temperature]])]
+            lines(DataXY[High.Temperature, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[High.Temperature][[name.Temperature]])], col = "red")
+            # Model.0 <- lm( log(y[Positives] - (A0 + A1 * x[Positives])) ~ Kelvin[Positives], data = DataXY)
+            # C0 <- coef(Model.0)[1]
+            # k0 <- coef(Model.0)[2]
+            # Formula <- as.formula("y ~ f_exp_kT(x, a0, a1, C, k, Kelvin)")
+            if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE,
                                control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001)
-            } else Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE, model = TRUE, weights = wi,
+            } else Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE, model = TRUE, weights = wi,
                                   control = nls.lm.control(maxiter = 1024, maxfev = 10000)) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
             # display equations and R^2
             Equation <- sprintf(paste0(Sensor_name, "Power: y = ",f_coef1,"+ ",f_coef2," x + exp(",f_coef2," T_Kelvin + ", f_coef2,"), RMSE=",f_coef1,",AIC= %.1f"),
@@ -1087,18 +1544,17 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         A0 <- coef(Linear.Model)[1]
         A1 <- coef(Linear.Model)[2]
         # Transforming Celsius in Kelvin if needed
-        if (Mod_type == 'K_power') DataXY[, "Temperature"] <- 273.15 + DataXY[, "Temperature"]
+        if (Mod_type == 'K_power') DataXY[, "Out.Temperature"] <- 273.15 + DataXY[, "Out.Temperature"]
         # index of row with max temperature
         index.mdT <- which(DataXY$Temperature == max(DataXY$Temperature, na.rm = TRUE))[1]
-        A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (DataXY[index.mdT, "Temperature"])^1.75
+        A2 <- (DataXY[index.mdT, "y"] - (A0 + A1 * DataXY[index.mdT, "x"])) / (DataXY[index.mdT, "Out.Temperature"])^1.75
         # Fitting model
-        browser()
-        f <- as.formula("y ~ f_T_power(x, a0, a1, a2, n, Temperature)")
-        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+        Formula <- as.formula("y ~ f_T_power(x, a0, a1, a2, n, Temperature)")
+        if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- minpack.lm::nlsLM(y ~ f_T_power(x, a0, a1, a2, n, Temperature), data = DataXY, start = list(a0 = A0, a1 = A1, a2 = A2, n = 1.75), model = TRUE, 
                            control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                            lower = c(-Inf,-Inf,-Inf, 0.1), upper = c(+Inf, +Inf, +Inf, 5))
-        } else Model <- minpack.lm::nlsLM(f, data = DataXY, start = list(a0 = A0, a1 = A1,  a2 = A2, n = 1.75), model = TRUE, weights = wi,
+        } else Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = list(a0 = A0, a1 = A1,  a2 = A2, n = 1.75), model = TRUE, weights = wi,
                               control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                               lower = c(-Inf,-Inf,-Inf, 0.1), upper = c(+Inf, +Inf, +Inf, 5))
         # display equations and R^2
@@ -1110,17 +1566,17 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
                             sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (any(Mod_type %in% c('BeerLambert'))) {
         # Transforming Celsius in Kelvin
-        DataXY[, "Temperature"] <- 273.15 + DataXY[, "Temperature"]
+        DataXY[, "Out.Temperature"] <- 273.15 + DataXY[, "Out.Temperature"]
         # Setting Initial values
         #Linear.Model <- lm(y ~ x, data = DataXY)
-        DataXY$X <- DataXY[["x"]] * DataXY[["Temperature"]] / DataXY[["Atmospheric_pressure"]]
+        DataXY$X <- DataXY[["x"]] * DataXY[["Out.Temperature"]] / DataXY[["Out.Atmospheric_pressure"]]
         Linear.Model <- rq(y ~ X, data = DataXY, tau = c(0.5))
         A0 <- coef(Linear.Model)[1]
         A1 <- coef(Linear.Model)[2]
         # Fitting model
-        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+        if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- minpack.lm::nlsLM(y ~ f_BeerLambert2(x = x, a0 = a0, aT = aT, n = n, Temperature = Temperature, Atmospheric_pressure = Atmospheric_pressure), data = DataXY,
-                           start = list(a0 = A0, aT = mean(DataXY[["Temperature"]], na.rm = T), n = 1),
+                           start = list(a0 = A0, aT = mean(DataXY[["Out.Temperature"]], na.rm = T), n = 1),
                            model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                            lower = c(-Inf,-Inf,-Inf), upper = c(+Inf, +Inf, +Inf))
         } else Model <- minpack.lm::nlsLM(y ~ f_BeerLambert(x, a0, a1, a2, n, Temperature, Atmospheric_pressure), data = DataXY,
@@ -1290,7 +1746,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Equation <- sprintf(paste0(Sensor_name, "Cubic: y= ",f_coef1,"+",f_coef2,"x+",f_coef2,"x2+",f_coef2,"x3",",R2=",f_R2,",RMSE=", f_coef1,",AIC= %.1f"),
                             coef(Model)[1], coef(Model)[2], coef(Model)[3], coef(Model)[4], summary(Model)$r.squared, sqrt(sum(resid(Model)^2) / (length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'ExpDecayInc') {
-        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+        if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- minpack.lm::nlsLM(y~f_ExpDI(x,C,k), data = DataXY, start = list(C = max(y), k = 0.05), model = TRUE)
         } else {
             Model <- minpack.lm::nlsLM(y~f_ExpDI(x,C,k), data = DataXY, start = list(C = max(y), k = 0.05), weights = wi, model = TRUE)}
@@ -1369,7 +1825,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         #MU <- log(dimatro) che corrisponde al max dei counts
         #SIGMA <- coef(Linear.Model)[2]
         # Fitting model
-        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
+        if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- minpack.lm::nlsLM(y ~ f_Normal(x, mu, sigma), data = DataXY, start = list(mu = MU, sigma = SIGMA), model = TRUE)
         } else Model <- minpack.lm::nlsLM(y ~ f_Normal(x, mu, sigma), data = DataXY, start = list(mu = MU, sigma = SIGMA), model = TRUE, weights = wi)
     } else if (Mod_type == 'bi_Normal') {
@@ -1380,14 +1836,14 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     } else if (Mod_type == 'Kohler') {
         # Setting Initial values of Kohler Model
         Start <- list(a0 = 0, a1 = 1, K = 0.41)
-        Lower <- c(-50, 0.1, -1)
-        Upper <- c(+50, 5  , 2)
+        Lower <- c(-50, 0.1, 0)
+        Upper <- c(+50, 5  , 0.8)
         # Fitting model
-        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-            Model <- minpack.lm::nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = DataXY, start = Start, model = TRUE,
+        if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
+            Model <- minpack.lm::nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Out.Relative_humidity), data = DataXY, start = Start, model = TRUE,
                            control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                            lower = Lower, upper = Upper)
-        } else Model <- minpack.lm::nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Relative_humidity), data = Start, model = TRUE, weights = wi,
+        } else Model <- minpack.lm::nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Out.Relative_humidity), data = Start, model = TRUE, weights = wi,
                               control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                               lower = Lower, upper = Upper)
         # display equations and R^2
@@ -1401,11 +1857,11 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         Lower <- -5
         Upper <- 5
         # Fitting model
-        if (is.null(s_y ) || any(s_y == 0) || all(is.na(s_y))) {
-            Model <- minpack.lm::nlsLM(y ~ f_Kohler_only(x, K, RH = Relative_humidity), data = DataXY, start = Start, model = TRUE,
+        if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
+            Model <- minpack.lm::nlsLM(y ~ f_Kohler_only(x, K, RH = Out.Relative_humidity), data = DataXY, start = Start, model = TRUE,
                                        control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                                        lower = Lower, upper = Upper)
-        } else Model <- minpack.lm::nlsLM(y ~ f_Kohler_only(x, K, RH = Relative_humidity), data = Start, model = TRUE, weights = wi,
+        } else Model <- minpack.lm::nlsLM(y ~ f_Kohler_only(x, K, RH = Out.Relative_humidity), data = Start, model = TRUE, weights = wi,
                                           control = nls.lm.control(maxiter = 1024, maxfev = 10000),
                                           lower = Lower, upper = Upper)
         # display equations and R^2
@@ -1420,32 +1876,31 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
         op <- par(no.readonly = TRUE)
         # resuming the par values
         on.exit(par(op))
-        # settings the margins
-        if (is.null(marges)) {
-            Margin <- c(4,4,3,0.5)
-            par(mar = c(4,4,3,0.5))
-        } else {
-            Margin <- par("mar")
-        }
         #Define the limits of the graphs
         if (is.null(lim)) {
             Xrange <- c(min(x, na.rm = T), max(x, na.rm = T))
             Yrange <- c(min(y, na.rm = T), max(y, na.rm = T))
             lim = cbind(Xrange, Yrange)
         }
-        # plotting calibrationn lines without plotting axis
+        # settings the margins
+        if (!is.null(marges)) {
+            par(mar = marges)
+        } else if (all(c("mar12","mar34")%in% colnames(lim))) par(mar = c(lim[,"mar12"],lim[,"mar34"]))
+        # plotting calibration lines
+        if ("Xlim" %in% colnames(lim)) Xlim <- lim[,"Xlim"] else Xlim <- lim[,1]
+        if ("Ylim" %in% colnames(lim)) Ylim <- lim[,"Ylim"] else Ylim <- lim[,2]
+        if ("Xusr" %in% colnames(lim) && "Yusr" %in% colnames(lim)) par(usr = c(lim[,"Xusr"],lim[,"Yusr"]))
         if (Mod_type %in% c("Linear","Linear.Robust")) {
-            par(new = TRUE)
-            plot(DataXY$x, Model$fitted.values, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
+            abline(a = coef(Model)[1], b= coef(Model)[2], col = Couleur)
             if (Weighted) {
-                points(DataXY$x, DataXY$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
+                points(DataXY$x, DataXY$y, col = Couleur, xlim = Xlim, ylim = Ylim, xaxt = "n", yaxt = "n" , xlab = "", ylab = "")
                 par(new = TRUE)
-                arrows(DataXY$x, DataXY$y - DataXY$SD, DataXY$x, DataXY$y + DataXY$SD, length = 0.05, angle = 90, code = 3, col = Couleur)}
+                arrows(DataXY$x, DataXY$y - DataXY$s_y, DataXY$x, DataXY$y + DataXY$s_y, length = 0.05, angle = 90, code = 3, col = Couleur)}
         } else if (Mod_type %in% c('gam', 'Quadratic', 'Unitec', 'Sigmoid', 'Michelis', 'ExpDecayDec_Int', 'ExpDecayInc_Int', 'ExpDecayInc', 'Cubic')) {
             Estimated <- Estimated.y(DataXY$x, Model)
             Estimated <- Estimated[order(Estimated$x),]
             par(new = TRUE)
-            plot(Estimated$x,Estimated$y, col = Couleur, xlim = lim[,1], ylim = lim[,2], type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")}
+            plot(Estimated$x,Estimated$y, col = Couleur, xlim = Xlim, ylim = Ylim, type = "l",xaxt = "n", yaxt = "n" , xlab = "", ylab = "")}
         # Adding equation text
         if (!is.null(Equation)) mtext(Equation, line = line_position, adj = 1, padj = 0, col = Couleur, cex = 0.875)
         on.exit(par(op))} 
@@ -1454,7 +1909,7 @@ Cal_Line <- function(x, s_x, y, s_y, Mod_type,  Multi.File = NULL, Matrice=NULL,
     return(Model)
 }
 #================================================================CR
-### Function Measurement Function x = f(y) once Calibration function (y = f(x) of sensor is established e.g with Cal_Line
+### Meas_Function: Function Measurement Function x = f(y) once Calibration function (y = f(x) of sensor is established e.g with Cal_Line ====
 #================================================================CR
 Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL, Matrice = NULL) {
     # This function estimates the x value using a calibration model (Model)
@@ -1567,14 +2022,17 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
         #  yy <- Model$Coef[1] * (1-exp(-Model$Coef[2] * xx)) + Model$Coef[3]
         return(x)
     } else if (Mod_type == 'exp_kT_NoC') {
-        CovMod <- ifelse(is.null(covariates), "Temperature", covariates)
+        CovMod <- ifelse(is.null(covariates), "Out.Temperature", covariates)
         # model f_exp_kT: return( (y - (a0 + exp(k * Temperature)))/ a1) )
-        Estimated <- as.vector( (y - (Model$Coef[1] * exp(Model$Coef[3] * Matrice[, CovMod]))) / Model$Coef[2] )
+        Estimated <- as.vector( (y - (Model$Coef[1] * exp(Model$Coef[3] * Matrice[, CovMod]))) / Model$Coef[2] ) #  - Model$Coef[4]
+        # browser()
+        # T.biger.25 <- which(Matrice[, CovMod] > 25)
+        # if (length(T.biger.25) > 0) Estimated[T.biger.25] <- NA
         return(Estimated)
     } else if (Mod_type == 'exp_kT') {
-        CovMod <- ifelse(is.null(covariates), "Temperature", covariates)
-        # model f_exp_kT: return( (y - (a0 + exp(k * Temperature + C)))/ a1) )
-        Estimated <- as.vector( (y - (Model$Coef[1] + exp(Model$Coef[4] * Matrice[, CovMod] +  Model$Coef[3]))) / Model$Coef[2] )
+        CovMod <- ifelse(is.null(covariates), "Out.Temperature", covariates)
+        # model f_exp_kT: return( (y - (a0 + C exp(k * Temperature)))/ a1) )
+        Estimated <- as.vector( (y - (Model$Coef[1] + Model$Coef[3] * exp(Model$Coef[4] * Matrice[, CovMod]))) / Model$Coef[2] )
         return(Estimated)
     } else if (Mod_type == 'exp_kK') {
         # model f_exp_kT: return( (y - (a0 + C.exp(k * Temperature)))/ a1) )
@@ -1588,15 +2046,15 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
         return(as.vector((y - (Model$Coef[1] + Model$Coef[3] * (273.15 + Matrice$Temperature)^Model$Coef[4])) / Model$Coef[2]))
     } else if (Mod_type == 'BeerLambert') {
         # model T_power: return( (y - a0)/ a1 * Pressure / Temperature^a2)
-        #return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]] + Model$Coef[4]) / (273.15 + Matrice[["Temperature"]])^Model$Coef[3]))
-        return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Atmospheric_pressure"]]) / ((273.15 + Matrice[["Temperature"]])/Model$Coef[2])^Model$Coef[3]))
+        #return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Out.Atmospheric_pressure"]] + Model$Coef[4]) / (273.15 + Matrice[["Out.Temperature"]])^Model$Coef[3]))
+        return(as.vector((y - Model$Coef[1]) / Model$Coef[2] * (Matrice[["Out.Atmospheric_pressure"]]) / ((273.15 + Matrice[["Out.Temperature"]])/Model$Coef[2])^Model$Coef[3]))
     } else if (Mod_type == 'Kohler') {
         # model return C <- 1 + (K/1.65/(100/RH - 1)) return(a0 + a1 * (x /C))
-        C <- 1 + (Model$Coef[3]/1.65/(100/Matrice[["Relative_humidity"]] - 1))
+        C <- 1 + (Model$Coef[3]/1.65/(100/Matrice[["Out.Relative_humidity"]] - 1))
         return(as.vector((y - Model$Coef[1]) /(Model$Coef[2] * C)))
     } else if (Mod_type == 'Kohler_only') {
         # model return C <- 1 + (K/1.65/(100/RH - 1)) return((x /C))
-        C <- 1 + (Model$Coef[1]/1.65/(100/Matrice[["Relative_humidity"]] - 1))
+        C <- 1 + (Model$Coef[1]/1.65/(100/Matrice[["Out.Relative_humidity"]] - 1))
         return(as.vector(y / C))
     } else if (Mod_type == 'Michelis') {
         # model f_Michelis: return(Vmax*x/(km +x) + intercept)
@@ -1631,13 +2089,13 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
     }
 }
 #================================================================CR
-### MeasLinear: Function Measurement Function x = f(y) once the Linear Calibration function (y = f(x) of sensor is established e.g with Cal_Line
+### MeasLinear: Function Measurement Function x = f(y) once the Linear Calibration function (y = f(x) of sensor is established e.g with Cal_Line ====
 #================================================================CR
 MeasLinear <- function(x, ModLinear) {
     (x-coef(ModLinear)[1])/coef(ModLinear)[2]
 }
 #================================================================CR
-### MeasParab: Function Measurement Function x = f(y) once the Quadratic Calibration function (y = f(x) of sensor is established e.g with Cal_Line
+### MeasParab: Function Measurement Function x = f(y) once the Quadratic Calibration function (y = f(x) of sensor is established e.g with Cal_Line ====
 #================================================================CR
 MeasParab <- function(x, ModParab) {
     if (coef(ModParab)[2] > 0) {
@@ -1647,13 +2105,13 @@ MeasParab <- function(x, ModParab) {
     }
 }
 #================================================================CR
-### MeasSigmoid: Function Measurement Function x = f(y) once the Sigmoidal Calibration function (y = f(x) of sensor is established e.g with Cal_Line
+### MeasSigmoid: Function Measurement Function x = f(y) once the Sigmoidal Calibration function (y = f(x) of sensor is established e.g with Cal_Line ====
 #================================================================CR
 MeasSigmoid <- function(x, ModSigmoid) {
     (log((coef(ModSigmoid)[1]-coef(ModSigmoid)[4])/(x-coef(ModSigmoid)[4])-1)/(-coef(ModSigmoid)[2])+coef(ModSigmoid)[3])
 }
 #================================================================CR
-### Adjust: Function Measurement Function using reverse calibration
+### Adjust: Function Measurement Function using reverse calibration ====
 #================================================================CR
 Adjust <- function(model_type, datafr, model_cal, zero_limit, Zero_drift_frame) {
     for (g in 1:nrow(datafr)) {
@@ -1686,7 +2144,7 @@ Adjust <- function(model_type, datafr, model_cal, zero_limit, Zero_drift_frame) 
     return(datafr)
 }
 #================================================================CR
-### Function Significant numbers
+### sigdigss: Function to estimate Significant numbers ====
 #================================================================CR
 sigdigss <- function(n) {
     i <- 0
@@ -1723,7 +2181,7 @@ sigdigss <- function(n) {
     return(sigfigs)
 }
 #================================================================CR
-### Function to fit the best polynomial fitting (Vs > 151016)
+### polyfit: Function to fit the best polynomial fitting (Vs > 151016) ====
 #================================================================CR
 polyfit <- function(XY, i) {
     # The function returns the degree of the polynomila with first minimum of AIC for a set of n-1 degree polynomials with maximum degree i:
@@ -1742,7 +2200,7 @@ polyfit <- function(XY, i) {
     return(degre)
 }
 #================================================================CR
-### Function to calibrate from lab (Vs > 151016)
+### citytech_no2_o3_model_delta: Function to calibrate from lab (Vs > 151016)-not working, not finish, delete? ====
 #================================================================CR
 citytech_no2_o3_model_delta <- function(DRS_NO2_V, DRS_O3_V, DTemp, DRH, SO2_emep, Dtime,time, parameters) {
     # Author:Gabri
@@ -1836,7 +2294,7 @@ citytech_no2_o3_model_delta <- function(DRS_NO2_V, DRS_O3_V, DTemp, DRH, SO2_eme
     return <-Xres
 }
 #================================================================CR
-### Tables for Rmarkdown reporting(Vs 170428)
+### Tables for Rmarkdown reporting(Vs 170428) ====
 #================================================================CR
 Table_Reference <- function(df) {
     df <- df[,c("BeginDate", "date", "Step" , "O3f_ppb", "NO2f_ppb", "NOf_ppb", "COf_ppm", "SO2f_ppb", "Tempf", "RHf", "P_hPa", "Wind_Speed", "RHf.1", "Step")]
@@ -1959,269 +2417,9 @@ Table_1Effect <- function(df,Sensor_type,Compounds, Outliers, Table_Number) {
     table_data <- table_data[,-which(colnames(table_data) == "Ajust. R2")]
     return(table_data)
 }
+
 #================================================================CR
-### Functions for fiting distributions
-#================================================================CR
-#================================================================CR
-# Function probability distribution funtion for Log-Normal distribution 1 parameter
-#================================================================CR
-f_lnormal_1par <- function(epsilon, lambda, q, m) {
-    # epsilon: vector data for wwhich the log-normal distribution is fitted
-    # lambda: vector shape parameter
-    # q: lower limiting value
-    # m: median
-    return(
-        1/(sqrt(2*pi)*lambda*abs(epsilon-q)) * exp(-(log((epsilon-q)/(m-q)))^2/(2*lambda^2))
-    )
-}
-#================================================================CR
-# Function probability distribution funtion for Log-Normal distribution 2 parameters
-#================================================================CR
-f_lnorm_2Par <- function(x, mu, sigma) {
-    # x: vector data for wwhich the log-normal distribution is calculated
-    # mu: mean of the log of x
-    # x: standard devaition of the log of x)
-    # m: median
-    return(1/(sqrt(2* pi)*sigma*x) * exp(-(log(x)-mu)^2/(2*sigma^2)))
-}
-#================================================================CR
-# Function returning mode of a distribution
-#================================================================CR
-Mode <- function(x) {
-    ux <- unique(x)
-    ux[which.max(tabulate(match(x, ux)))]
-}
-#================================================================CR
-# Fitting distribution to data
-#================================================================CR
-Fitting_distrib <- function(Air_Pol, ug, coeff_ppb, Dist_xlab, Dist_range, BandWidth, band, distribution, to_fit, lamb, q) {
-    # fitting distribution manual Non Linear Regression based on the probability distribution funtion with only one parameter: the shape parameter
-    # Air_Pol: variable for which the densit function is calculated
-    # ug: if TRUE transform from ug/m3 to ppb or ppm if FALSE does not transform
-    # coeff_ppb: used if ug = TRUE: conversion factor to divide  ug/m3 to get ppb (ex 1.91 for NO2)
-    # Dist_xlab: Label of X axis of the distribution plot
-    # Dist_range: min and max value for the distribution plot - NO WE USE QUANTILE of 99 %
-    # BandWidth: if TRUE bandwidth is automatically estimated by the R's "density" function. if FALSE the coeff band is used (see below)
-    # band : USed if bandwith is FALSE, If 0 then bw is set to "nrd0" (see help of density function). If anoother values is passed, the bandwidth is set to this value
-    # distribution: type of distribution to be fitted: lognormal ...
-    # to_fit: if TRUE fitted with nls, if FALSE: not fitted - value lamb is used for the shape factor
-    # lamb: initial lambda value for the lognormal distribution
-    # q the limit of possible data of log normal distribution
-    # removing negative values of data
-    # Air_Pol <- subset(Air_Pol, Air_Pol >0)
-    # transforming in ppb
-    if (ug) Air_Pol <- Air_Pol/coeff_ppb
-    #-----------------------------------CR
-    # calculating the reference density
-    #-----------------------------------CR
-    if (BandWidth == TRUE) {
-        # calculating the band width of reference distribution
-        h <- density(Air_Pol, kernel="gaussian")$bw
-        # calculating weight that are higher at 0
-        print(sprintf("Best bandwidth = %.3f", h), quote = FALSE)
-        d_Air_Pol<- density(Air_Pol, bw = h, adjust = 1 , kernel = "gaussian", na.rm = TRUE) # returns the density data
-    }
-    else {
-        if (band == 0) {
-            d_Air_Pol<- density(Air_Pol, bw = "nrd0", adjust = 1 , kernel = "gaussian", na.rm = TRUE) # returns the density data
-            h <- d_Air_Pol$bw
-        }
-        else {
-            d_Air_Pol<- density(Air_Pol, bw = band, adjust = 1 , kernel = "gaussian", na.rm = TRUE) # returns the density data
-            h <- d_Air_Pol$bw
-        }
-    }
-    print(sprintf("Bandwith : %.6f",h))
-    #-----------------------------------CR
-    # Subtracting the minimum d_Air_Pol$x if negative - Defining "Air_Pol_final"
-    #-----------------------------------CR
-    if (min(d_Air_Pol$x, na.rm = T)<-10000) {
-        Air_Pol_final <- Air_Pol - min(d_Air_Pol$x, na.rm = T) + 0.0001
-        print(sprintf("minmum x_density: %.3f was subtracted",min(d_Air_Pol$x, na.rm = T)))
-        d_Air_Pol<- density(Air_Pol_final, bw = h, adjust = 1, kernel = "gaussian", na.rm = TRUE) # returns the density data
-        print(sprintf("minmum x_density: %.3f",min(d_Air_Pol$x, na.rm = T)))
-    }
-    else {
-        print(sprintf("minmum x_density: %.1f was not added",min(d_Air_Pol$x, na.rm = T)))
-        Air_Pol_final <- Air_Pol # do not add anything becasue the minimum value is not negative
-    }
-    #-----------------------------------CR
-    ## density plot of d_Air_Pol - one parameter - reference density plot
-    #-----------------------------------CR
-    par(mar=c(5, 0.5, 0, 0.5))
-    plot(d_Air_Pol, xlim = c(min(0,d_Air_Pol$x, na.rm = T),quantile(Air_Pol, probs = 0.98)), xlab = Dist_xlab, ylab = "", main = "", cex.lab=3, cex.axis=2.5)
-    polygon(c(min(d_Air_Pol$x, na.rm = T),d_Air_Pol$x,quantile(Air_Pol, probs = 0.98)), c(0,d_Air_Pol$y,0), col="red", border="blue")
-    #-----------------------------------CR
-    # calculating the Mode of the data variable
-    ## with the Fit of a log-normal distribution With MASS function fitdistr
-    #-----------------------------------CR
-    f_MASS <- fitdistr(Air_Pol_final, "log-normal")
-    coef(f_MASS)
-    M <- lnormMode(meanlog = coef(f_MASS)['meanlog'], sdlog = coef(f_MASS)['sdlog']) # need package modeest
-    #transforamtion in log
-    Log_Air_Pol_final <- log(Air_Pol_final)
-    #-----------------------------------CR
-    ## Histogram and density plots for the 2 parameters Lognormal distribution
-    #-----------------------------------CR
-    hist(Log_Air_Pol_final)
-    mu <- coef(f_MASS)['meanlog']
-    sigma <- coef(f_MASS)['sdlog']
-    x <- seq( min(Air_Pol_final, na.rm = T), quantile(Air_Pol_final,probs = 0.98), length.out=250)
-    y <- f_lnorm_2Par(x,mu,sigma)
-    par(mar=c(5, 0,0, 0))
-    plot(x,y, xlim = c(min(0,x,na.rm = T),max(x,na.rm = T)), xlab = Dist_xlab, ylab = "", main = "", type = "l", cex.lab=3, cex.axis=2.5)
-    polygon(c(min(x),x,max(x)), c(0,y,0), col="red", border="blue")
-    abline(v = M, lwd =2, col = "Black")
-    print(sprintf("Mu (mean of log): %.3f", mu), quote = FALSE)
-    print(sprintf("Sigma (sd of log): %.3f",sigma), quote = FALSE)
-    print(sprintf("Mode: %.3f",exp(mu-sigma^2)), quote = FALSE)
-    print(sprintf("Median: %.3f",median(x)), quote = FALSE)
-    print(sprintf("u (adding the mode): %.3f",sqrt(exp(mu+1/2*sigma^2)^2 + exp(2*(mu+sigma^2)) - exp(2*mu+sigma^2))), quote = FALSE)
-    # median
-    m <- median(Air_Pol_final)
-    #-----------------------------------CR
-    # Fitting Distribution of NASA
-    #-----------------------------------CR
-    # if (distribution == "lognormal") {
-    #
-    #     # Estimating the Mode as the maximum of the density function - Document NASA
-    #     M <- mlv(Air_Pol_final, method = "parzen", bw = h)
-    #     # Preparing data for fitting the distribution without NA and negative values, adding weights according to distance from 0 to promote data at 0
-    #     DataXY <- na.omit(data.frame(cbind(d_Air_Pol$y, d_Air_Pol$x, d_Air_Pol$y^-1)))
-    #     colnames(DataXY) <- c('referenceY','x_to_fit', "w")
-    #     DataXY$W <- d_Air_Pol$y^-1 / sum(d_Air_Pol$y^-1)
-    #     # Fitting the distribution with non linear regression for NO2
-    #     # initial value of lambda = 1.0
-    #     if (to_fit) {
-    #         fitted_Distribution <- nls(referenceY ~ f_lnormal_1par(x_to_fit, lambda, q, m)
-    #                                    , data=DataXY, start=list(lambda = coef(f_MASS)['sdlog'])) # start=list(lambda = lamb)
-    #         lambda <- coef(fitted_Distribution)
-    #     }
-    #     else {
-    #         lambda <- lamb
-    #     }
-    #     DataXY$Fitted <- f_lnormal_1par(DataXY$x_to_fit, lambda, q, m)
-    #     # if NA are created:
-    #     DataXY <- na.omit(DataXY)
-    #
-    #     #-----------------------------------CR
-    #     # calculating the Mode of the data variable
-    #     ## with the Fit of a log-normal distribution With MASS function fitdistr
-    #     #-----------------------------------CR
-    #     f_MASS <- fitdistr(Air_Pol_final, "log-normal")
-    #     coef(f_MASS)
-    #     M <- lnormMode(meanlog = coef(f_MASS)['meanlog'], sdlog = coef(f_MASS)['sdlog']) # need package modeest
-    #     # Plotting f_MASS
-    #     par(mar=c(5, 0.5, 0, 0.5))
-    #     curve(dlnorm(x, meanlog = coef(f_MASS)["meanlog"], sdlog = coef(f_MASS)["sdlog"]), from = 0, to = quantile(Air_Pol_final, probs = 0.98)
-    #           , xlab = Dist_xlab, ylab = ""
-    #           , main = "",cex.lab=3, cex.axis=2.5)
-    #     abline(v = M, lwd =2, col = "Black")
-    #     par(new=T)
-    #
-    #     # Printing characteristics of the lognormal distribution
-    #     print(sprintf('Mode: M = %.3f', M), quote = FALSE)
-    #     print(sprintf('Median: m = %.3f', m), quote = FALSE)
-    #     print(sprintf('Lower limit of possible values: q = %.3f', q), quote = FALSE)
-    #     print(sprintf('Shape factor: Lambda = %.4f',  lambda), quote = FALSE)
-    #     print(sprintf('Standard uncertainty: u = %.3f',  sqrt(M^2 + (abs(m+q) * exp(lambda^2) * sqrt(exp(lambda^2-1)))^2), quote = FALSE))
-    #     # plotting the refrence distribution and fittecd one
-    #     print(sprintf('Max reference %.1f, max fitted %.1f', max(DataXY$referenceY), max(DataXY$referenceY,DataXY$Fitted)), quote = FALSE)
-    #     ## density plot of d_Air_Pol - one parameter - reference density plot
-    #     par(mar=c(5, 0.5, 0, 0.5))
-    #     Ylim <- c(0, quantile(Air_Pol_final, probs = 0.98))
-    #     plot(DataXY$x_to_fit, DataXY$referenceY
-    #          , type = "l"
-    #          , xlim = c(min(0,d_Air_Pol$x),quantile(Air_Pol, probs = 0.98))
-    #          , ylim = Ylim
-    #          , xlab = Dist_xlab, ylab = ""
-    #          , main = "",cex.lab=3, cex.axis=2.5)
-    #     polygon(c(min(DataXY$x_to_fit),DataXY$x_to_fit,max(DataXY$x_to_fit)), c(0,DataXY$referenceY,0), col="red", border="blue")
-    #     lines(DataXY$x_to_fit, DataXY$Fitted ,
-    #           xlim = Dist_range,
-    #           ylim = c(min(0,d_Air_Pol$x),quantile(Air_Pol, probs = 0.98)),
-    #           xlab = Dist_xlab,
-    #           ylab = "",
-    #           lwd =2,
-    #           col = "Blue"
-    #     )
-    #     abline(v = M, lwd =2, col = "Black")
-    # }
-    #return(lambda)
-    return(c(m, M,sqrt(exp(mu+1/2*sigma^2)^2 + exp(2*(mu+sigma^2)) - exp(2*mu+sigma^2))))
-}
-#================================================================CR
-### Fitting the distribution to data
-#================================================================CR
-Fit_Hist <- function(Air_Pol, ug, coeff_ppb, Dist_range, bins, distribution, to_fit, Dist_xlab) {
-    # fitting distribution manual Non Linear Regression based on the probability distribution funtion with only one parameter: the shape parameter
-    # data: variable for whcih the densit function is calculated
-    # ug: if TRUE transform from ug/m3 to ppb or ppm if FALSE does not transform
-    # coeff_ppb: used if ug = TRUE: conversion factor to divide  ug/m3 to get ppb (ex 1.91 for NO2)
-    # Dist_range: min and max value for the distribution plot and histogram
-    # bins: number of breaks in the histogram
-    # distribution: type of distribution to be fitted: lognormal ...
-    # to_fit: if TRUE fitted with nls, if FALSE: not fitted
-    # Dist_xlab: Label of X axis of the distribution plot
-    # removing negative values of data - No we do not do it
-    # Air_Pol <- subset(Air_Pol, Air_Pol >0)
-    # transforming in ppb
-    if (ug) Air_Pol <- Air_Pol/coeff_ppb
-    # calculating the reference histrogram
-    par(mar=c(5, 2,0, 0))
-    histogram = hist(Air_Pol, breaks = bins, xlim =c(mini,maxi),xlab = Dist_xlab, ylab = "", main = "", cex.lab=3, cex.axis=2.5)
-    # histogram <- subset(histogram, histogram$mids>0) # removing the negative values
-    ## density plot for the 2 parameters lognormal distribution
-    Log_Air_Pol <- log(Air_Pol)
-    mu <- mean(Log_Air_Pol)
-    sigma <- sd(Log_Air_Pol)
-    x <- seq( min(Air_Pol, na.rm = T), max(Air_Pol), length.out=250)
-    y <- f_lnorm_2Par(x,mu,sigma)
-    par(mar=c(5, 2, 0, 0))
-    plot(x, y, xlim = c(min(0,x),max(x, na.rm = T)), xlab = Dist_xlab, ylab = "", main = "", type = "l", cex.lab=3, cex.axis=2.5)
-    polygon(c(min(x, na.rm = T),x,max(x, na.rm = T)), c(0,y,0), col="red", border="blue")
-    print(sprintf("Mu (mean of log): %.1f", mu), quote = FALSE)
-    print(sprintf("Sigma (sd of log): %.1f",sigma), quote = FALSE)
-    print(sprintf("Mode: %.1f",exp(mu-sigma^2)), quote = FALSE)
-    print(sprintf("Median: %.1f",median(Air_Pol)), quote = FALSE)
-    print(sprintf("u (adding the mode): %.1f",sqrt(exp(mu-sigma^2)^2 + exp(2*(mu+sigma^2)) - exp(2*mu+sigma^2))), quote = FALSE)
-    # Fitting Distribution
-    if (distribution == "lognormal") {
-        # Preparing data for fitting the distribution without NA and negative values, adding weights according to distance from 0 to promote data at 0
-        DataXY <- na.omit(data.frame(cbind(histogram$density, histogram$mids)))
-        colnames(DataXY) <- c('referenceY','x_to_fit')
-        # Fitting the distribution with non linear regression with initial values of mu and sigma
-        if (to_fit) {
-            fitted_Distribution <- nls(referenceY ~ f_lnormal_2par(x_to_fit, m, s)
-                                       , data=DataXY, start=list(m = mu, s = sigma))
-            mu <- coef(fitted_Distribution)[1]
-            sigma <- coef(fitted_Distribution)[2]
-        }
-        else {
-            mu <- mean(Log_Air_Pol)
-            sigma <- sd(Log_Air_Pol)
-        }
-        DataXY$Fitted <- f_lnormal_2par(DataXY$x_to_fit, mu, sigma)
-        # if NA are created:
-        DataXY <- na.omit(DataXY)
-        # calculating the Mode of the data variable
-        M <-  exp(mu - sigma^2)
-        # Printing characteristics of the lognormal distribution
-        # plotting the refrence distribution and fittecd one
-        print(sprintf('Max reference %.1f, max fitted %.1f', max(DataXY$referenceY), max(DataXY$referenceY,DataXY$Fitted)), quote = FALSE)
-        plot(DataXY$x_to_fit, DataXY$referenceY
-             , type = "l"
-             , xlim = Dist_range, ylim = c(0, max(DataXY$referenceY,DataXY$Fitted))
-             , xlab = Dist_xlab, ylab = ""
-             , main = "",cex.lab=3, cex.axis=2.5)
-        lines(DataXY$x_to_fit, DataXY$Fitted , xlim = Dist_range, ylim = c(0, max(DataXY$referenceY,DataXY$Fitted)), xlab = Dist_xlab, ylab = ""
-        )
-        abline(v = M, col = 2)
-    }
-    return(fitted_Distribution)
-}
-#================================================================CR
-### change names of files
+### change names of files ====
 ### see http://stackoverflow.com/questions/10758965/how-do-i-rename-files-using-r#10759083
 #================================================================CR
 umxRenameFile <- function(baseFolder = "Finder", Missing = FALSE, findStr = NA, missingStr = NA, replaceStr = NA
@@ -2288,7 +2486,7 @@ umxRenameFile <- function(baseFolder = "Finder", Missing = FALSE, findStr = NA, 
     message("changed ", changed)
 }
 #================================================================CR
-### Function checking if a value is within a range
+### Function checking if a value is within a range ====
 #================================================================CR
 is.between <- function(x, mini, maxi) {
     ## This function check if the value x is found within a and b.
@@ -2299,7 +2497,7 @@ is.between <- function(x, mini, maxi) {
     (x - mini)  *  (maxi - x) > 0
 }
 #================================================================CR
-### Function loading an RData file and returning it into a variable
+### Function loading an RData file and returning it into a variable ====
 #================================================================CR
 loadRData <- function(fileName) {
     ## This function loads an RData file and returns it into a variable
@@ -2310,13 +2508,7 @@ loadRData <- function(fileName) {
     load(fileName)
     get(ls()[ls() != "fileName"])
 }
-#================================================================CR
-### 170609 MG : ASEPanel04File Looking for the sensor config file --> 180118 transfered to Function4ASE.R
-#================================================================CR
-#================================================================CR
-### 170609 MG : ASEPanel04Read Reading the sensor config file     --> 180118 transfered to Function4ASE.R
-#================================================================CR
-# transform NaN into Na
+# transform NaN into Na ====
 nan.to.na <- function(x) {x[which(is.nan(x))] <- NA; return(x)}
 #================================================================CR
 # Checking if there are coordinates for the reference data separated by a comma and project if needed
@@ -2355,21 +2547,19 @@ get_Coord.Ref  <- function(Coordinates.chr, ShinyUpdate = False, session = NULL,
         return(paste0(Ref.coord_LON, ",", Ref.coord_LAT))
     } else {
         cat("[get_Coord.Ref] ERROR Coordinates are not comma separated")
-        return(paste0(NA,NA))
-    }
-}
+        return(paste0(NA,NA))}}
 #================================================================CR
-# Aggreation of time series in dataframe
+# Aggreation of time series in dataframe ====
 #================================================================CR
 DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60, keyDate = "date", SameClass = NULL) {
     # Use data.table to average a data frame
-    # DF            : dataframe to be aggregated, shall include the PosixCT column "date" (default), or another name of POSIXct column on which to aggregate
-    # Cols.for.Avg  : vector of charaters, default NULL. If not NULL the  columns Cols.for.Avg and "date" are returned
+    # DF            : data.table or dataframe to be aggregated, shall include the PosixCT column "date" (default), or another name of POSIXct column on which to aggregate
+    # Cols.for.Avg  : character vector, default is NULL. If not NULL the columns Cols.for.Avg in DF and "date" are returned
     # width         : numeric, default is 60. Size in minutes of the window used for averaging
     # keyDate       : chr, defalt "date, name of the column of DF which hold the POSIXct on which
     #
     # return        : aggregated data.table starting on the first full hour discarding empty rows and transforming nan to na
-    # Previous code used timeAverage and later RcppRoll::roll_mean whcih but needed to complete dataframes with all date.
+    # Previous code used timeAverage and later RcppRoll::roll_mean which but needed to complete dataframes with all date.
     # We use now data.table which is faster
     # checking the size of window, at least two times the width
     if (exists("DF") && !is.null(DF) && nrow(DF) > width * 2) {
@@ -2379,6 +2569,7 @@ DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60, keyDate = "date", SameCl
             DF <- DF[,Columns, with = FALSE]
         }
         if (is.data.table(DF)) {
+            #if (!haskey(DF)) setkey(DF, "date")
             DF[, Agg := lubridate::ceiling_date(DF[[keyDate]], unit = ifelse(width <= 60, paste0(width,"minute"), paste0(width/60, "hour")))]
             DF[, (keyDate) := NULL]
             data.table::setnames(DF, c("Agg"), keyDate)

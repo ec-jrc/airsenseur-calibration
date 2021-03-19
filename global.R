@@ -84,7 +84,7 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # file extension file_ext                                               --> tools
 # Projection of coordinates for leaflet                                 --> OSMscale
 # inserting rows with NAs in a dataframe                                --> berryFunctions
-# library for fastin moving average calculations                        --> RcppRoll
+# library for fast moving average calculations                          --> RcppRoll
 # parallel computing                                                    --> foreach
 # parallel computing Linux or windows                                   --> doParallel
 # Rolling mad and median                                                --> caTools, stats
@@ -93,6 +93,10 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # package needed to install Github rundel/timezone                      --> proj4
 # matrix statistic,e.g., colMedian, rowMedian etc                       --> matrixStats
 # where() to look for environment                                       --> pryr
+# ctest for Heteroskedacity                                             --> skedastic
+# Deming regression, standard uncertainty of slope and intercept        --> car
+# Deming regression model                                               --> MethComp
+
 list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broomExtra"      , "stringi"         ,
                    "lubridate"       , "zoo"             , "xts"             ,"matrixStats"      , "pryr"            ,
                    "futile.options"  , "lambda.r"        , "futile.logger"   , "geosphere"       ,
@@ -104,7 +108,7 @@ list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"d
                    "OSMscale"        , "berryFunctions"  ,
                    "RcppRoll"        , "foreach"         , "doParallel"      ,
                    "caTools"         , "weathermetrics"  , "colorspace"      , "backports"       , "raster"          ,
-                   "proj4")
+                   "proj4"           , "skedastic"       , "car"             , "MethComp")
 # if error on plyr then type install.packages("plyr") at the console
 list.packages.github <- c("52North/sensorweb4R", "rundel/timezone")
 cat("-----------------------------------------------------------------------------------\n")

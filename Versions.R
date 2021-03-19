@@ -1,28 +1,39 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
-# New release V0.22, 2020-09-24
-#             E99 - bug correction: When cloning an ASE box, the name of box was not updated in ASE_Server.cfg and the calibration models used  within ASE.cfg where not exported. 
-#                                   Corrected using function Create_ASE
-#            E100 - Bug correction: the App crashes if there are no Reference data. Corrected Ref$Data sets to NULL if there are no reference data
-#            N138 - Warming time is now detected with function Warm_Index() that try to use the Board registry of ASE box if available (>faster)
-#            E101 - Bug correction: in influx.downloadAndPredict() + Apply_Mode(), Identify_ASE(), Identify_ASE_Dir(), Complete_General() avoiding repetition of unnecessary 
-#                                   filtering of sensors and reference data. It is now much faster. I also deleted setwd() step to avoid an error if the code is stopped 
-#                                   in the middle of function influx.downloadAndPredict().
-#              E4 - Bug correction: It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user.
-#                                   With the help of Eike, I try using a combination of interactive(), rstudioapi::getActiveDocumentContext() and manual setting.
+# New release V0.23, released 2021-03-19
+#            E102 - bug correction: In the ASE_App: absolute humidity and Td_deficit were computed using the unfiltered temperature and humidity: Corrected now the filtered temperature and humidity are used
+#            E103 - bug correction: in Function influx.downloadAndPredict(), absolute humidity and Td_deficit uses the unfiltered temperature and humidity. 
+#                                   The computation is moved to after filtering of sensor data. Corrected
+#            E104 - bug correction: absolute humidity and Td_deficit are no more computed in GENERAL() since it is necessary to wait for filtering of temperature and relative humidity.
+#                                   absolute humidity and Td_deficit are added now in Complete_General() after filtering.
+#            E105 - bug correction: all calibration functions which used temperature, humidity and atmospheric parameters did not used the filtered parameters. Now solved.
+#            E106 - bug correction: Temperature_int and Relative_humidty_int are not filtered when used as covariates for calibration. They are now added to the list of sensors to calibrate.
+#                                   When adding these sensors in ASE.cfg and ASE_SETTIME.cfg using buttons "ADD" and then "Save Config of sensors" there was a bug crashing the App if sensor 
+#                                   were added and RhandsomeTable were modified at the same time. Corrected.
+#             E69 - bug correction: There is a problem with the color scale of concentration levels of the Target Diagram
+#                                   In Target.Diagram(), the color scale was not using the correct color value in Mat, the label 2(b0/xi) was not correctly located when b0 < 0, 
+#                                   the estimation of negative or positive bias label was incorrect. Use of function Get.DQO for DQO, LV, UAT ... All corrected.
+#            E108 - bug correction: in Check_Download an error occurs when looking for the table ASE_cast in airseneur.db if the size 0kb, for example after un crash when creating airsenseur.db. Solved
+#             E26 - bug correction: It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after 
+#                                   the detection of outliers and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
+#                                   This has been solved since a long time, I forgot to cancel it
+#            N139 - Change in the file General.csv that does not save anymore the filtered columns: OUt.Warm, Out.Warm.TRh, Out.Invalid, Out.Neg and _DV columns in order to decrease the file size ( - 55 % in size)
+#            N140 - A new function Upload2Influx has been created to upload claibrated data to InfluxDB server.
+#            N141 - a set functions for the automatic calibration have been developed see Compare.Model.R (Auto.cal ...)
+#            N142 - Change in the number of iterations for filtering outliers of sensor and reference data: it cannot be over 4 and less than 1 unless filtering is disabled
+#              E6 - bug correction: General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA. Change substraction to V or nA
+#                   Since x_DV variables are no more used, this bug is discarded.
+#            N143 - Reading of airsenseur.db is now carried out in parallel computing with 4 cores to spped up sql2df
+#            N144 - Creation of scripts for the automatic calibration and visualisation of sensor data on InfluxDB: Compare_Model.R, Cloning_ASE_Boxes.R, 
+#                   Set_Proxy_FALSE.R, Update_Influx.R and grafana dashboards Maps_calibrated.JSON and Dashboard_with_Reference.JSON
 # BUG CORRECTIONS
-#              E6 - General.conv(): x_DV Values are converted in volt or nA by substracting the zero.Board in Volt? This is an error if the conversion is carried out in nA.
-#                   Change substraction to V or nA
-#             E26 - It seems that the detection of invalid data is not performed automatically when the file ind.Invalid.file does not exist or that it is performed after the detection of outliers
-#                   and hence not applied to DF$General. You can check on the mainTabPanel PlotFiltering - Invalid data appear.
-#             E36 - Some of the Spin Loaders keep on spining after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
+#             E36 - Some of the Spin Loaders keep on spinning after updating of the plots. Others do not realized when they receive the updated plots and do not display them. Have a look.
 #             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instead of the data series ime zone ("UTC") when discarding values.
-#             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the startvalues
-#             E69 - there is a problem with the color scale of concentration levels of the Target Diagram
+#             E60 - When calibrating NO2-B43F with a multilinear model including ExpGrowth of temperature and linear effect of humidity, the model fitting crash. IT is likely due to the start values
 #             E70 - In some cases when selecting a new minimum Valid date, the date for covariates, calibration, prediction and reference outlier is wrongly updated
 #             E75 - When selecting a 2nd AirSensEUR box, it seems that it is not possible to merge the new ASE data, please check
-#             E79 - The button to export the Rmardown report does not work
+#             E79 - The button to export the Rmarkdown report does not work
 #             E89 - The date interval to be selected for the download of SOS reference data is hidden. By default the start date is the last available dates in RefData and the end date is the current date.
 #             E90 - Time of DYGraph are given in local time
 # NEW FEATURES needed:----
@@ -58,6 +69,16 @@
 #            N108 - Allow to select only data with GPStimestamp and GPS coordinates
 #            N133 - use the information in the new version of AirSensEUR regarding reset to filter data for warming time
 #            
+# New release V0.22, 2020-09-24
+#             E99 - bug correction: When cloning an ASE box, the name of box was not updated in ASE_Server.cfg and the calibration models used  within ASE.cfg where not exported. 
+#                                   Corrected using function Create_ASE
+#            E100 - Bug correction: the App crashes if there are no Reference data. Corrected Ref$Data sets to NULL if there are no reference data
+#            N138 - Warming time is now detected with function Warm_Index() that try to use the Board registry of ASE box if available (>faster)
+#            E101 - Bug correction: in influx.downloadAndPredict() + Apply_Mode(), Identify_ASE(), Identify_ASE_Dir(), Complete_General() avoiding repetition of unnecessary 
+#                                   filtering of sensors and reference data. It is now much faster. I also deleted setwd() step to avoid an error if the code is stopped 
+#                                   in the middle of function influx.downloadAndPredict().
+#              E4 - Bug correction: It seems that the detection of directory from where the script is run detected using function Script_Dir() does not allways works, it should be made transparent for user.
+#                                   With the help of Eike, I try using a combination of interactive(), rstudioapi::getActiveDocumentContext() and manual setting.
 # New release V0.21, 2020-09-21
 #            N134 - When using button Ready SOS. the App check that all calibration models exist.
 #            N135 - insert function TRH_index into the App in order to simplify coding

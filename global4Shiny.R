@@ -55,6 +55,7 @@ futile.logger::flog.info("[Global4Shiny] List of packages needed to run the Shin
 # Rmarkdown report                                                      --> formattable, flextable, pandoc, captioner, kableExtra
 # unzip                                                                 --> utils
 # Automatic determination of the starting directory                     --> kimisc
+# Plotting color scale of Target.Dagram                                 --> plotrix
 #
 # Manca rgdal?
 #
@@ -67,7 +68,8 @@ list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "
                    "htmlwidgets"     , "webshot"         , 
                    "GGally"          , "plotly"          , "maptools"        , "raster"          , "rgeos"           ,
                    "rmarkdown"       , "xtable"          , "knitr"           ,
-                   "formattable"     , "flextable"       , "pander"          , "captioner"       , "kableExtra")
+                   "formattable"     , "flextable"       , "pander"          , "captioner"       , "kableExtra"      ,
+                   "plotrix")
 # Install PhatomJS Should be done only ONCE - add a test for this, see https://groups.google.com/forum/#!topic/phantomjs/3IUqGG31imI
 # https://www.rdocumentation.org/packages/webshot/versions/0.5.1/topics/install_phantomjs
 #webshot::install_phantomjs(version = "2.1.1", baseURL = "https://github.com/wch/webshot/releases/download/v0.3.1/")
