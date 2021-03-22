@@ -13,6 +13,7 @@ Project     <- "Federico"
 DIR_General <- "General_data"
 DIR_Config  <- "Configuration"
 DIR_Results <- "Results"
+List.ASE    <- "424A56"
 
 # Load packages ----
 # Installing package librarian to install and load packages from CRAN, github and bio conductor in 1 line
