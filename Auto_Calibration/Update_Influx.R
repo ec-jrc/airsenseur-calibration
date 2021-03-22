@@ -63,7 +63,7 @@ Essai <- foreach(i = 1:length(List.ASE), .verbose = T, .combine = c) %dopar% {
     ASE.Download <- influx.downloadAndPredict(boxName = List.ASE[i], Project = Project, boxConfig = boxConfig, Add.Ref = ifelse(i==1,TRUE,FALSE))
     
     # uploading calibrated data to InfluxDB
-    Upload2Influx(WD, Project, List.ASE = List.ASE[i], User = "jrcuser", Pass = "jrcasdatabase", DIR_Config = DIR_Config, DIR_General = DIR_General, DIR_Results = DIR_Results,
+    Upload2Influx(WD, Project, List.ASE = List.ASE[i], User = "jrcuser", Pass = "", DIR_Config = DIR_Config, DIR_General = DIR_General, DIR_Results = DIR_Results,
                   General.DT = ASE.Download$data, SetTime = ASE.Download$timeConfig, Filter.Ref = ifelse(i==1,TRUE,FALSE),
                   Ref_Analysers = data.table(variable    = c("Ref.CO_ppm", "Ref.NO", "Ref.NO2", "Ref.NOx","Ref.O3", "Ref.SO2","Ref.CO2" , "Ref.PM10", "Ref.PM2.5", "ref.PM1","Ref.Temp"),
                                              name.sensor = c("APMA-370"  , "42i"   , "42i"    , "42i"    ,"49i"   , "43i"    , "Picarro", "FIDAS"   , "FIDAS"    , "FIDAS", "")))
