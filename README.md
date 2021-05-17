@@ -6,6 +6,3 @@ Licensed under the EUPL, Version 1.2 or subsequent versions of the EUPL (the "Li
 Authors
 - Michel Gerboles, michel.gerboles@ec.europa.eu; Laurent Spinelle, Laurent.SPINELLE@ineris.fr, Alexander Kotsev, alexander.kotsev@ec.europa.eu and Federico Karagulian, federico.karagulian@ec.europa.eu - European Commission - Joint Research Centre, and
 - Marco Signorini, marco.signorini@liberaintentio.com
-
-
-# Please start by reading Version.R and since version 0.17 all ASE boxes directories shall be moved to ../ASE_Boxes
