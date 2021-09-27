@@ -41,7 +41,7 @@ if (!file.exists(c(DisqueSensToolBox))) {
 #----------------------------------------------------------------CR
 # 1.c Sourcing SensorToolBox and Functions4AES.R----
 #----------------------------------------------------------------CR
-futile.logger::flog.info(paste0("[Global] sourcing 151016 Sensor_Toolbox.R and Funtions4ASE.R"), sep = ".")
+futile.logger::flog.info(paste0("[Global] sourcing 151016 Sensor_Toolbox.R and Funtions4ASE.R"))
 # Loading SensorToolBox
 source(DisqueSensToolBox)
 remove(DisqueSensToolBox)
@@ -76,6 +76,7 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # crating polynomial for solving the cubic equation                     --> polynom
 # correlation matrix                                                    --> Hmisc
 # Variance Inflation Factors vif()                                      --> HH
+# Sign.test to check if covariates of Models are significants           --> BSDA
 # To read the airsenseur.db SQLite database                             --> RSQLite, sqldf, RODBC, jsonlite
 # To get the time zone using the ggogle API in Down_Influx and for later
 # github package threadr                                                --> RJSONIO,  XML
@@ -96,19 +97,21 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # ctest for Heteroskedacity                                             --> skedastic
 # Deming regression, standard uncertainty of slope and intercept        --> car
 # Deming regression model                                               --> MethComp
+# Robust algoritm A, ISO 5725                                           --> MetRology
+# parallel computing                                                    --> future.apply
 
 list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broomExtra"      , "stringi"         ,
                    "lubridate"       , "zoo"             , "xts"             ,"matrixStats"      , "pryr"            ,
                    "futile.options"  , "lambda.r"        , "futile.logger"   , "geosphere"       ,
                    "curl"            , "RCurl"           , "httr"            , "devtools"        , "processx"        , "sp"              ,
-                   "quantreg"        , "minpack.lm"      , "limSolve"        , "mgcv"            , "polynom"         , "Hmisc"           , "HH"               ,
+                   "quantreg"        , "minpack.lm"      , "limSolve"        , "mgcv"            , "polynom"         , "Hmisc"           , "HH"               , "BSDA"             ,
                    "RSQLite"         , "sqldf"           , "jsonlite"        , #"RODBC"           ,
                    "RJSONIO"         , "XML"             ,
                    "BMS"             , "rlist"           , "tools"           , "stringr"         ,
                    "OSMscale"        , "berryFunctions"  ,
                    "RcppRoll"        , "foreach"         , "doParallel"      ,
                    "caTools"         , "weathermetrics"  , "colorspace"      , "backports"       , "raster"          ,
-                   "proj4"           , "skedastic"       , "car"             , "MethComp")
+                   "proj4"           , "skedastic"       , "car"             , "MethComp"        , "MetRology"       , "future.apply")
 # if error on plyr then type install.packages("plyr") at the console
 list.packages.github <- c("52North/sensorweb4R", "rundel/timezone")
 cat("-----------------------------------------------------------------------------------\n")

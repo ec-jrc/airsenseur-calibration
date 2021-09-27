@@ -501,8 +501,7 @@ slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL,
 #================================================================CR
 #' Function Orthogonal regression without plotting
 #'
-#' @param Mat : Data.table or DataFrame of data including Case number, Date, x, y + optional ubsRM and/or ubss if ubsRM and/or ubss are not constant for all xi. The columns
-#' shall be in the order: "case", "Date", "xis", "yis","ubsRM", "ubss" with whatever column names.
+#' @param Mat : Data.table or DataFrame of data including Case number, Date, x, y + optional ubsRM and/or ubss if ubsRM and/or ubss are not constant for all xi. The columns shall be in the order: "case", "Date", "xis", "yis","ubsRM", "ubss" with whatever column names.
 #' @param ubsRM : numeric (default = NULL ), random standard uncertainty of reference measurements, xis, given as a constant value for all xis reference values.
 #' @param variable.ubsRM : logical, default is FALSE. If FALSE, ubsRM is used as constant random standard uncertainties for all xis reference values. If TRUE ubsRM given in Mat and is used for each reference value
 #' @param ubss : numeric (default = NULL ), random standard uncertainty of sensor measurements, yis, given as a constant value for all yis sensor values
@@ -750,15 +749,14 @@ f_Michelis <- function(x, Vmax, km, intercept) {
 #================================================================CR
 ### f_ExpGrowth: Function Fitting an Exponential Growth model without intercept ====
 #================================================================CR
+#' @title Fitting exponential growth model
+#' @description The following function fit a model to x data of the form y = C exp(kx), k > 0 see https://people.richland.edu/james/lecture/m116/logs/models.html
+#' @param x numeric values on x axis
+#' @param C numeric, C is the initial value when x = 0
+#' @param k numeric rate of ecponential growth
+#' @details Features: Asymptotic to y = 0 to left, passes through (0,C), C is the initial value
 f_ExpGrowth <- function(x, C, k) {
-    # https://people.richland.edu/james/lecture/m116/logs/models.html
-    # y = C ekx, k > 0
-    # Features
-    # Asymptotic to y = 0 to left
-    # Passes through (0,C)
-    # C is the initial value
-    return(C * (exp(k*x)))
-}
+    return(C * (exp(k*x)))}
 f_exp_kT <- function(x, a0, a1, C, k, Temperature) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
     # y = a0 + a1 x + C exp(kT), k > 0
@@ -776,6 +774,15 @@ f_exp_kT_NoC <- function(x, a1, C, k, Temperature) {
     # Passes through (0,C)
     # C is the initial value
     return(a1 * x + C * exp(k * Temperature))
+}
+f_exp_kT_NoC_log.min <- function(x, a1, C, k, Temperature, log.min) {
+    # https://people.richland.edu/james/lecture/m116/logs/models.html
+    # y = a1 x + C * e(kT + log.min), k > 0
+    # Features
+    # Asymptotic to y = 0 to left
+    # Passes through (0,C)
+    # C is the initial value
+    return(a1 * x + C * exp(k * Temperature) + log.min)
 }
 f_T_power <- function(x, a0, a1, a2, n, Temperature) {
     # https://people.richland.edu/james/lecture/m116/logs/models.html
@@ -1175,22 +1182,50 @@ Estimated.y <- function(x, Model, Length = NULL) {
     }
     return(Estimated)}
 #================================================================CR
+### R1_rq: Function to compute pseudo-R^2 for quantile regression ====
+#================================================================CR
+#' @description The pseudo-R^2 measure suggested by Koenker and Machado's 1999 JASA paper gives a local measure of goodness of fit at the particular (??) quantile
+#' by comparing the sum of weighted deviations for the model of interest with the same sum from a model in which only the intercept appears.
+#' see https://stackoverflow.com/questions/19861194/extract-r2-from-quantile-regression-summary/27510106
+#' @param x numeric vector x data
+#' @param y numeric vector x data
+#' @param probs numeric between 0 and 1, default is 0.5 the particular (??) quantile that shall be honoured by the quantile regression
+#' @return The pseudo-R^2 measure suggested by Koenker and Machado's 1999 JASA paper
+R1_rq <- function(x, y, probs = 0.5) {
+    # loading libraries
+    librarian::shelf(quantreg, data.table, futile.logger)
+    
+    # Preparing data and keeping full rows
+    DataXY <- data.table::data.table(x = x, y = y)
+    DataXY[is.finite(rowSums(DataXY))]
+    
+    if (DataXY[, .N] > 0) {
+        fit0 <- rq(y~1,tau=probs,data=DataXY)
+        fit1 <- rq(y~x,tau=probs,data=DataXY)
+        
+        rho <- function(u,tau=.5)u*(tau - (u < 0))
+        R1 <- 1 - fit1$rho/fit0$rho
+        return(R1)
+    } else return(futile.logger::flog.error("[] there is no complete data with x and y"))}
+#================================================================CR
 ### Cal_Line: Function calibration function and plot calibration line (VS 170428) ====
 #================================================================CR
 #' Function to correct for the lag of reference data due to autocorelation of sensor data
 #' @param DT.General Data.table with columns date (POSIXCt), ...
 #' @param ColRef name of column to be delagged
-#' @param ColSens name of colum used to estimate the lag of ColRef
+#' @param ColSens name of column used to estimate the lag of ColRef
 #' @param DateIN starting date for delagging, default is NULL. If NULL no data interval is selected
 #' @param DateEND ending date for delagging, defautl is NULL.
 #' @param Sync logical, default is TRUE. If TRUE lag time is estimated and corrected. If False, lag time is not estimated, initial ColRef data vector is re-used if available
 #' @param Verbose logical, default is TRUE. If TRUE lag time is estimated and corrected. If False, lag time is not estimated, initial ColRef data vector is resumed if available
 #' @return DT.General with ColRef being corrected for lag with ColSens
-DeLag_Cal <- function(DT.General, ColRef, ColSens, DateIN = NULL, DateEND = NULL, Sync = TRUE, Verbose = TRUE) {
+DeLag_Cal <- function(DT.General, ColRef, ColSens, DateIN = NULL, DateEND = NULL, Sync = TRUE, Verbose = TRUE, ASE.name = NULL, name.sensor = NULL) {
     if (!is.null(DateIN) && !is.null(DateEND)) Used.date <- which(DT.General$date >= DateIN & DT.General$date <= DateEND + 1) else Used.date <- NULL
     if (length(Used.date) > 0 && length(DT.General[Used.date][[ColRef]]) > 0 && length(DT.General[Used.date][[ColSens]]) > 0) {
         if (Sync) {
             Lag <- Find_Max_CCF(DT.General[Used.date][[ColRef]],DT.General[Used.date][[ColSens]])
+            # exception for NO2 4047D0
+            if (!is.null(ASE.name) && !is.null(name.sensor) && ASE.name == "4047D0" && name.sensor == "NO2_B43F_P1" && DateEND < as.Date("2020-02-01")) Lag$lag <- -60
             if (Lag$lag != 0) {
                 if (Verbose) futile.logger::flog.info(paste0("[DeLag_Cal] there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y"))
                 # Saving original data
@@ -1206,10 +1241,11 @@ DeLag_Cal <- function(DT.General, ColRef, ColSens, DateIN = NULL, DateEND = NULL
             # Resuming possible original reference data
             if (paste0("Lag.", ColRef) %in% names(DT.General) && !all(is.na(DT.General[Used.date][[paste0("Lag.", ColRef)]]))) {
                 data.table::set(DT.General, i =  Used.date, j =  ColRef, value = DT.General[Used.date][[paste0("Lag.", ColRef)]])
-                # Lag.[ColRef to NA
+                # Lag.ColRef to NA
                 data.table::set(DT.General, i =  Used.date, j =  paste0("Lag.", ColRef), value = rep(NA, length(Used.date)))
                 if (Verbose) futile.logger::flog.info("[DeLag_Cal] Initial unlagged data are restored")}}}
     return(DT.General)}
+#' Function to correct for the lag of reference data due to autocorelation of sensor data
 #' @param Meas.DateIN starting date for delagging, default is NULL. If NULL no data interval is selected
 #' @param Meas.DateEND ending date for delagging, defautl is NULL.
 #' @param CalDateIN starting date for delagging of the calibration interval, default is NULL. If NULL no data interval is selected
@@ -1217,14 +1253,16 @@ DeLag_Cal <- function(DT.General, ColRef, ColSens, DateIN = NULL, DateEND = NULL
 #' @param Sync.Pred logical, default is TRUE. If TRUE lag time is estimated and corrected. If False, lag time is not estimated, initial ColRef data vector is re-used if available
 #' @param Sync.Cal logical, default is TRUE. If TRUE lag time is estimated for the prediction period taking out the calibration period. 
 DeLag_Pred <- function(DT.General, ColRef, ColSens, Meas.DateIN = NULL, Meas.DateEND = NULL, Cal.DateIN = NULL, Cal.DateEND = NULL, 
-                       Sync.Pred = TRUE, Sync.Cal = FALSE, Verbose = TRUE) {
-    if (!is.null(Meas.DateIN) && !is.null(Meas.DateEND)) Used.date <- which(DT.General$date >= Meas.DateIN & DT.General$date <= Meas.DateEND + 1) else Used.date <- NULL
-    if (Sync.Cal) {
-        Cal.date  <- which(DT.General$date >= Cal.DateIN & DT.General$date <= Cal.DateEND + 1)
-        Used.date <-setdiff(Used.date,Cal.date)}
+                       Sync.Pred = TRUE, Sync.Cal = TRUE, Verbose = TRUE, ASE.name = NULL, name.sensor = NULL) {
+    if (!is.null(Meas.DateIN) && !is.null(Meas.DateEND)) Used.date <- which(DT.General$date >= Meas.DateIN & DT.General$date <= Meas.DateEND + 1 & is.finite(rowSums(DT.General[, c(ColRef, ColSens), with = FALSE]))) else Used.date <- NULL
+    if (TRUE & length(Used.date) > 0) { # Sync.Cal # in order to avoid error: putting the NA of DeLag_cal when Sync.cal is False to the Prediction interval. In this case we can have only NA for Prediction if Calibration and prediction are the same interval
+        Cal.date  <- which(DT.General$date >= Cal.DateIN & DT.General$date <= Cal.DateEND + 1 & is.finite(rowSums(DT.General[, c(ColRef, ColSens), with = FALSE])))
+        if (length(Cal.date) > 0) Used.date <- setdiff(Used.date,Cal.date)}
     if (length(Used.date) > 0) {
         if (Sync.Pred) {
             Lag <- Find_Max_CCF(DT.General[Used.date][[ColRef]],DT.General[Used.date][[ColSens]])
+            # exception for NO2 4047D0
+            if (!is.null(ASE.name) && !is.null(name.sensor) && ASE.name == "4047D0" && name.sensor == "NO2_B43F_P1" && DateEND < as.Date("2020-02-01")) Lag$lag <- -60
             if (Lag$lag != 0) {
                 if (Verbose) futile.logger::flog.info(paste0("[DeLag_Pred] there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y"))
                 # Saving original data
@@ -1271,7 +1309,7 @@ insertRow <- function(existingDF, newrow, r) {
     row.names(existingDF) <- 1:nrow(existingDF)
     return(existingDF)
 }
-#' 
+#' Fitting Calibration model of sensor data
 #' @description This Function estimates calibration functions, plots the calibration line and write the equation above the plot at line_position
 #' @description The regression equation can be weigthed (1/sy^2) or not if s_y = Null
 #' @description Lag can be corrected using autocorrelation
@@ -1295,18 +1333,21 @@ insertRow <- function(existingDF, newrow, r) {
 #' @param Auto.Lag logical, default is FALSE. If Auto.Lag is TRUE, y is changed using the lag at which cross correlation between x and y is maximum using ccf( ) using auto-correlation and Lag of y versus x, adding NAs at the begining or end of x, y, s_y and Matrice
 #' @param Plot_Line logical, default is TRUE. If TRUE the calibration line is added using par(new=TRUE) to an existing scatterplot
 #' @param Verbose logical, default TRUE. If TRUE print some messages
+#' @param Date vector of POSIXct, default is null. DateTime  corresponding to each row of x, y values. Used for plotting.
+#' @param probs numeric, default is NULL converted to 0.9 if NULL. default tau value for quantile regression, Mo_Type "Linear.robust".
 #' @return the estimated calibration model and plot a calibration is Plot_Line is TRUE
-Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL, Matrice=NULL, Covariates = NULL, 
+Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type, Probs = NULL,  Multi.File = NULL, Matrice=NULL, Covariates = NULL, 
                      line_position = 0, Couleur = "red", Sensor_name = NULL, 
                      f_coef1 = "%.3e", f_coef2 = "%.3e", f_R2 = "%.4f", lim = NULL, marges = c(4,4,3,0.5), 
                      Weighted = FALSE, Lag_interval = sqrt(max(x, na.rm = T) - min(x, na.rm = T)),
                      Auto.Lag = FALSE, Plot_Line = TRUE, Verbose = TRUE, Date = NULL) {
-    # 
+    #
+    # if (!is.null(Sensor_name) && Sensor_name == "5310CAT") browser()
     if (Auto.Lag) {
         Lag <- Find_Max_CCF(x,y)
         if (Lag$lag != 0) {
-            if (Verbose) futile.logger::flog.info(paste0("[DeLag_Cal] there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y"))
-            if (Verbose) futile.logger::flog.info(paste0("[DeLag_Cal] The lag is corrected before establishing the calibration model."))
+            if (Verbose) futile.logger::flog.info(paste0("[Cal_Line] there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y"))
+            if (Verbose) futile.logger::flog.info(paste0("[Cal_Line] The lag is corrected before establishing the calibration model."))
             if (Lag$lag > 0) {
                 x <- c(x[(Lag$lag+1):length(y)], rep(NA, Lag$lag))
             } else {
@@ -1316,10 +1357,10 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
     if (is.null(s_y) || any(s_y == 0) || all(is.na(s_y))) DataXY <- data.table(x = x, y = y) else {
         DataXY    <- data.table(x = x, y = y, s_y = s_y)
         DataXY[, wi := DataXY$s_y^-2/sum(DataXY$s_y^-2, na.rm = T)]}
+    # removing NA, NaN, inf
     # adding Covariates for multilinear model and multivariate models
-    # browser()
     if (Mod_type == "MultiLinear") {
-        DataXY <- cbind(DataXY, Matrice[, ..Covariates])
+        for (i in Covariates) set(DataXY, j = i, value = Matrice[,..i])
     } else if (Mod_type %in% c("Peaks_baseline","exp_kT_NoC","exp_kT", "exp_kK","T_power","K_power", "BeerLambert")) {
         if (is.null(Covariates)) {
             if (nrow(DataXY != nrow(Matrice))) futile.logger::flog.error(pate0("[Cal_line] x, y and Covariates do not have the same length."))
@@ -1333,9 +1374,10 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
         if (is.data.table(DataXY)) DataXY[,Out.Temperature := Matrice[["Out.Temperature"]]] else if (is.data.frame(DataXY)) DataXY$Temperature <- Matrice[["Out.Temperature"]]
         DataXY[, Out.Relative_humidity := Matrice[["Out.Relative_humidity"]]]}
     # Adding date
-    if (!is.null(Date)) DataXY[, date := Date]
-    # removing NA of any variables in DATAXY
-    DataXY <- DataXY[complete.cases(DataXY[, .SD])]
+    if (!is.null(Date)) set(DataXY, j = "date", value = Date)
+    # removing NA, NaN, Inf of any variables in DATAXY except "date"
+    #DataXY <- DataXY[complete.cases(DataXY[, .SD])]
+    DataXY <- DataXY[is.finite(rowSums(DataXY[, grep("date", names(DataXY), invert = T), with = F]))]
     # Creating weights from the standard deviations within lags
     if (Weighted) {
         #lag_distance <- round((range(DataXY$x, na.rm = T)[2] - range(DataXY$x, na.rm = T)[1])/Lag_numbers)
@@ -1372,16 +1414,26 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
         } else {
             Model <- lm(y ~ x, data = DataXY, model = TRUE, x = TRUE, y = TRUE, weights = wi)}
         # display equations and R^2
-        Equation <- sprintf(paste0(Sensor_name, "Linear: y= ", f_coef1,"+ ", f_coef2," x",", R2=", f_R2,", RMSE=", f_coef1,",AIC= %.1f"), # ", s(Res)=",f_coef1,
+        Equation <- sprintf(paste0(Sensor_name, "Linear: y= %.2 f + %.2f x",",R2= %.2f,RMSE= %.2f,AIC= %.1f"), # ", s(Res)=",f_coef1,
                             coef(Model)[1], coef(Model)[2], summary(Model)$r.squared, sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'Linear.Robust') {
         # MGV Robust Linear Model, (if s_y is not null calculate weights wi and use them in the regression
         # This models the median of y as a function of x, rather than modelling the mean of y as a function of x, in the case of least squares regression.
+        if (is.null(Probs)) Probs = 0.9
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
-            Model <- rq(y ~ x, data = DataXY, tau = 0.5, model = TRUE)
+            Model <- rq(y ~ x, data = DataXY, tau = Probs, model = TRUE) # Model <- rq(y ~ x, data = DataXY, tau = seq(0, 1, by = 0.1), model = TRUE, method = "br")
         } else {
-            Model <- rq(y ~ x, data = DataXY, weights = wi, tau = 0.5, model = TRUE)}
-        Equation <- sprintf(paste0("Quantile regression tau 0.5: y= ",f_coef1,"+ ",f_coef2," x", ", RMSE=",f_coef1,",AIC= %.1f"),
+            Model <- rq(y ~ x, data = DataXY, weights = wi, tau = Probs, model = TRUE)}
+        Equation <- sprintf(paste0(round(100*Probs),"th Percentile (%.1f) reg.: y= ",f_coef1,"+ ",f_coef2," x", ", R1= %.2f, RMSE=",f_coef1,",AIC= %.1f"),
+                            quantile(DataXY$x, probs = Probs),coef(Model)[1], coef(Model)[2], R1_rq(DataXY$x, DataXY$y, probs = Probs), sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
+    } else if (Mod_type == 'Linear.Robust.rqs') {
+        # MGV Robust Linear Model, (if s_y is not null calculate weights wi and use them in the regression
+        # This models the a number of quantile of y as a function of x, rather than modelling the mean or median of y as a function of x, in the case of least squares regression.
+        if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
+            Model <- rq(y ~ x, data = DataXY, tau = seq(0.1, 0.9, by = 0.1), model = TRUE, method = "br")
+        } else {
+            Model <- rq(y ~ x, data = DataXY, weights = wi, tau = seq(0, 1, by = 0.1), model = TRUE)}
+        Equation <- sprintf(paste0("Quantile regression tau 0,0.1...1: y= ",f_coef1,"+ ",f_coef2," x", ", RMSE=",f_coef1,",AIC= %.1f"),
                             coef(Model)[1], coef(Model)[2], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
     } else if (Mod_type == 'gam') {
         Estimated <- data.frame(x = x, y = y)
@@ -1395,31 +1447,55 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
             Model <- gam(y~s(x), family = Gamma(link = log), data = Estimated, weights = wi)}
         Equation <- sprintf(paste0("General Additive model"))
     } else if (Mod_type %in% c("Yatkin",'MassonO', 'Peaks_baseline','exp_kT_NoC','exp_kT','exp_kK')) {
+        #browser()
         name.Temperature <- ifelse(is.null(Covariates), "Out.Temperature", Covariates)
-        # Setting Initial values of the linear relationship between sensor and reference using the smallest temperatures: T< Qtile(0.33) and T < 20 degrress
-        #High.x <- which(DataXY[,x] > quantile(DataXY[,x], probs = c(0.75)))
-        High.x <- which(DataXY[[name.Temperature]] < quantile(DataXY[[name.Temperature]], probs = c(0.33)) & DataXY[[name.Temperature]] < 20)
-        Linear.Model <- rq(y ~ x, data = DataXY[High.x], tau = c(0.5))
+        # Setting Initial values of the linear relationship between sensor and reference using the smallest temperatures: T< Qantile(0.33) and T < 20 degrress
+        if (Sensor_name == "NO_B4_P1, ") {
+            # For NO
+            #Low.Temp <- which(DataXY[,x] > quantile(DataXY[,x], probs = c(0.95)) & DataXY[[name.Temperature]] < 20)
+            Low.Temp <- which(DataXY[[name.Temperature]] < quantile(DataXY[[name.Temperature]], probs = c(0.33)) & DataXY[[name.Temperature]] < 20)
+        } else if (Sensor_name == "NO2_B43F_P1, ") {
+            # For NO2, possibly for others
+            #Low.Temp  <- which(DataXY[,x] > quantile(DataXY[["x"]], probs = c(0.66)) & DataXY[[name.Temperature]] < quantile(DataXY[[name.Temperature]], probs = c(0.25)))
+            Low.Temp <-  DataXY[DataXY[[name.Temperature]] < quantile(DataXY[[name.Temperature]], probs = c(0.25)), which = T]
+            Low.Temp.RH <-  DataXY[DataXY[[name.Temperature]] < quantile(DataXY[[name.Temperature]], probs = c(0.25)) & 
+                                    DataXY[["Out.Relative_humidity"]] > quantile(DataXY[["Out.Relative_humidity"]], probs = c(0.75)) & 
+                                    DataXY[["Absolute_humidity"]] > quantile(DataXY[["Absolute_humidity"]], probs = c(0.75)) &
+                                       DataXY[["x"]]<  15, which = T]
+            Low.Temp <- Low.Temp.RH
+        }
+        Linear.Model <- rq(y ~ x, data = DataXY[Low.Temp], tau = c(0.5))
         A0 <- unname(coef(Linear.Model)[1])
         A1 <- unname(coef(Linear.Model)[2])
-        plot(DataXY[High.x,c("x","y")], main = "Initial a0 and a1 values");grid(); lines(DataXY[High.x,x], A0 + A1 *DataXY[High.x, x], type = "l", col = "red")
-        Formula         <- as.formula(paste0("y ~ f_ExpGrowth(",name.Temperature,", C, k)"))
-        Starting.values <- list(C = min(DataXY$y, na.rm= T), k = 0.1)
-        I0              <- minpack.lm::nlsLM(Formula, data = DataXY[x < 2], start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
-        # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
-        # browser()
+        # Plotting initial values A0 and A1 for high x values/low name.Temperature
+        plot(DataXY[Low.Temp,c("x","y")], 
+             main = paste0("first a0 and a1 at low temperature, ", format(min(DataXY$date), format = "%Y%m%d"), " - ", format(max(DataXY$date), format = "%Y%m%d")))
+        grid(); abline(a = A0, b = A1, col = "red")
+        coeff <- round(Linear.Model$coefficients , 2)
+        text(x = range(DataXY[Low.Temp,x], na.rm = T)[1], y = range(DataXY[Low.Temp,y], na.rm = T)[2], pos = 4, paste("rq: y = ",coeff[1] , " + " , coeff[2] , "*x" ))
+        text(x = range(DataXY[Low.Temp,x], na.rm = T)[2], y = range(DataXY[Low.Temp,y], na.rm = T)[1], pos = 2, paste("R2 = ",round(summary(lm(y ~ x, data = DataXY[Low.Temp]))$r.squared, digits = 2)))
+        
+        # determining initial k values at high temperature when x is low
+        if (Weighted || Sensor_name == "NO2_B43F_P1, ") {
+            Low.x <- which(DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.25)))
+            Low.x.Hi.RH <- DataXY[x <= quantile(DataXY[["x"]], probs = c(0.10))  & 
+                                      DataXY[["Out.Relative_humidity"]] > quantile(DataXY[["Out.Relative_humidity"]], probs = c(0.75)), which = T]
+        } else if (Sensor_name == "NO_B4_P1, ") {
+            #Low.x <- which(DataXY[,x] <= quantile(DataXY[["x"]], probs = c(0.25)) & DataXY[[name.Temperature]] > quantile(DataXY[[name.Temperature]], probs = c(0.66)))
+            Low.x <- DataXY[x <= quantile(DataXY[["x"]], probs = c(0.10)), which = T]}
+        # Choosing the correction model for name.Temperature
         if (Mod_type == 'Peaks_baseline') {
             # Baseline correction for temperature effect
             # checking for positives values for the log((RNo - a1 x)/a0)
             # Model in celsius degrees
-            Positives <- which((DataXY[High.Temperature]$y - A1 * DataXY[High.Temperature]$x)/A0 > 0)
-            DataXY[High.Temperature[Positives],"Init.Coeffs"] <- log((DataXY[High.Temperature][Positives,"y"] - A1 * DataXY[High.Temperature][Positives,"x"])/A0)
+            Positives <- which((DataXY[Low.x]$y - A1 * DataXY[Low.x]$x)/A0 > 0)
+            DataXY[Low.x[Positives],"Init.Coeffs"] <- log((DataXY[Low.x][Positives,"y"] - A1 * DataXY[Low.x][Positives,"x"])/A0)
             # Fit without intercept, only the slope k
-            Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[High.Temperature[Positives],], tau = c(0.5))
-            plot(DataXY[High.Temperature][[name.Temperature]], DataXY[High.Temperature,y])
+            Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[Low.x[Positives],], tau = c(0.5))
+            plot(DataXY[Low.x][[name.Temperature]], DataXY[Low.x,y])
             grid()
-            DataXY[High.Temperature, Predict := predict(Model.0, DataXY[High.Temperature][[name.Temperature]])]
-            lines(DataXY[High.Temperature, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[High.Temperature][[name.Temperature]])], col = "red")
+            DataXY[Low.x, Predict := predict(Model.0, DataXY[Low.x][[name.Temperature]])]
+            lines(DataXY[Low.x, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[Low.x][[name.Temperature]])], col = "red")
             # Fitting model
             Formula <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a0, a1, k, ",name.Temperature,") - Y0"))
             Starting.values <- list(a0 = unname(coef(Model.0)[1]), a1 = A1, k = unname(coef(Model.0)[2]), Y0 = unname(coef(Model.0)[3]))
@@ -1434,75 +1510,242 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
                                 coef(Model)[1],coef(Model)[3],coef(Model)[2],
                                 sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                                 AIC(Model))
-        } else  if (Mod_type == 'exp_kT_NoC') {
-            # Model in Celsius degrees RNO = a1 NO + C exp(kT)
-            # determining initial K0 values at high temperature
-            if (Weighted) {
-                High.Temperature <- which(DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.25)))
-            } else High.Temperature <- which(DataXY[[name.Temperature]] > quantile(DataXY[[name.Temperature]], probs = c(0.5)) &
-                                              DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.33)))
-            # # checking for positives values for the log((RNo - a1 x)/a0)
-            # Positives        <- which((DataXY[High.Temperature]$y - A1 * DataXY[High.Temperature]$x)/A0 > 0)
-            # DataXY[High.Temperature[Positives],"Init.Coeffs"] <- log((DataXY[High.Temperature][Positives,"y"] - A1 * DataXY[High.Temperature][Positives,"x"])/A0)
-            # # Fit without intercept, only the slope k
-            # Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[High.Temperature[Positives]], tau = c(0.5))
-            Formula <- as.formula(paste0("(y - A1 * x) ~ f_ExpGrowth(",name.Temperature,", C, k)"))
-            Starting.values <- list(C = min(DataXY$y, na.rm = T), k = 0.13)
-            Model.0 <- minpack.lm::nlsLM(Formula, data = DataXY[High.Temperature], start = Starting.values, model = TRUE, 
-                                         control = nls.lm.control(maxiter = 1024, maxfev = 10000))
-            plot(DataXY[High.Temperature][[name.Temperature]], DataXY[High.Temperature,y], main = "Initial k0 value")
-            grid()
-            DataXY[High.Temperature, Predict := predict(Model.0, DataXY[High.Temperature][[name.Temperature]])]
-            lines(DataXY[High.Temperature, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[High.Temperature][[name.Temperature]])], col = "red")
+        } else  if (Mod_type == 'Yatkin') {
+            # Model in Celsius degrees RNO = a0 + a1 NO2 + b0 + b1 RH + C exp(kT)
+            # effect of humidity
+            Low.Temp.RH <-  DataXY[DataXY[[name.Temperature]] < quantile(DataXY[[name.Temperature]], probs = c(0.25)) & 
+                                       DataXY[["Out.Relative_humidity"]] > quantile(DataXY[["Out.Relative_humidity"]], probs = c(0.75)) & 
+                                       DataXY[["Absolute_humidity"]] > quantile(DataXY[["Absolute_humidity"]], probs = c(0.75)) & 
+                                       DataXY[["x"]]<  15, which = T]
+            DataXY[, y.corr := y - (A1 * x)]
+            # determining initial C and k values at high temperature
+            if (length(Low.x) > 0) {
+                # checking for positives values for the log((RNo - a1 x)/a0)
+                Positives <- which(DataXY[Low.x]$y.corr/A0 > 0)
+                if (length(Positives) > 0) {
+                    set(DataXY, i = Low.x[Positives], j = "Init.Coeffs", value = log(DataXY[Low.x][Positives]$y.corr/A0))
+                    T.min   <- min(DataXY[Low.x][Positives]$Out.Temperature_int)
+                    init.name.Temperature <- name.Temperature
+                    name.Temperature      <- "Normalised.Temperature"
+                    set(DataXY, j = name.Temperature, value = DataXY$Out.Temperature_int - T.min)
+                    log.min <- coef(rq(as.formula(paste0("Init.Coeffs ~ " , name.Temperature)), data = DataXY[Low.x][Positives], tau = c(0.5)))["(Intercept)"]
+                    #log.min <- min(DataXY[Low.x][Positives]$Init.Coeffs)
+                    name.Log <- "Normalised.Log"
+                    set(DataXY, j = name.Log, value = DataXY$Init.Coeffs - log.min)
+                    Formula <- as.formula(paste0(name.Log," ~ " , name.Temperature, " - 1"))
+                    #Formula <- as.formula(paste0("Init.Coeffs ~ " , name.Temperature, " - 1"))
+                    #Formula <- as.formula(paste0("Init.Coeffs  ~ name.Temperature -1"))
+                    Model.0 <- rq(Formula, data = DataXY[Low.x][Positives], tau = c(0.5))
+                    plot(DataXY[Low.x][Positives, .SD, .SDcols = c(name.Temperature, name.Log)], xlab = paste0(name.Temperature, ", T - T.min"),ylab = "log ((y - a1 x)/a0) - log.min", 
+                         main = "Temperature effect at low x, Initial k value for log of sensor values")
+                    mtext(side=3, line=0, adj=1, cex=1, paste0("T.min = ", round(T.min, digits = 1), ", log.min = ", round(log.min, digits = 3), ", k = ",round (coef(Model.0), digits = 5),"; ",format(min(DataXY$date), format = "%Y%m%d"), " - ", format(max(DataXY$date), format = "%Y%m%d")))
+                    grid()
+                    abline(a = 0, b = coef(Model.0)[1], col=2, lwd=2)
+                    coeff <- round(Model.0$coefficients , 4)
+                    text(x = range(DataXY[Low.x][Positives,..name.Temperature], na.rm = T)[1], y = range(DataXY[Low.x][Positives,..name.Log], na.rm = T)[2], pos = 4,
+                         paste("Model : y = ",coeff[1] , "*x" ))
+                    # plotting y - a1 x = c exp(k(T-Tmin) + log.min)
+                    plot(DataXY[Low.x][Positives, .SD, .SDcols = c(init.name.Temperature, "y.corr")], xlab = name.Temperature,ylab = "y - a1 x",
+                         main = paste0("Temperature at low x, k value ", format(min(DataXY$date), format = "%Y%m%d"), " - ", format(max(DataXY$date), format = "%Y%m%d")))
+                    grid()
+                    set(DataXY, j = "Cexp_kT", value = A0 * exp(unname(coef(Model.0)[1]) * (DataXY$Out.Temperature_int - T.min)))
+                    set(DataXY, j = "Cexp_kT_log.min", value = A0 * exp(coef(Model.0)[1] * (DataXY$Out.Temperature_int - T.min) + log.min))
+                    lines(setorderv(DataXY[Low.x][Positives, .SD, .SDcols = c(init.name.Temperature, "Cexp_kT_log.min")], cols = init.name.Temperature), type = "l", col = "red")
+                    mtext(side=3, line=0, adj=1, cex=1, paste0("y - ", round(A1, digits = 3), " x = ", round(A0, digits = 3), 
+                                                               " exp(", round (coef(Model.0), digits = 5), " (T - ", round(T.min, digits = 1),") + ", round(log.min, digits = 3), ")"))
+                    # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
+                    Starting.values <- list(a1 = A1, C = A0 * exp(unname(log.min)), k = unname(coef(Model.0)[1]))
+                } else {
+                    # checking for positives values for the log(RNo - a1 x)
+                    Positives <- which(DataXY[Low.x]$y.corr > 0)
+                    if (length(Positives) > 0) {
+                        set(DataXY, i = Low.x[Positives], j = "Init.Coeffs", value = log(DataXY[Low.x][Positives]$y.corr))
+                        Formula <- as.formula(paste0("Init.Coeffs ~ ",name.Temperature))
+                        Model.0 <- rq(Formula, data = DataXY[Low.x][Positives], tau = c(0.5))
+                        plot(DataXY[Low.x][Positives, .SD, .SDcols = c(name.Temperature, "Init.Coeffs")], 
+                             xlab = name.Temperature,ylab = "log(y - a1 x)", main = "Temperature at low x, Initial k value")
+                        grid()
+                        abline(a = coef(Model.0)[1], b = coef(Model.0)[2], col=2, lwd=2)
+                        coeff <- round(Model.0$coefficients , 4)
+                        text(x = range(DataXY[Low.x][Positives,..name.Temperature], na.rm = T)[1], y = range(DataXY[Low.x][Positives,Init.Coeffs], na.rm = T)[2], pos = 4,
+                             paste("Model : y = ", coef(Model.0)[1], " + ",coeff[2] , "*x" ))
+                        # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
+                        Starting.values <- list(a1 = A1, C = exp(unname(coef(Model.0)[1])), k = unname(coef(Model.0)[2]))
+                    } else stop(futile.logger::flog.error("[Cal_Line] (y - a1 x)/a0 and y - a1 x are always negative at high ",name.Temperature,". Cannot compute logarithmic."))}
+            } else stop(futile.logger::flog.error("[Cal_Line] no high temperature sensor data with low x values."))
+            # Plotting 
+            
+            # Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[Low.x[Positives]], tau = c(0.5))
             # Fitting model
             Formula <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a1, C, k, ",name.Temperature,")"))
-            Starting.values <- list(a1 = A1, C = unname(coef(Model.0)[1]), k = unname(coef(Model.0)[2]))
+            #Formula <- as.formula(paste0("y ~ f_exp_kT_NoC_log.min(x, a1, C, k, " , name.Temperature, ", log.min)"))
             if (Verbose) print(Starting.values, quote = F)
+            browser()
             if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
                 Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
             } else {
                 Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000), weights = wi) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
             }
+            car::scatter3d(y ~ x + Out.Temperature_int, data = DataXY[Low.x], point.col = "blue", surface= F)
+            Sensor        <- DataXY[["y"]]
+            Fitted.Sensor <- coef(Model)["a1"] * DataXY$x + coef(Model)["C"] * exp(coef(Model)["k"] * (DataXY$Out.Temperature_int - T.min))
+            plot(Sensor, Fitted.Sensor, 
+                 main = paste0("Sensor calibrated ", format(min(DataXY$date), format = "%Y%m%d"), " - ", format(max(DataXY$date), format = "%Y%m%d")))
+            mtext(side=3, line=0, adj=1, cex=1, paste0("y = ", round(coef(Model)["a1"], digits = 3), " x + ", round(coef(Model)["C"], digits = 3), 
+                                                       " exp(", round (coef(Model)["k"], digits = 3), " (T - ", round(T.min, digits = 1),") + ", round(log.min, digits = 3), ")"))
+            grid();abline(a = 0, b = 1, col = "red")
+            text(x = range(Sensor, na.rm = T)[2], y = range(Fitted.Sensor, na.rm = T)[1], pos = 2, "Identity line", col = "red")
+            Linear.Fitted <- lm(Fitted.Sensor ~ Sensor)
+            Coeff <- round(Linear.Fitted$coefficients , 2)
+            text(x = range(Sensor, na.rm = T)[1], y = range(Fitted.Sensor, na.rm = T)[2], pos = 4, paste("y = ", Coeff[1], " + ",Coeff[2] , "*x" ))
+            text(x = range(Sensor, na.rm = T)[1], y = range(Fitted.Sensor, na.rm = T)[2] - 0.05 * diff(range(Fitted.Sensor, na.rm = T)) , 
+                 pos = 4, paste0("R2 = ", round(summary(Linear.Fitted)$r.squared, digits = 2)))
             # display equations and R^2
-            Equation <- sprintf(paste0(Sensor_name, "exp_kT_NoC: y = ",f_coef2," x + ",f_coef1," exp(",f_coef2," T_Celsius), RMSE=",f_coef1,", AIC= %.1f"),
+            Equation <- sprintf(paste0(Sensor_name, "exp_kT_NoC: y = ",f_coef2," x + ",f_coef1," exp(",f_coef2," (T_Celsius - ", round(T.min, digits = 2),"), RMSE=",f_coef1,", AIC= %.1f"),
+                                coef(Model)[1],coef(Model)[2],coef(Model)[3],
+                                sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
+                                AIC(Model))
+        } else if (Mod_type == 'exp_kT_NoC') {
+            # Model in Celsius degrees RNO = a1 NO + C exp(kT)
+            # # Fit without intercept a0, only the slope a1 and k. C is a0
+            DataXY[, y.corr := y - (A1 * x)]
+            # determining initial C and k values at high temperature
+            if (length(Low.x) > 0) {
+                # checking for positives values for the log((RNo - a1 x)/a0)
+                Positives <- which(DataXY[Low.x]$y.corr/A0 > 0)
+                if (length(Positives) > 0) {
+                    set(DataXY, i = Low.x[Positives], j = "Init.Coeffs", value = log(DataXY[Low.x][Positives]$y.corr/A0))
+                    T.min   <- min(DataXY[Low.x][Positives]$Out.Temperature_int)
+                    init.name.Temperature <- name.Temperature
+                    name.Temperature      <- "Normalised.Temperature"
+                    set(DataXY, j = name.Temperature, value = DataXY$Out.Temperature_int - T.min)
+                    log.min <- coef(rq(as.formula(paste0("Init.Coeffs ~ " , name.Temperature)), data = DataXY[Low.x][Positives], tau = c(0.5)))["(Intercept)"]
+                    #log.min <- min(DataXY[Low.x][Positives]$Init.Coeffs)
+                    name.Log <- "Normalised.Log"
+                    set(DataXY, j = name.Log, value = DataXY$Init.Coeffs - log.min)
+                    Formula <- as.formula(paste0(name.Log," ~ " , name.Temperature, " - 1"))
+                    #Formula <- as.formula(paste0("Init.Coeffs ~ " , name.Temperature, " - 1"))
+                    #Formula <- as.formula(paste0("Init.Coeffs  ~ name.Temperature -1"))
+                    Model.0 <- rq(Formula, data = DataXY[Low.x][Positives], tau = c(0.5))
+                    plot(DataXY[Low.x][Positives, .SD, .SDcols = c(name.Temperature, name.Log)], xlab = paste0(name.Temperature, ", T - T.min"),ylab = "log ((y - a1 x)/a0) - log.min", 
+                         main = "Temperature effect at low x, Initial k value for log of sensor values")
+                    mtext(side=3, line=0, adj=1, cex=1, paste0("T.min = ", round(T.min, digits = 1), ", log.min = ", round(log.min, digits = 3), ", k = ",round (coef(Model.0), digits = 5),"; ",format(min(DataXY$date), format = "%Y%m%d"), " - ", format(max(DataXY$date), format = "%Y%m%d")))
+                    grid()
+                    abline(a = 0, b = coef(Model.0)[1], col=2, lwd=2)
+                    coeff <- round(Model.0$coefficients , 4)
+                    text(x = range(DataXY[Low.x][Positives,..name.Temperature], na.rm = T)[1], y = range(DataXY[Low.x][Positives,..name.Log], na.rm = T)[2], pos = 4,
+                         paste("Model : y = ",coeff[1] , "*x" ))
+                    # plotting y - a1 x = c exp(k(T-Tmin) + log.min)
+                    plot(DataXY[Low.x][Positives, .SD, .SDcols = c(init.name.Temperature, "y.corr")], xlab = name.Temperature,ylab = "y - a1 x",
+                         main = paste0("Temperature at low x, k value ", format(min(DataXY$date), format = "%Y%m%d"), " - ", format(max(DataXY$date), format = "%Y%m%d")))
+                    grid()
+                    set(DataXY, j = "Cexp_kT", value = A0 * exp(unname(coef(Model.0)[1]) * (DataXY$Out.Temperature_int - T.min)))
+                    set(DataXY, j = "Cexp_kT_log.min", value = A0 * exp(coef(Model.0)[1] * (DataXY$Out.Temperature_int - T.min) + log.min))
+                    lines(setorderv(DataXY[Low.x][Positives, .SD, .SDcols = c(init.name.Temperature, "Cexp_kT_log.min")], cols = init.name.Temperature), type = "l", col = "red")
+                    mtext(side=3, line=0, adj=1, cex=1, paste0("y - ", round(A1, digits = 3), " x = ", round(A0, digits = 3), 
+                                                               " exp(", round (coef(Model.0), digits = 5), " (T - ", round(T.min, digits = 1),") + ", round(log.min, digits = 3), ")"))
+                    # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
+                    Starting.values <- list(a1 = A1, C = A0 * exp(unname(log.min)), k = unname(coef(Model.0)[1]))
+                } else {
+                    # checking for positives values for the log(RNo - a1 x)
+                    Positives <- which(DataXY[Low.x]$y.corr > 0)
+                    if (length(Positives) > 0) {
+                        set(DataXY, i = Low.x[Positives], j = "Init.Coeffs", value = log(DataXY[Low.x][Positives]$y.corr))
+                        Formula <- as.formula(paste0("Init.Coeffs ~ ",name.Temperature))
+                        Model.0 <- rq(Formula, data = DataXY[Low.x][Positives], tau = c(0.5))
+                        plot(DataXY[Low.x][Positives, .SD, .SDcols = c(name.Temperature, "Init.Coeffs")], 
+                             xlab = name.Temperature,ylab = "log(y - a1 x)", main = "Temperature at low x, Initial k value")
+                        grid()
+                        abline(a = coef(Model.0)[1], b = coef(Model.0)[2], col=2, lwd=2)
+                        coeff <- round(Model.0$coefficients , 4)
+                        text(x = range(DataXY[Low.x][Positives,..name.Temperature], na.rm = T)[1], y = range(DataXY[Low.x][Positives,Init.Coeffs], na.rm = T)[2], pos = 4,
+                             paste("Model : y = ", coef(Model.0)[1], " + ",coeff[2] , "*x" ))
+                        # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
+                        Starting.values <- list(a1 = A1, C = exp(unname(coef(Model.0)[1])), k = unname(coef(Model.0)[2]))
+                    } else stop(futile.logger::flog.error("[Cal_Line] (y - a1 x)/a0 and y - a1 x are always negative at high ",name.Temperature,". Cannot compute logarithmic."))}
+            } else stop(futile.logger::flog.error("[Cal_Line] no high temperature sensor data with low x values."))
+            # Plotting 
+            
+            # Model.0 <- rq(Init.Coeffs ~ get(name.Temperature) - 1, data = DataXY[Low.x[Positives]], tau = c(0.5))
+            # Fitting model
+            Formula <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a1, C, k, ",name.Temperature,")"))
+            #Formula <- as.formula(paste0("y ~ f_exp_kT_NoC_log.min(x, a1, C, k, " , name.Temperature, ", log.min)"))
+            if (Verbose) print(Starting.values, quote = F)
+            browser()
+            if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            } else {
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000), weights = wi) # , lower = c(0, 0.0000000001, 0, 0.00000000001))
+            }
+            car::scatter3d(y ~ x + Out.Temperature_int, data = DataXY[Low.x], point.col = "blue", surface= F)
+            Sensor        <- DataXY[["y"]]
+            Fitted.Sensor <- coef(Model)["a1"] * DataXY$x + coef(Model)["C"] * exp(coef(Model)["k"] * (DataXY$Out.Temperature_int - T.min))
+            plot(Sensor, Fitted.Sensor, 
+                 main = paste0("Sensor calibrated ", format(min(DataXY$date), format = "%Y%m%d"), " - ", format(max(DataXY$date), format = "%Y%m%d")))
+            mtext(side=3, line=0, adj=1, cex=1, paste0("y = ", round(coef(Model)["a1"], digits = 3), " x + ", round(coef(Model)["C"], digits = 3), 
+                                                       " exp(", round (coef(Model)["k"], digits = 3), " (T - ", round(T.min, digits = 1),") + ", round(log.min, digits = 3), ")"))
+            grid();abline(a = 0, b = 1, col = "red")
+            text(x = range(Sensor, na.rm = T)[2], y = range(Fitted.Sensor, na.rm = T)[1], pos = 2, "Identity line", col = "red")
+            Linear.Fitted <- lm(Fitted.Sensor ~ Sensor)
+            Coeff <- round(Linear.Fitted$coefficients , 2)
+            text(x = range(Sensor, na.rm = T)[1], y = range(Fitted.Sensor, na.rm = T)[2], pos = 4, paste("y = ", Coeff[1], " + ",Coeff[2] , "*x" ))
+            text(x = range(Sensor, na.rm = T)[1], y = range(Fitted.Sensor, na.rm = T)[2] - 0.05 * diff(range(Fitted.Sensor, na.rm = T)) , 
+                 pos = 4, paste0("R2 = ", round(summary(Linear.Fitted)$r.squared, digits = 2)))
+            # display equations and R^2
+            Equation <- sprintf(paste0(Sensor_name, "exp_kT_NoC: y = ",f_coef2," x + ",f_coef1," exp(",f_coef2," (T_Celsius - ", round(T.min, digits = 2),"), RMSE=",f_coef1,", AIC= %.1f"),
                                 coef(Model)[1],coef(Model)[2],coef(Model)[3],
                                 sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)),
                                 AIC(Model))
         } else  if (Mod_type == 'exp_kT') {
             # Model in Celsius degrees RNO = a0 + a1 NO + C exp(kT)
-            # determining initial K0 values at high temperature
-            if (Weighted) {
-                High.Temperature <- which(DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.25)))
-            } else High.Temperature <- which(DataXY[[name.Temperature]] > quantile(DataXY[[name.Temperature]], probs = c(0.5)) &
-                                              DataXY[["x"]] <= quantile(DataXY[["x"]], probs = c(0.25)))
-            #Formula <- as.formula(paste0("(y - A1 * x) ~ f_ExpGrowth(",name.Temperature,", C, k) + Y0"))
-            #Starting.values <- list(C = 1, k = 0.13, Y0 = unname(A0))
-            Formula <- as.formula(paste0("(y - (A0 + A1 * x)) ~ f_ExpGrowth(",name.Temperature,", C, k)"))
-            Starting.values <- list(C = 1, k = 0.13)
-            Model.0 <- minpack.lm::nlsLM(Formula, data = DataXY[High.Temperature], start = Starting.values, model = TRUE,
-                                         control = nls.lm.control(maxiter = 1024, maxfev = 10000))
-            plot(DataXY[High.Temperature][[name.Temperature]], DataXY[High.Temperature,y], main = "Initial k0 value")
-            grid()
-            DataXY[High.Temperature, Predict := A0 + A1 * x + predict(Model.0, DataXY[High.Temperature][[name.Temperature]])]
-            lines(DataXY[High.Temperature, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[High.Temperature][[name.Temperature]])], col = "red")
-            # # Values for which log(DataXY$y - (A0 + A1 * DataXY$x)) can be calculated
-            # Positives <- which(DataXY$y - (A0 + A1 * DataXY$x) > 0)
-            # # Model in celsius degrees
-            # DataXY[Positives,"Init.Coeffs"] <- log(DataXY[Positives,"y"] - (A0 + A1 * DataXY[Positives,"x"]))
-            # Model.0 <- rq(Init.Coeffs ~ get(name.Temperature), data = DataXY[Positives,], tau = c(0.5))
-            C0 <- coef(Model.0)[1]
-            k0 <- coef(Model.0)[2]
-            #A0 <- coef(Model.0)[3]
+            DataXY[, y.corr := y - (A1 * x + A0)]
+            # determining initial C and k values at high temperature
+            if (length(Low.x) > 0) {
+                # only for positive logarithmic
+                Positives <- which(DataXY[Low.x]$y.corr > 0)
+                if (length(Positives) > 0) {
+                    set(DataXY, i = Low.x[Positives], j = "Init.Coeffs", value = log(DataXY[Low.x][Positives]$y.corr))
+                } else stop(futile.logger::flog.error(paste0("[Cal_Line] y - (a0 + a1 x) is always negative at high ",name.Temperature,". Error on logarithmic computation. use Exp_kT_NoC model")))
+                Formula <- as.formula(paste0("Init.Coeffs ~ ",name.Temperature))
+                Model.0 <- rq(Formula, data = DataXY[Low.x][Positives], tau = c(0.5))
+                plot(DataXY[Low.x][Positives, .SD, .SDcols = c(name.Temperature, "Init.Coeffs")], xlab = name.Temperature,ylab = "log (y - (a1 x + a0))", 
+                     main = "Temperature effect at low x, Initial k value")
+                grid()
+                abline(a = coef(Model.0)[1], b = coef(Model.0)[2], col=2, lwd=2)
+                coeff <- round(Model.0$coefficients , 4)
+                text(x = range(DataXY[Low.x][Positives,..name.Temperature], na.rm = T)[1], y = range(DataXY[Low.x][Positives,Init.Coeffs], na.rm = T)[2], pos = 4,
+                     paste("Model : y = ",coeff[1] , "+", coeff[2],"*x" ))
+                # initial values see https://stats.stackexchange.com/questions/160552/why-is-nls-giving-me-singular-gradient-matrix-at-initial-parameter-estimates
+                Starting.values <- list(a0 = A0, a1 = A1, C = exp(unname(coef(Model.0)[1])), k = unname(coef(Model.0)[2]))
+            } else {
+                
+                stop(futile.logger::flog.error("[Cal_Line] no high temperature sensor data with low x values."))
+                #Starting.values <- list(C = 1, k = 0.13, Y0 = unname(A0))
+                Formula <- as.formula(paste0("(y - (A0 + A1 * x)) ~ f_ExpGrowth(",name.Temperature,", C, k)"))
+                Starting.values <- list(C = 1, k = 0.13)
+                Model.0 <- minpack.lm::nlsLM(Formula, data = DataXY[Low.x], start = Starting.values, model = TRUE,
+                                             control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+                plot(DataXY[Low.x][[name.Temperature]], DataXY[Low.x,y], main = "Initial k0 value")
+                plot(DataXY[Low.x][Positives, .SD, .SDcols = c(name.Temperature, "Init.Coeffs")], ylab = "log (y - (a0 + a1 x))", main = "Temperature effect, Initial C and k value")
+                grid()
+                DataXY[Low.x, Predict := A0 + A1 * x + predict(Model.0, DataXY[Low.x][[name.Temperature]])]
+                lines(DataXY[Low.x, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[Low.x][[name.Temperature]])], col = "red")
+                abline(a = coef(Model.0)[1], b = coef(Model.0)[2], col=2, lwd=2)
+                coeff <- round(Model.0$coefficients , 2)
+                text(x = range(DataXY[Low.x][Positives,..name.Temperature], na.rm = T)[1], y = range(DataXY[Low.x][Positives,Init.Coeffs], na.rm = T)[2], pos = 4,
+                     paste("Model : y = ",coeff[1] , " + " , coeff[2] , "*x" ))
+                
+                C0 <- exp(coef(Model.0)[1])
+                k0 <- coef(Model.0)[2]
+                #A0 <- coef(Model.0)[3]
+                Starting.values <- list(a0 = unname(A0), a1 = unname(A1), C = unname(C0), k = unname(k0))} 
             # Fitting model
             Formula <- as.formula(paste0("y ~ f_exp_kT(x, a0, a1, C, k, ",name.Temperature,")"))
-            Starting.values <- list(a0 = unname(A0), a1 = unname(A1), C = unname(C0), k = unname(k0))
             # Lower = c(0, 0.0000000001, 0, 0.00000000001)
             if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
-                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE,
-                               control = nls.lm.control(maxiter = 1024, maxfev = 10000)) 
-            } else Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = list(a0 = A0, a1 = A1, C = C0, k = k0), model = TRUE, weights = wi, 
-                                  control = nls.lm.control(maxiter = 1024, maxfev = 10000))
-            # if (Unfit) 
+                Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            } else Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, weights = wi, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
+            plot(broom.mixed::augment(Model)[,c("y", ".fitted")], xlab = "sensor", ylab = "fitted model") 
             # display equations and R^2
             Equation <- sprintf(paste0(Sensor_name, "exp_kT: y = ",f_coef1,"+ ",f_coef2," x + ", f_coef2," exp(",f_coef2," T_Celsius), RMSE=", f_coef1,",AIC= %.1f"),
                                 coef(Model)[1],coef(Model)[2],coef(Model)[3],coef(Model)[4],
@@ -1516,12 +1759,12 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
             DataXY$Kelvin     <- 273.15 + DataXY$Temperature
             Formula <- as.formula(paste0("(y - A1 * x) ~ f_ExpGrowth(",name.Temperature,", C, k) + Y0"))
             Starting.values <- list(C = 1, k = 0.13, Y0 = unname(A0))
-            Model.0 <- minpack.lm::nlsLM(Formula, data = DataXY[High.Temperature], start = Starting.values, model = TRUE,
+            Model.0 <- minpack.lm::nlsLM(Formula, data = DataXY[Low.x], start = Starting.values, model = TRUE,
                                          control = nls.lm.control(maxiter = 1024, maxfev = 10000))
-            plot(DataXY[High.Temperature][[name.Temperature]], DataXY[High.Temperature,y], main = "Initial k0 value")
+            plot(DataXY[Low.x][[name.Temperature]], DataXY[Low.x,y], main = "Initial k0 value")
             grid()
-            DataXY[High.Temperature, Predict := predict(Model.0, DataXY[High.Temperature][[name.Temperature]])]
-            lines(DataXY[High.Temperature, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[High.Temperature][[name.Temperature]])], col = "red")
+            DataXY[Low.x, Predict := predict(Model.0, DataXY[Low.x][[name.Temperature]])]
+            lines(DataXY[Low.x, .SD, .SDcols = c(name.Temperature, "Predict")][order(DataXY[Low.x][[name.Temperature]])], col = "red")
             # Model.0 <- lm( log(y[Positives] - (A0 + A1 * x[Positives])) ~ Kelvin[Positives], data = DataXY)
             # C0 <- coef(Model.0)[1]
             # k0 <- coef(Model.0)[2]
@@ -1693,6 +1936,7 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
                         }
                     }
                     #fitting with Exponential growth
+                    browser()
                     Model <- minpack.lm::nlsLM(Formula.Covariates, data = DataXY,
                                    start = Start.Value,
                                    # start = list(a0 = A0, #coef(lm(y ~ x, data = DataXY))[1],
@@ -1837,7 +2081,7 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
         # Setting Initial values of Kohler Model
         Start <- list(a0 = 0, a1 = 1, K = 0.41)
         Lower <- c(-50, 0.1, 0)
-        Upper <- c(+50, 5  , 0.8)
+        Upper <- c(+50, 5  , Inf)
         # Fitting model
         if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
             Model <- minpack.lm::nlsLM(y ~ f_Kohler(x, a0, a1, K, RH = Out.Relative_humidity), data = DataXY, start = Start, model = TRUE,
@@ -1867,7 +2111,7 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
         # display equations and R^2
         Equation <- paste0(Sensor_name, "Kohler: y =  x * (1+(",f_coef2,"/1.65)/(1/RH-1) ), RMSE=",f_coef1,", AIC= %.1f")
         Equation <- sprintf(Equation, coef(Model)[1], sqrt(sum(resid(Model)^2)/(length(resid(Model)) - 2)), AIC(Model))
-    } else if (Verbose) cat("[Cal_Line] unknown calibration model\n")
+    } else if (Verbose) futile.logger::flog.warn(paste0("[Cal_Line] unknown calibration model ", Mod_type, "\n"))
     # Adding printing summary of Model
     if (Verbose) print(summary(Model))
     # Plotting and resuming the par values
@@ -1911,7 +2155,7 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type,  Multi.File = NULL,
 #================================================================CR
 ### Meas_Function: Function Measurement Function x = f(y) once Calibration function (y = f(x) of sensor is established e.g with Cal_Line ====
 #================================================================CR
-Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL, Matrice = NULL) {
+Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL, Matrice = NULL, Date = NULL) {
     # This function estimates the x value using a calibration model (Model)
     # y            : Sensor data to be converted to concentration level using the reverse calibration function (Model)
     # Mod_type     : type of calibration function: Linear, Quadratic, Sigmoid
@@ -1921,6 +2165,19 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
     # Matrice      : Covariates values, data.frame, default is NULL
     if (Mod_type == 'Linear' || Mod_type == 'Linear.Robust') {
         return((y - Model$Coef[1])/Model$Coef[2])
+    } else if (Mod_type == 'Linear.Robust.rqs') {
+        DataXY <- data.table(y = y)
+        DataXY[, quantile := cut(y, quantile(Model$Augment$y, probs = seq(0.1,0.9,0.1)))]
+        levels(DataXY$quantile) <- 1:ncol(Model$Coef)
+        # adding levels for y outside values of calibration
+        Which.Low  <- which(y<quantile(Model$Augment$y, probs = 0.1))
+        Which.High <- which(y>quantile(Model$Augment$y, probs = 0.9))
+        if (length(Which.Low)  > 0) set(DataXY, i = Which.Low,  j = "quantile", value = 1)
+        if (length(Which.High) > 0) set(DataXY, i = Which.High, j = "quantile", value = ncol(Model$Coef))
+        DataXY[, slope := Model$Coef[2,DataXY$quantile]]
+        DataXY[, intercept := Model$Coef[1,DataXY$quantile]]
+        DataXY[, x := (DataXY$y - DataXY$intercept) / DataXY$slope]
+        return(DataXY$x)
     } else if (Mod_type == 'MultiLinear') {
         # convert any column of Matrice that is not numeric (Date) to numeric
         if (!all(grepl(pattern = "numeric", x = sapply(lapply(Matrice, class), "[", 1)))) {
@@ -1962,7 +2219,6 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
             Matrice <- NewMatrice
             rm(NewMatrice)
         }
-        
         if (class(Matrice) != "matrix") Matrice <- as.matrix(Matrice)
         if (any("ExpGrowth" %in% Degrees)) {
             Degrees.Exp <- which("ExpGrowth" == Degrees)
@@ -1976,7 +2232,7 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
                 M.Cov.Not.Growth <- Matrice[, grep(pattern = covariates[j], colnames(Matrice))] %*% t(Model$Coef[Coef.Not.Growth])
                 if (exists("M.Cov")) M.Cov <- M.Cov + M.Cov.Not.Growth else M.Cov <- M.Cov.Not.Growth
             }
-        } else M.Cov <- Matrice %*% Model$Coef[3:length(Model$Coef)]
+            } else M.Cov <- Matrice %*% Model$Coef[3:length(Model$Coef)]
         Estimated <- as.vector((y - (Model$Coef[1] + M.Cov ))/Model$Coef[2])
         return(Estimated)
     } else if (Mod_type == 'Quadratic') {
@@ -2022,9 +2278,15 @@ Meas_Function <- function(y, Mod_type, Model, covariates = NULL, Degrees = NULL,
         #  yy <- Model$Coef[1] * (1-exp(-Model$Coef[2] * xx)) + Model$Coef[3]
         return(x)
     } else if (Mod_type == 'exp_kT_NoC') {
+        # model f_exp_kT: return( (y - (C + exp(k * Temperature - Tmin)))/ a1) )
         CovMod <- ifelse(is.null(covariates), "Out.Temperature", covariates)
-        # model f_exp_kT: return( (y - (a0 + exp(k * Temperature)))/ a1) )
-        Estimated <- as.vector( (y - (Model$Coef[1] * exp(Model$Coef[3] * Matrice[, CovMod]))) / Model$Coef[2] ) #  - Model$Coef[4]
+        # Extracting T.min from the equation
+        pattern <- "T_Celsius - \\s*(.*?)\\s*), RMSE"
+        T.min <- as.numeric(regmatches(Model$Equation, regexec(pattern, Model$Equation))[[1]][2])
+        setDT(Matrice)
+        #set(Matrice, j = "T.min", value = caTools::runmin(Matrice$Out.Temperature_int, 1440))
+        #Estimated <- as.vector((y - (Model$Coef["C"] * exp(Model$Coef["k"] * (Matrice[[CovMod]] - Matrice$T.min)))) /Model$Coef["a1"] ) #  - Model$Coef[4]
+        Estimated <- as.vector((y - (Model$Coef["C"] * exp(Model$Coef["k"] * (Matrice[[ CovMod]] - T.min)))) /Model$Coef["a1"] ) #  - Model$Coef[4]
         # browser()
         # T.biger.25 <- which(Matrice[, CovMod] > 25)
         # if (length(T.biger.25) > 0) Estimated[T.biger.25] <- NA
@@ -2513,7 +2775,7 @@ nan.to.na <- function(x) {x[which(is.nan(x))] <- NA; return(x)}
 #================================================================CR
 # Checking if there are coordinates for the reference data separated by a comma and project if needed
 #================================================================CR
-get_Coord.Ref  <- function(Coordinates.chr, ShinyUpdate = False, session = NULL, ID.Long = NULL, ID.Lat = NULL) { # feed back of coordinates into the ui
+get_Coord.Ref  <- function(Coordinates.chr, ShinyUpdate = FALSE, session = NULL, ID.Long = NULL, ID.Lat = NULL) { # feed back of coordinates into the ui
     # Coordinates.chr       : character string with long and lat coordinates separated with comma
     # ShinyUpdate           : logical default is FALSE, if TRUE update 2 Shiny select input with decimaldegree of LOng and Lat
     # ID.Long               : Shiny SelectInput ID for longitude
@@ -2533,12 +2795,13 @@ get_Coord.Ref  <- function(Coordinates.chr, ShinyUpdate = False, session = NULL,
             Ref.coord_LAT  <- Ref.coord_d[1,1]
             Ref.coord_LON  <- Ref.coord_d[1,2]
             # updating coordinates of reference station
-            updateTextInput(session = session,
-                            inputId = ID.Long,
-                            value   = Ref.coord_LON)
-            updateTextInput(session = session,
-                            inputId = ID.Lat,
-                            value   = Ref.coord_LAT)
+            if (ShinyUpdate) {
+                updateTextInput(session = session,
+                                inputId = ID.Long,
+                                value   = Ref.coord_LON)
+                updateTextInput(session = session,
+                                inputId = ID.Lat,
+                                value   = Ref.coord_LAT)}
         } else {
             Ref.coord_LON <- as.numeric(strsplit(x = Coordinates.chr, split = ",")[[1]][1])
             Ref.coord_LAT <- as.numeric(strsplit(x = Coordinates.chr, split = ",")[[1]][2])
@@ -2546,21 +2809,22 @@ get_Coord.Ref  <- function(Coordinates.chr, ShinyUpdate = False, session = NULL,
         # update Shiny Select input s
         return(paste0(Ref.coord_LON, ",", Ref.coord_LAT))
     } else {
-        cat("[get_Coord.Ref] ERROR Coordinates are not comma separated")
+        futile.logger::flog.warn("[get_Coord.Ref] ERROR Coordinates are not comma separated")
         return(paste0(NA,NA))}}
 #================================================================CR
-# Aggreation of time series in dataframe ====
+# DF_avg: Aggregation of Dataframe/datatable in datatable base on POSIXCt column====
 #================================================================CR
-DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60, keyDate = "date", SameClass = NULL) {
-    # Use data.table to average a data frame
-    # DF            : data.table or dataframe to be aggregated, shall include the PosixCT column "date" (default), or another name of POSIXct column on which to aggregate
-    # Cols.for.Avg  : character vector, default is NULL. If not NULL the columns Cols.for.Avg in DF and "date" are returned
-    # width         : numeric, default is 60. Size in minutes of the window used for averaging
-    # keyDate       : chr, defalt "date, name of the column of DF which hold the POSIXct on which
+#' @description aggregate/average data.table based on a POSIXct column.
+#' Previous code used timeAverage which is slw and later RcppRoll::roll_mean which is faster but needs to complete dataframe with all date before computing.
+#' Data.table is now used which is faster and easier
+#' @param DF data.table or dataframe to be aggregated, shall include the POSIXCt column "date" (default), or another name of POSIXct column used to aggregate
+#' @param Cols.for.Avg  character vector, default is NULL. If not NULL the columns Cols.for.Avg in DF and "date" are returned
+#' @param width numeric, default is 60. Size in minutes of the time window used for averaging
+#' @param keyDate chr, default is "date, name of the column of DF which hold the POSIXct used for averaging
+#' @ SameClass not used
+#' @return aggregated data.table starting on the first full hour discarding empty rows and transforming nan to na
+DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60L, keyDate = "date", SameClass = NULL) {
     #
-    # return        : aggregated data.table starting on the first full hour discarding empty rows and transforming nan to na
-    # Previous code used timeAverage and later RcppRoll::roll_mean which but needed to complete dataframes with all date.
-    # We use now data.table which is faster
     # checking the size of window, at least two times the width
     if (exists("DF") && !is.null(DF) && nrow(DF) > width * 2) {
         # Select columns
@@ -2598,7 +2862,10 @@ DF_avg <- function(DF, Cols.for.Avg = NULL, width = 60, keyDate = "date", SameCl
         # replace nan with
         DF.Agg.DT <- DF.Agg.DT[, lapply(.SD, nan.to.na)]
         return(DF.Agg.DT)
-    } else return(cat("[DF_avg] ERROR, the selected dataframe does not exist or is too short for averaging"))
+    } else {
+        futile.logger::flog.warn(paste0("[DF_avg] ERROR, the data table does not exist or is too short for averaging, width: ", width, ", number of rows: ", nrow(DF)))
+        return(DF)   
+    }
 }
 #================================================================CR
 # OS-independent way to select directory interactively in R

@@ -1,6 +1,16 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
+# New release V0.24, released 2021-09-12
+#            E109 - bug correction: The App is extremely slow because of the search of scriptsLog. Now Solved: Dir.Logs <- file.path(choices.ASEconfig, "scriptsLog")[dir.exists(file.path(choices.ASEconfig, "scriptsLog"))]
+#            E110 - bug correction: The App TabPanels for calibration, prediction, TimeSeries and Matrix were too reactive to all the the configuration of all sensors. Now it is sensitive only to the selected sensor using Last.CalSet and require(). Solved
+#            E111 - bug correction: TabPanels "Plot-Filtering-StatFiletering" returned an error when the reference data of some sensors were missing. Now it is sensitive only to the selected sensor using Last.CalSet and require(). Solved
+#            E112 - bug correction: TabPanels "Predition-Uncertainty-Orth.Regression" returned an error (wrong number of columns in Table.U_Table()). Solved
+#            E113 - bug correction: TabPanels in PlotFiletering used to be reactive only to the date interval of Range of dates for filtering data (1st sensor change DataTable view) of the 1st sensor. Now solved
+#            E114 - bug correction: when changing of sensors the tabPanels of Filtering, Calib and SetTime always ends up on the first sensor name. Now solved
+#            E115 - bug correction: when changing Meas.DateIn and MeasDateEnd, DF_Aggregated_avg was not recalculated. Now solved
+#            E116 - bug correction: when changing Calibration model, at different date interval with Sync.cal TRUE, the original reference data at the previous calibration interval was lost. Now solved
+#            E117 - bug correction: when columns of filtered reference data were missing from General.df, filtering of reference was not automatically carried out. Now solved
 # New release V0.23, released 2021-03-19
 #            E102 - bug correction: In the ASE_App: absolute humidity and Td_deficit were computed using the unfiltered temperature and humidity: Corrected now the filtered temperature and humidity are used
 #            E103 - bug correction: in Function influx.downloadAndPredict(), absolute humidity and Td_deficit uses the unfiltered temperature and humidity. 

@@ -115,7 +115,7 @@ if (length(List.ASE) > 0) for (ASE in List.ASE) {
                                           modelled             = Cal.Param$modelled[i.Sensor], 
                                           Register             = Cal.Param$Register[i.Sensor],
                                           Exclude.Cal          = Cal.Param$Exclude.Cal[i.Sensor],
-                                          Rdata.name.file = paste0(Auto.cal.name,".rdata"))}
+                                          Rdata.name.file      = paste0(Auto.cal.name,".rdata"))}
 }
 
 # Comparing all calibration models
