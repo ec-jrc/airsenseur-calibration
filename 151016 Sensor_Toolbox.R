@@ -504,8 +504,10 @@ slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL,
 #' @param Mat : Data.table or DataFrame of data including Case number, Date, x, y + optional ubsRM and/or ubss if ubsRM and/or ubss are not constant for all xi. The columns shall be in the order: "case", "Date", "xis", "yis","ubsRM", "ubss" with whatever column names.
 #' @param ubsRM : numeric (default = NULL ), random standard uncertainty of reference measurements, xis, given as a constant value for all xis reference values.
 #' @param variable.ubsRM : logical, default is FALSE. If FALSE, ubsRM is used as constant random standard uncertainties for all xis reference values. If TRUE ubsRM given in Mat and is used for each reference value
+#' @param perc.ubsRM : numeric default value 0.03. Use to compute ubsRm in case variable.ubsRM is TRUE as Mat$ubsRM = perc.ubsRM * Mat[["xis"]] 
 #' @param ubss : numeric (default = NULL ), random standard uncertainty of sensor measurements, yis, given as a constant value for all yis sensor values
 #' @param variable.ubss : logical, default is FALSE. If FALSE, ubss is used as constant random standard uncertainties for all yis sensor values. If TRUE ubss given in Mat and is used for each sensor value
+#' @param perc.ubss : numeric default value 0.03. Use to compute ubss in case variable.ubss is TRUE as Mat$ubss = perc.ubss * Mat[["yis"]] 
 #' @param Fitted.RS : logical, default is FALSE. If TRUE the square residuals (RS) can be fitted using a General Additive Model, according to the result of provided that the probability that the correlation between xis and RS is null is lower than 0.01, (p < 0.01)
 #' @param Regression character, default is "Orthogonal", possible values are "OLS" ,"Deming" and "Orthogonal". For Orthogonal Delta  is 1 and for "Deming" Delta is ubss^2/ubsRM^2. See https://en.wikipedia.org/wiki/Deming_regression
 #' @param Add.ubss : logical, default is TRUE If TRUE ubss is added to  Mat$Rel.RSS. If FALSE ubss is not added to  Mat$Rel.RSS.
@@ -519,7 +521,8 @@ slope_orth <- function(Xlabel, Ylabel, Title, Sensor_name = NULL,
 #' Negative Mat$RS - Mat$ubsRM^2) are set to 0
 
 #' @examples: empty
-U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, variable.ubss = FALSE, Fitted.RS = FALSE, Regression = "Orthogonal", Verbose = FALSE, Add.ubss = TRUE) {
+U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, perc.ubsRM = 0.03, ubss = NULL, variable.ubss = FALSE, perc.ubss = 0.03, Fitted.RS = FALSE, Regression = "Orthogonal",
+                      Verbose = FALSE, Add.ubss = TRUE, Versus = NULL) {
     #checking that the Mat  is not empty
     if (exists("Mat") && !is.null(Mat) && nrow(Mat)>0) {
         
@@ -529,22 +532,20 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
         # Convert Mat to data.table if needed
         if (!"data.table" %in% class(Mat)) Mat <- data.table(Mat, key = "Date")
         # Filtering for the validation data only
-        Mat <- Mat[complete.cases(Mat[,.(xis,yis)])]
+        Mat <- Mat[is.finite(rowSums(Mat[,.(xis,yis)]))]
         if (!nrow(Mat) > 0) return(futile.logger::flog.error("[U_orth_DF] Mat does not contains any complete rows with xis and yis"))
         
         # Setting ubsRM and ubss in Mat
         if (!variable.ubsRM) {
-            if (!is.null(ubsRM)) {
-                New.ubsRM <- rep(ubsRM, nrow(Mat))
-                Mat[, ubsRM := New.ubsRM]  
-                rm(New.ubsRM)} 
-        } else if (!"ubsRM" %in% names(Mat)) return(futile.logger::flog.error("[U_orth_DF] u(bs,RM) not given in data.table Mat. Stopping the function."))
+            if (!is.null(ubsRM)) set(Mat,  j = "ubsRM", value = rep(ubsRM, nrow(Mat))) 
+        } else if (!"ubsRM" %in% names(Mat)) {
+            return(futile.logger::flog.error("[U_orth_DF] u(bs,RM) not given in data.table Mat. Stopping the function."))
+        }  else Mat$ubsRM = perc.ubsRM * Mat[["xis"]]
         if (!variable.ubss) {
-            if (!is.null(ubss)) {
-                New.ubss <- rep(ubss, nrow(Mat))
-                Mat[, ubss := New.ubss]
-                rm(New.ubss)}
-        } else if (!"ubss" %in% names(Mat)) return(futile.logger::flog.error("[U_orth_DF] u(bs,s) not given in data.table Mat. Stopping the function."))
+            if (!is.null(ubss)) set(Mat,  j = "ubss", value = rep(ubss, nrow(Mat)))
+        } else if (!"ubss" %in% names(Mat)) {
+            return(futile.logger::flog.error("[U_orth_DF] u(bs,s) not given in data.table Mat. Stopping the function."))
+        } else Mat$ubss = perc.ubss * Mat[["yis"]]
         
         # Determination of delta for Deming or orthogonal regression
         if (Regression == "Deming") {
@@ -576,7 +577,7 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
             b1  <- (Syy - Sxx + sqrt((Syy- Sxx)^2 + 4*Sxy^2))/(2*Sxy)
             b0  <- mm - b1 * mo
             ub1 <- sqrt((Syy - (Sxy^2/Sxx))/((nb-2)*Sxx))
-            ub0 <- sqrt(ub1^2 * sum(Mat$xis^2)/nb)
+            ub0 <- sqrt(ub1^2 * sum(Mat[["xis"]]^2)/nb)
         } else if (Regression == "Deming"){
             #tls::tls(yis ~ xis, data = Mat[, .(xis, yis)])
             m2  <- MethComp::Deming(x = Mat[["xis"]], y = Mat[["yis"]], vr = Delta)
@@ -600,7 +601,7 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
         mbe   <- mean(Mat[["yis"]] - Mat[["xis"]])
         mae   <- mean(abs(Mat[["yis"]] - Mat[["xis"]]))
         CRMSE <- sqrt(mean(((Mat[["yis"]] - mm) - (Mat[["xis"]] - mo))^2))
-        NMSD  <- (sd(Mat[["yis"]]) - sd(Mat$xis)) / sd(Mat[["xis"]])
+        NMSD  <- (sd(Mat[["yis"]]) - sd(Mat[["xis"]])) / sd(Mat[["xis"]])
         Correlation <- cor(Mat[["xis"]],Mat[["yis"]])
         # Squares of Residuals and bias (vector of values)
         Mat[, fitted := (b0 + b1 * Mat[["xis"]])]
@@ -608,7 +609,7 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
         Mat[, residuals := (Mat[["yis"]] - Mat[["fitted"]])]
         Mat[,     RS := (Mat[["yis"]] - Mat[["fitted"]])^2]
         # # creating an OLS model to apply Breusch Pagan test and to compute ub0 and ub1
-        OLS <- lm(Mat[["yis"]] ~ Mat[["xis"]])
+        OLS <- lm(yis ~ xis, data = Mat)
         OLS$coefficients  <- c(b0,b1)
         OLS$residuals     <- Mat$residuals
         OLS$fitted.values <- Mat$fitted
@@ -618,6 +619,7 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
             ub1 <- lmtest::coeftest(OLS, vcov. = car::hccm(OLS, type = "hc1"))[2, "Std. Error"]}
         
         # testing for heteroscedacity with Breusch Pagan test
+        # https://www.r-bloggers.com/2016/01/how-to-detect-heteroscedasticity-and-rectify-it/
         Breusch.Pagan     <- lmtest::bptest(formula = OLS)
         skedastic::breusch_pagan(OLS)
         # testing significance of correlation between s and square of absolute residuals - The calculation does not work only possibility the constrant RSS
@@ -628,22 +630,22 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
             futile.logger::flog.info("[U_orth_DF] Breusch-Pagan: null hypothesis is constant variance of residuals along x axis (homoscedacity). The hyposthesis is rejected if p-value < 0.05 (heterosccedacity)\n")
             futile.logger::flog.info(paste0("[U_orth_DF] if Breusch-Pagan lagrange multiplier statistic p-value < 0.05, the null hypothesis (homoscedacity) is rejected, residuals are heteroscedastic with 0.95 level of statistical confidence. p-value =  ",
                                             format(rtest$p.value, digits = 4)))
-            RS.Fitted <- TRUE
             futile.logger::flog.info("[U_orth_DF] The variance of residuals is not constant. RSS is calculated after applying a General Additive Model fitting.")
-            # Fitting with gam
+            # Fitting with gam Vs "Xi"
+            if (is.null(Versus)) Versus <- "xis"
             # if any y value is zero getting Warning: Error in eval: non-positive values not allowed for the 'gamma' family (we had 0.5 % of min(xis) to avoid this
-            z <- gam(Mat$RS ~ s(Mat$xis), family=Gamma(link=log) )
-            Mat[, RS := fitted(z)]
+            #Formula <- as.formula(paste0("Mat$RS ~ s(Mat[[", Versus, "]])"))
+            #z <- gam(Formula, family=Gamma(link=log) )
+            z <- gam(sqrt(Mat$RS) ~ s(Mat$xis), family=Gamma(link=log) )
+            Mat[, RS := fitted(z)^2]
             # Sum of squares of Residuals (one constant value)
             RSS     <- sum(Mat$RS)
-            #plot(Mat$xis, Mat$residuals); grid()
-            plot(Mat$xis, Mat$residuals^2, type = "p"); points(Mat$xis, Mat$RS, col = "red"); grid()
+            plot(Mat[[Versus]], Mat$residuals^2, type = "p"); lines(Mat[order(Mat[[Versus]]),c(Versus, "RS"), with = F], col = "red", xlab = Versus); grid()
         } else {
             if (Fitted.RS) {
                 futile.logger::flog.info(paste0("[U_orth_DF] Argument \"Fitted.RS\" in U_orth_DF(): ", Fitted.RS, ". If FALSE the square residuals are not fitted and constant RSS is computed."))
                 futile.logger::flog.info(paste0("[U_orth_DF] if Breusch-Pagan lagrange multiplier statistic p-value > 0.05, residuals are homoscedastic with 0.95 level of statistical confidence. p -value = ",
                                                 format(rtest$p.value, digits = 4)))}
-            RS.Fitted <- FALSE
             futile.logger::flog.info("[U_orth_DF] RSS is calculated with equation for constant residuals.")
             # Sum of squares of Residuals (one constant value)
             RSS     <- sum(Mat$RS)
@@ -652,7 +654,7 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
             Mat[, RS := rep(RSS/(nb-2), times = .N)]}
         
         # Checking if RSS^2 - Mat$ubsRM^2 < 0 that results in an error using sqrt(RSS^2 - Mat$ubsRM^2) of the rs.RSS. Replacing with 0
-        neg.RSS <- which(Mat$RS - Mat[["ubsRM"]]^2 <= 0)
+        neg.RSS <- which(Mat$RS - Mat[["ubsRM"]]^2 < 0)
         if (length(neg.RSS) > 0) {
             futile.logger::flog.warn("[U_orth_DF] Some \"RSS/(nb - 2) - ubsRM^2\" are negative and square roots cannot be calculated.")
             futile.logger::flog.info("[U_orth_DF] ubsRM maybe too high and could be modified.")
@@ -661,15 +663,28 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
             # mat$RS are not changed and they are already calculated
             futile.logger::flog.info("[U_orth_DF] All \"RSS/(nb - 2) - ubsRM^2\" are positives. ubsRM makes sence.")}
         #### Calculating parameters for modified Target diagram Rel.bias and Rel.RSS
-        Mat[, Rel.bias := 2 * (b0/Mat$xis + (b1 - 1))]
+        Mat[, Rel.bias := 2 * (b0/Mat[["xis"]] + (b1 - 1))]
         # (Mat$RS - Mat$ubsRM^2) cannot be negative, adding or not ubss
-        if (Add.ubss) Mat[, Rel.RSS := 2 * sqrt(Mat$ubss^2 + max(0,Mat$RS - Mat$ubsRM^2)) / Mat$xis] else Mat[, Rel.RSS := 2 * sqrt(max(0,Mat$RS - Mat$ubsRM^2)) / Mat$xis]
+        if (Add.ubss){
+            if (length(neg.RSS) == 0) {
+                Mat[, Rel.RSS := 2 * sqrt(Mat$ubss^2 + Mat$RS - Mat$ubsRM^2) / Mat[["xis"]]]
+            } else {
+                Positives <- setdiff(1:nrow(Mat),neg.RSS)
+                if (length(Positives) > 0) Mat[Positives, Rel.RSS := 2 * sqrt(Mat[Positives,ubss]^2 + Mat[Positives,RS] - Mat[Positives,ubsRM]^2) / Mat[Positives,xis]]
+                Mat[neg.RSS,  Rel.RSS := 0]}
+        } else {
+            if (length(neg.RSS) == 0) {
+                Mat[, Rel.RSS := 2 * sqrt(Mat$RS - Mat$ubsRM^2) / Mat[["xis"]]]
+            } else {
+                Positives <- setdiff(1:nrow(Mat),neg.RSS)
+                if (length(Positives) > 0) Mat[Positives, Rel.RSS := 2 * sqrt(Mat[Positives,RS] - Mat[Positives,ubsRM]^2) / Mat[Positives,xis]]
+                Mat[neg.RSS,  Rel.RSS := 0]}} 
         #### Calculating uncertainty
         Mat[, Ur := sqrt(Mat$Rel.bias^2 + Mat$Rel.RSS^2) * 100]
-        Mat[, U  := Mat$Ur / 100 * Mat$xis]
+        Mat[, U  := Mat$Ur / 100 * Mat[["xis"]]]
         # Indicators
         Mat[, Max.ubsRM := sqrt(RSS/(nb-2) + Mat$bias^2)]
-        Mat[, Max.RSD   := sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis]
+        Mat[, Max.RSD   := sqrt(RSS/(nb-2) + Mat$bias^2)/Mat[["xis"]]]
         # Printing
         if (Verbose) {
             cat("--------------------------------\n")
@@ -688,15 +703,15 @@ U_orth_DF <- function(Mat, ubsRM = NULL, variable.ubsRM = FALSE, ubss = NULL, va
             cat(sprintf("CRMSE: %.4g ",CRMSE), "\n")
             cat(sprintf("NMSD : %.4g ",NMSD), "\n")
             cat(sprintf("n    : %.4g ",nb), "\n")}
-        calib <- list(mo,sdo, mm,sdm, b1, ub1, b0, ub0, RSS, rmse, mbe, Correlation, nb, CRMSE, NMSD, Mat, RS.Fitted, Regression)
+        calib <- list(mo,sdo, mm,sdm, b1, ub1, b0, ub0, RSS, rmse, mbe, Correlation, nb, CRMSE, NMSD, Mat, Fitted.RS, Regression)
     } else {
         cat("Mat is empty. Returning NAs.")
         calib <- list(mo = NA,sdo = NA, mm = NA,sdm = NA, b1 = NA, ub1 = NA, b0 = NA, ub0 = NA, RSS = NA,rmse = NA, mbe = NA, Correlation = NA, nb = NA, CRMSE = NA, NMSD = NA, Mat = NA, Regression = Regression)}
     names(calib) <- c("mo","sdo", "mm","sdm", "b1", "ub1", "b0", "ub0", "RSS","rmse", "mbe", "Correlation", "nb", "CRMSE", "NMSD", "Mat", "RS.Fitted", "Regression")
-    if (Verbose) print(data.frame(x              = Mat$xis,
+    if (Verbose) print(data.frame(x              = Mat[["xis"]],
                                   ubsRM          = Mat$ubsRM,
                                   Max.ubsRM      = sqrt(RSS/(nb-2) + Mat$bias^2),
-                                  Max.RSD        = sqrt(RSS/(nb-2) + Mat$bias^2)/Mat$xis,
+                                  Max.RSD        = sqrt(RSS/(nb-2) + Mat$bias^2)/Mat[["xis"]],
                                   Decrease.ubsRM = (Mat$ubsRM - sqrt(RSS/(nb-2) + Mat$bias^2)) > 0))
     return(calib)
 }
@@ -1261,8 +1276,8 @@ DeLag_Pred <- function(DT.General, ColRef, ColSens, Meas.DateIN = NULL, Meas.Dat
     if (length(Used.date) > 0) {
         if (Sync.Pred) {
             Lag <- Find_Max_CCF(DT.General[Used.date][[ColRef]],DT.General[Used.date][[ColSens]])
-            # exception for NO2 4047D0
-            if (!is.null(ASE.name) && !is.null(name.sensor) && ASE.name == "4047D0" && name.sensor == "NO2_B43F_P1" && DateEND < as.Date("2020-02-01")) Lag$lag <- -60
+            ## exception for NO2 4047D0
+            #if (!is.null(ASE.name) && !is.null(name.sensor) && ASE.name == "4047D0" && name.sensor == "NO2_B43F_P1" && DateEND < as.Date("2020-02-01")) Lag$lag <- -60
             if (Lag$lag != 0) {
                 if (Verbose) futile.logger::flog.info(paste0("[DeLag_Pred] there is a lag between x and y, of ", Lag$lag," row of data which gives a better correlation between x and y"))
                 # Saving original data
@@ -1580,7 +1595,6 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type, Probs = NULL,  Mult
             Formula <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a1, C, k, ",name.Temperature,")"))
             #Formula <- as.formula(paste0("y ~ f_exp_kT_NoC_log.min(x, a1, C, k, " , name.Temperature, ", log.min)"))
             if (Verbose) print(Starting.values, quote = F)
-            browser()
             if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
                 Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
             } else {
@@ -1671,7 +1685,6 @@ Cal_Line <- function(x, s_x = NULL, y, s_y = NULL, Mod_type, Probs = NULL,  Mult
             Formula <- as.formula(paste0("y ~ f_exp_kT_NoC(x, a1, C, k, ",name.Temperature,")"))
             #Formula <- as.formula(paste0("y ~ f_exp_kT_NoC_log.min(x, a1, C, k, " , name.Temperature, ", log.min)"))
             if (Verbose) print(Starting.values, quote = F)
-            browser()
             if (is.null(DataXY$wi) || any(DataXY$wi == 0) || all(is.na(DataXY$wi))) {
                 Model <- minpack.lm::nlsLM(Formula, data = DataXY, start = Starting.values, model = TRUE, control = nls.lm.control(maxiter = 1024, maxfev = 10000))
             } else {

@@ -1,6 +1,19 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
+# New release V0.25, released 2021-12-15
+#            E118 - bug correction: in Function4ASE.R, function SQLite2df was unable to manage changes of sensor names on the same channel of the chemical shield. Now the function combines
+#                                   the data of the same channel in different sensor names, keeps the name of the last sensor and guesses the variable name (Carbon_monoxide ...). Solved
+#            E119 - bug correction: in Function4ASE.R, all functions about filtering and conversion assumed the presence of Temperature_int and relative_int even when the sensor was missing. Solved
+#            N145 - Added parameters "Add.ubss", "variable.ubsRM", "variable.ubss", "Fitted.RS", "Regression" in ASE.cfg in order to control the linear regression type and including of ubss in Target diagrams. 
+#                                     All cfg are automatically updated to include tses parameters
+#            E120 - Solving small bugs in plotting and saving Target Diagrams (adding regression and fit of RSi), and plotting of uncertainty scatterplot, Sqr. residuals and Uncertainty
+#            E120 - bug correction: u(bs,RM) and u(bs,s) should not be allowed to have a value of 0, as this may crash the app with wrong calculation in U_Orth_list(). Solved, min value 0.01, if needed change the min value
+#            N146 - Change in saving Target Diagram, residuals and uncertainty: They are not saved automatically anymore. They are now plotted as raster and saved as pdf only if button "Save Plot" 
+#                                                                               is pressed in order to save time of computing.
+#            N147 - Prediction|Uncertainty|Residuals gives now the absolute values of residuals instead of their square are fitted and ploted
+#            N148 - The app is now more reactive once data are loaded by dimisnishing the number to agrregate columns in DDF.aggregated.Avg.
+#            N149 - the percentage of ubsRM and ubss for target.digram can be given in the side Layout. The target diagrams give UR(yi) using contour lines to ease reading.
 # New release V0.24, released 2021-09-12
 #            E109 - bug correction: The App is extremely slow because of the search of scriptsLog. Now Solved: Dir.Logs <- file.path(choices.ASEconfig, "scriptsLog")[dir.exists(file.path(choices.ASEconfig, "scriptsLog"))]
 #            E110 - bug correction: The App TabPanels for calibration, prediction, TimeSeries and Matrix were too reactive to all the the configuration of all sensors. Now it is sensitive only to the selected sensor using Last.CalSet and require(). Solved

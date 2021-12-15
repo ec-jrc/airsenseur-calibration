@@ -140,7 +140,7 @@ ASEDigi2Volt <- function(Sensors_Cal, Digital, ADC = 16, Volt.Convert = TRUE, Pa
     #               Intercept     : a float vector, one value per sensor in Sensors_Cal$Sensors, intercept of conversion equation Conc[] = Intercept + Slope x Voltage
     #               Slope         : a float vector, one value per sensor in Sensors_Cal$Sensors, intercept of conversion equation Conc[] = Intercept + Slope x Voltage
     #               Sens.raw.unit : vector of strings, one value per sensor with the Unit names after conversion of Digital values into raw data
-    # ADC         : number of bits of the Aanalogue to digital conversion
+    # ADC         : number of bits of the Analogue to digital conversion
     # Digital     : a dataframe of numerics with the Digital values to be converted into Voltages or Currents (Out.Nitrogen_dioxide, ...
     # Volt.Convert: logical, default is TRUE. If TRUE, the data in Digital dataFrame need conversion from Digital to V/nA. If FALSE data units do not need conversion.
     # Pattern     : string, default "Out.". Pattern to be deleted from names(Digital)
@@ -149,7 +149,7 @@ ASEDigi2Volt <- function(Sensors_Cal, Digital, ADC = 16, Volt.Convert = TRUE, Pa
     # reorder Sensors_Cal as Digital for gas sensors - create empty data.table of results
     # The name of the sensors are given by the names of the column in Digital
 
-        # Deleting Pattern from gas.name or sensor.name if needed. Dicard non chemical sensor from Sensors_Cal
+        # Deleting Pattern from gas.name or sensor.name if needed. Discard non chemical sensor from Sensors_Cal
     if (Name.Digital == "gas.sensor") {
         Sensors_Cal  <- Sensors_Cal[as.vector(sapply(gsub(pattern = Pattern, replacement = "", unique(gsub("_StDev","",names(Digital)))),
                                                      function(i) grep(i, Sensors_Cal$gas.sensor))),]
@@ -1292,7 +1292,7 @@ Down_Influx <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PA
     # create influx connection object and getting number of records
     #------------------------------------------------------------------------------CR
     if (PROXY) {
-        if (is.null(LOGIN)) set_config(use_proxy(url=URL, port=PORT)) else set_config( use_proxy(url=URL, port=PORT, username    = LOGIN, password = PASSWORD))
+        if (is.null(LOGIN)) set_config(use_proxy(url=URL, port=PORT)) else set_config( use_proxy(url=URL, port=PORT, username = LOGIN, password = PASSWORD))
     } else reset_config()
     Influx.con <- httr::GET(paste0("http://",Host,":",Port,"/ping"), config = authenticate(user = User, password = Pass, type = "basic"))
     if (Influx.con$status_code != 204) {
@@ -1574,7 +1574,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     # Installing necessary packages
     #------------------------------------------------------------------------------CR
     # Both RSQLite and sqldf (and others too) are loaded by library(sqldf), so it is enough to instal sqldf
-    list.Packages <- c("sqldf", "openair", "reshape","tidyverse", "data.table")
+    list.Packages <- c("openair", "reshape")
     if (!all(list.Packages %in% installed.packages())) librarian::shelf(list.Packages);rm(list.Packages)
     #------------------------------------------------------------------------------CR
     # AirsensEur.db exists? creating the db or just the connect to the db
@@ -1617,6 +1617,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         # There are no records in AirSensEUR$Dataset
         futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " file InfluxData.csv does not exist. Reading all data of airsenseur.db."))
         Dataset.N  <- 0
+        #Parallel <- FALSE
     }
     #DBI::dbGetQuery(SQLite.con, paste0("CREATE INDEX IDtime ON ",Dataset, "(time);"))
     # # getting the default Page of data to download
@@ -1644,12 +1645,19 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         #Register the Cluster
         registerDoParallel(cl)
         
+        # Selecting only data to add
+        if (Dataset.N == 0) {
+            rowID2use <- 1:SQL.Total.N 
+        } else {
+            rowID2use <- Dataset.N:SQL.Total.N
+        }
+        
         #Start the Parallel Loop
         Values_db <- data.table(rbindlist(
             foreach(i= 1:n.cores, .inorder = FALSE, .noexport="SQLite.con", .packages=c("DBI","RSQLite")) %dopar% { #.combine = "rbindlist"
                 sql_text <- paste0("SELECT rowid,* FROM '", paste0(Dataset,"_Cast"), 
-                                   "' WHERE rowid >= ", round(quantile(1:Dataset.N, (i-1)/n.cores)),
-                                   " LIMIT ", (round(quantile(1:Dataset.N, (i)/n.cores)) - round(quantile(1:Dataset.N, (i-1)/n.cores))),";")
+                                   "' WHERE rowid >= ", round(quantile(rowID2use, (i-1)/n.cores)),
+                                   " LIMIT ", (round(quantile(rowID2use, (i)/n.cores)) - round(quantile(rowID2use, (i-1)/n.cores))-1),";")
                 return(DBI::dbGetQuery(SQLite.con, sql_text))
             }, fill = TRUE),check.names = FALSE)
         
@@ -1662,6 +1670,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         stopCluster(cl)
         stopImplicitCluster()
     } else Values_db <- data.table(DBI::dbGetQuery(SQLite.con, statement=paste("SELECT * FROM '", paste0(Dataset,"_Cast"), "'", sep="")),check.names = FALSE)
+    # set class of time to POSIXct and set index 
     data.table::set(Values_db, j = "time", value =  ymd_hms(Values_db[["time"]], tz = Influx.TZ))
     setkey(Values_db, "time")
     # resuming Page for tabulating values
@@ -1688,7 +1697,7 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
     #------------------------------------------------------------------------------CR
     # Adding final name (Temperature, Relative ...)
     #------------------------------------------------------------------------------CR
-    futile.logger::flog.info("[SQLite2df] ", Dataset, " looking for the names of meteorological sensors and ASE Status using the sensor names")
+    futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " looking for the names of meteorological sensors and ASE Status using the sensor names"))
     for (i in Meteo.names.change$Influx.names[Meteo.names.change$Influx.names %in% Channel.names$name]) {
         i.rows <- which(Channel.names$name == i)
         # setting column variables in Channel.names with names of Meteo.names.change
@@ -1701,34 +1710,12 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
         if (!"Variables" %in% names(Channel.names)) {
             Channel.names[i = i.rows, Variables := ASE_Status[ASE_Status$Influx.names == i,"General.names"]]
         } else set(Channel.names, i = i.rows, j = "Variables", value = ASE_Status[ASE_Status$Influx.names == i,"General.names"])}
-    futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " looking for the names of all sensors and channel numbers from a list of sensor names"))
-    if (is.null(asc.File)) {
-        # In case of having more than one sensor name on the same channel number in Values_db and thus Channel.names
-        for (i in Channel.names$channel) {
-            if (Verbose) futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " looking for different sensor models at channel ",i))
-            # Taking the last name if sensors have been replaced
-            if (length(Channel.names[channel == i, channel]) > 1) {
-                futile.logger::flog.warn(paste0("[SQLite2df] ", Dataset, " There are different sensor names at channel",i,". Sensors ",c(Channel.names$name[Channel.names$channel == i])))
-                data.table::set(Channel.names, i = Channel.names[channel == i, which = T], j = "name", value = paste(Channel.names[channel == i, name], collapse = "!"))
-                # Setting the name of the sensor to the last one with same channel number
-                if (any(grepl(pattern = "!", x = Channel.names[channel == i, name]))) {
-                    set(Channel.names, i = Channel.names[channel == i, which = T], j = "name", 
-                        value = tail(unlist(strsplit(Channel.names$name[Channel.names[channel == i, which = T]], split = "!")), n = 1))
-                    futile.logger::flog.warn(paste0("[SQLite2df] the name of the sensor of channel ", i, " has been changed. The script is assuming that the sensor model type was not changed during use and it is  ",
-                               Channel.names[channel == i, name], ", set to the last one."))}}}
-    } else {
-        # Set Channel.names$name, Values_db$name and Values_db$Pollutants based on the shield config file of the chemical sensor board. Sensor shall be in channel 1, 2, 3 and 4!!!
-        for (i in which(!is.na(asc.File$name.sensor))) {
-            # Setting name of sensor from file base on channel number - 1
-            futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " setting name.sensor and gas.sensor using the shield config file for sensor ", i))
-            # updating the model of sensor in df Channel.names corresponding to sensor in asc.File based on channel number
-            set(Channel.names, i = which(Channel.names$channel == (i-1)), j = "name", value = asc.File$name.sensor[i])}}
     # Defining names and variables for gas sensors - Used the same names of variables as in SOS for compatibility reasons
     Sensor.names <- list(Nitrogen_dioxide      = c("NO2_B43F_P1", "NO2_A43F_P1","no2_b43f", "NO2-B43F", "NO2B43F", "NO2_B43","NO2_M20", "NO2_C1", "NO2_C25", "NO2/C-20", "NO2_3E50", "NO23E50", "NO2", "S1"),
-                         Carbon_monoxide       = c("CO_A4_P1"   , "CO_B4_P1","CO-B4", "CO-A4", "CO_MF200","CO/MF-200", "CO/MF-20", "CO-MF200", "CO_C200", "CO_CF200", "CO_3E300","CO3E300", "CO","COMF200","CO-A4 O","COA4", "S2"),
+                         Carbon_monoxide       = c("CO_A4_P1"   , "CO_B4_P1","CO-B4", "CO-A4",  "COA4", "COMF200", "CO_MF200","CO/MF-200", "CO/MF-20", "CO-MF200", "CO_C200", "CO_CF200", "CO_3E300","CO3E300", "CO","CO-A4 O", "S2"),
                          Ozone                 = c("OX_A431_P1" , "OX_B431_P1","O3/M-5", "O3-B4", "AX-A431", "OX-A431", "OX_A431", "O3-A431", "O3_M5", "O3_C5", "O3_C100", "O3-M5", "o3_m_5", "O3_3E1F", "O33EF1", "O3", "O3E100", "S3"),
                          Nitric_oxide          = c("NO_B4_P1"   , "NO_A4_P1"  , "NO-B4", "NOB4_P1","NOB4", "NO_M25", "NO_C1", "NO_C25","NO/C-25", "NO3E100", "NO_3E100", "NO", "No Sensor", "S4"),
-                         Sulfur_dioxide        = c("SO2_B4_P1"  , "SO2_A4_P1" , "SO2_M20", "SO2_M20", "SO2_MF20", "SO2_C1", "SO2_C20", "SO2_CF20"),
+                         Sulfur_dioxide        = c("SO2_B4_P1"  , "SO2_A4_P1" , "SO2_M20", "SO2_MF20", "SO2_C1", "SO2_C20", "SO2_CF20"),
                          Ammonia               = c("NH3_MR100"  , "NH3_CR50") ,
                          Particulate_Matter_1  = c("OPCN2PM1"   , "OPCN3PM1") ,
                          Particulate_Matter_25 = c("OPCN2PM25"  , "OPCN3PM25"),
@@ -1777,24 +1764,75 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
                          PM25_PMSCal           = "5325CAT",
                          PM10_PMSraw           = "5310CST",
                          PM10_PMSCal           = "5310CAT",
-                         Radon                 = "RD200M") # Add new sensor model to be recognized if needed
+                         Radon                 = "RD200M",
+                         Relative_humidity     = c("SHT31HE", "Humid"),
+                         Temperature           = c("SHT31TE", "Tempe", "Temp"),
+                         Atmospheric_pressure  = c("Press", "BMP280"),
+                         Temperature_int       = "SHT31TI",
+                         Relative_humidity_int = "SHT31HI",
+                         Batt_Cumulated_Charge = "L2942CUR",
+                         Batt_Voltage          = "L2942VOL",
+                         Batt_Charge_Status    = "L4156STA"
+    ) # Add new sensor model to be recognized if needed
     #------------------------------------------------------------------------------CR
-    # Adding sensor model type (Nitic_Oxide...) if more than 1 model of sensors then the model type are separated with "!" -
-    # The last sensor model type is used
+    # Adding sensor model type (Nitic_Oxide...) if more than 1 model of sensors then columns are combined and the last sensor model type is used
     #------------------------------------------------------------------------------CR
     for (i in 1:length(Sensor.names)) {
-        for (j in which(Sensor.names[[i]] %in% Channel.names$name)) {
-            irows <- which(Channel.names$name == Sensor.names[[i]][j])
-            if (length(irows) > 0) set(Channel.names, i = irows, j = "Variables", value = names(Sensor.names)[i])}}
-    futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " sensors found in the airsenseur.db"))
-    if (Verbose) print(cbind(Channel.names, lubridate::ymd_hms(Values_db$time[as.numeric(row.names(Channel.names))]) ))
-    # Setting Values_db$Pollutants that gives the correct Polluants names even if the sensors are changed of position during use, not for chemical sensors, already done
-    for (i in unique(Channel.names$name)) {
-        # setting correct colnames in values_db for Meteo.names. delete if not recognized
-        if (Verbose) futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " setting Values_db$Pollutants to ", unique(Channel.names$Variables[which(Channel.names$name == i)])," using the shield config file for sensor ", i))
-        # Sensor.rows <- which(Values_db$name == i)
-        Sensor.Columns <- which(names(Values_db) == i)
-        if (length(Sensor.Columns) > 0) setnames(Values_db, i, unique(Channel.names$Variables[which(Channel.names$name == i)])) else Values_db[,(i) := NULL]}
+        Index.sensors <- which(Channel.names$name %in% Sensor.names[[i]])
+        # Dealing with change of sensor name on the same channel
+        if (length(Index.sensors) > 1) Dupli.Sensors <- Channel.names$name[which(Channel.names$name %in% Sensor.names[[i]])] else Dupli.Sensors <- NA
+        if (all(!is.na(Dupli.Sensors))) {
+            for (Dupli in 2:length(Dupli.Sensors)) {
+                if (all(Dupli.Sensors[c(Dupli - 1, Dupli)] %in% names(Values_db))) {
+                    Rows.1st <- which(!is.na(Values_db[[Dupli.Sensors[Dupli - 1]]]))
+                    Rows.2nd <- which(is.na(Values_db[[Dupli.Sensors[Dupli]]]))
+                    Missing.2nd <- intersect(Rows.1st, Rows.2nd)
+                    if (length(Rows.1st) > 0  && length(Missing.2nd) > 0) set(Values_db, i = Missing.2nd, j = Dupli.Sensors[Dupli], value = Values_db[[Dupli.Sensors[Dupli - 1]]][Missing.2nd])
+                    # deleting 1st sensor in Values_db
+                    Sensors2Del <- Dupli.Sensors[Dupli - 1]
+                    Values_db[, (Sensors2Del) := NULL]}}
+            # giving official name of the remaing sensor found in the shield configuration
+            setnames(Values_db, old = Dupli.Sensors[Dupli], new = names(Sensor.names)[i])
+        } else if (length(Index.sensors) > 0) setnames(Values_db, old = Channel.names$name[Index.sensors], new = names(Sensor.names)[i])
+        # Updating Channel.names
+        # for (j in which(Sensor.names[[i]] %in% Channel.names$name)) {
+        #     irows <- which(Channel.names$name == Sensor.names[[i]][j])
+        #     if (length(irows) > 0) set(Channel.names, i = irows, j = "Variables", value = names(Sensor.names)[i])}
+    }
+    if ("rowid" %in% names(Values_db)) Values_db[, rowid := NULL]
+    # changing chemical sensor names with sensor shield configuration file in Channel.names
+    # futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " looking for the names of all sensors and channel numbers from a list of sensor names"))
+    # if (is.null(asc.File)) {
+    #     # In case of having more than one sensor name on the same channel number in Values_db and thus Channel.names
+    #     for (i in Channel.names$channel) {
+    #         if (Verbose) futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " looking for different sensor models at channel ",i))
+    #         # Taking the last name if sensors have been replaced
+    #         if (length(Channel.names[channel == i, channel]) > 1) {
+    #             futile.logger::flog.warn(paste0("[SQLite2df] ", Dataset, " There are different sensor names at channel",i,". Sensors ",c(Channel.names$name[Channel.names$channel == i])))
+    #             data.table::set(Channel.names, i = Channel.names[channel == i, which = T], j = "name", value = paste(Channel.names[channel == i, name], collapse = "!"))
+    #             # Setting the name of the sensor to the last one with same channel number
+    #             if (any(grepl(pattern = "!", x = Channel.names[channel == i, name]))) {
+    #                 set(Channel.names, i = Channel.names[channel == i, which = T], j = "name", 
+    #                     value = tail(unlist(strsplit(Channel.names$name[Channel.names[channel == i, which = T]], split = "!")), n = 1))
+    #                 futile.logger::flog.warn(paste0("[SQLite2df] the name of the sensor of channel ", i, " has been changed. The script is assuming that the sensor model type was not changed during use and it is  ",
+    #                                                 Channel.names[channel == i, name], ", set to the last one."))}}}
+    # } else {
+    #     # Set Channel.names$name, Values_db$name and Values_db$Pollutants based on the shield config file of the chemical sensor board. Sensor shall be in channel 1, 2, 3 and 4!!!
+    #     for (i in which(!is.na(asc.File$name.sensor))) {
+    #         # Setting name of sensor from file base on channel number - 1
+    #         futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " setting name.sensor and gas.sensor using the shield config file for sensor ", asc.File$name.sensor[i]))
+    #         # updating the model of sensor in df Channel.names corresponding to sensor in asc.File based on channel number
+    #         set(Channel.names, i = which(Channel.names$channel == (i-1)), j = "name", value = asc.File$name.sensor[i])}}
+    # futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " sensors found in the airsenseur.db ", paste(unique(Channel.names$name),collapse = ", ")))
+    # if (Verbose) print(cbind(Channel.names, lubridate::ymd_hms(Values_db$time[as.numeric(row.names(Channel.names))]) ))
+    # # Setting Values_db$Pollutants that gives the correct Pollutant names even if the sensors are changed of position during use, not for chemical sensors, already done
+    # for (i in unique(Channel.names$name)) {
+    #     # setting correct colnames in values_db for Meteo.names. delete if not recognized
+    #     if (Verbose) futile.logger::flog.info(paste0("[SQLite2df] ", Dataset, " setting Values_db$Pollutants to ", unique(Channel.names$Variables[which(Channel.names$name == i)])," using the shield config file for sensor ", i))
+    #     # Sensor.rows <- which(Values_db$name == i)
+    #     Sensor.Columns <- which(names(Values_db) == i)
+    #     if (length(Sensor.Columns) > 0) setnames(Values_db, i, unique(Channel.names$Variables[which(Channel.names$name == i)])) else{
+    #         if (i %in% names(Values_db)) Values_db[,(i) := NULL]}} 
     #------------------------------------------------------------------------------CR
     # Putting data in tabulated dataframe
     #------------------------------------------------------------------------------CR
@@ -1864,6 +1902,10 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
 #=====================================================================================CR
 #' Download Reference Data
 #' @description reference data can be downlaodd from SOS or a_i_p servers or by local loading of rdata or csv files of by uploading csv files from a ftp server
+#' @param PROXY          : Logical, default value FALSE. If TRUE PROXY is configured using the following 4 parameters:
+#' @param PORT           : numeric, default value NULL, open Port for the proxy, jrc = 8012;
+#' @param LOGIN          : character, default value = NULL, login for the proxy server, JRC = NULL;
+#' @param PASSWORD       : character, default value = NULL, password for the proxy server, jrc = NULL;
 #' @param Reference.name character vector, Name of the Reference station
 #' @param FTPMode character vector with possible value csv, ftp, SOS, a_i_p, default is "ftp". Type of download of reference data: 
 #' "ftp" using a csv file on a ftp server, "csv" the same with a local file, SOS: from a SOS download and a_i_p form an a_i_p server.
@@ -1905,7 +1947,8 @@ Sqlite2df <- function(name.SQLite, Dataset, Influx.TZ, UserMins = NULL, Download
 #' @param Ref__a_i_p__DateEND Date, as.Date(input$Ref__a_i_p__Date[2], format = "%Y-%m-%d")
 #' @return  data.table of the reference data with correct header and perodicity (UserMins)
 #' @example  
-Down_Ref <- function(Reference.name, FTPMode = "ftp", Ref.Type = "Ref", UserMins, naStrings = NULL, WDoutput = NULL, ref.tzone = "UTC", 
+Down_Ref <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PASSWORD = NULL, 
+                     Reference.name, FTPMode = "ftp", Ref.Type = "Ref", UserMins, naStrings = NULL, WDoutput = NULL, ref.tzone = "UTC", 
                      DownloadSensor, AirsensWeb, Old.Ref.Data = NULL, coord.ref = NULL, shiny = TRUE,
                      urlref,
                      csvFile = NULL, csvFile.sep = NULL, csvFile.quote = NULL, csvFile.DateIN = NULL, csvFile.DateEND = NULL,
@@ -2007,6 +2050,10 @@ Down_Ref <- function(Reference.name, FTPMode = "ftp", Ref.Type = "Ref", UserMins
         )
         Ref <- NULL
     } else {
+        # Setting PROXY (not used for csv!)
+        if (PROXY) {
+            if (is.null(LOGIN)) set_config(use_proxy(url=URL, port=PORT)) else set_config( use_proxy(url=URL, port=PORT, username = LOGIN, password = PASSWORD))
+        } else reset_config()
         # Downloading according to FTPMode
         if (FTPMode == "ftp" || FTPMode == "csv") {
             if (FTPMode == "ftp") {
@@ -2220,6 +2267,7 @@ Down_Ref <- function(Reference.name, FTPMode = "ftp", Ref.Type = "Ref", UserMins
             }
         } else {
             if (FTPMode == "SOS") {
+                
                 # Sensor Data retrieving at apiEndpoint
                 # Duration              = integer, the number of days to download per page (as Limit in SQL), default is NULL, data are downloaded in slices of 7 days
                 # DateEND               = To be set if the whole function is run over an internal from DownloadSensor$DateEND.SOS.prev until DateEND. DownloadSensor$DateEND.SOS.prev
@@ -2686,7 +2734,7 @@ Validation.tool <- function(General, DateIN, DateEND, DateINCal = DateIN, DateEN
         if (timeseries.display) {
             Relationships         <- na.omit(colnames(General)[colnames(General) %in% Covariates])
             if (!is.null(Relationships) && !identical(character(0), Relationships)) {
-                timePlot(mydata = General[ date >= DateINPlot & date < DateENDPlot + 1,], pollutant = Relationships, date.pad = TRUE, auto.text = FALSE, y.relation = "free",
+                timePlot(mydata = General[ date > DateINPlot & date <= DateENDPlot + 1,], pollutant = Relationships, date.pad = TRUE, auto.text = FALSE, y.relation = "free",
                          main = paste0(AirSensEur.name, ": Effects on ", name.sensor," from ",format(DateIN,"%d-%b-%y")," to ",format(DateEND,"%d-%b-%y"),
                                        " at ",Reference.name))
                 # save plots in files
@@ -2699,7 +2747,7 @@ Validation.tool <- function(General, DateIN, DateEND, DateINCal = DateIN, DateEN
                 dev.off()}
         }
         # checking completness of x, y and Covariates
-        if(is.null(DateCal)) General <- General[date >= DateINCal & date < DateENDCal + 1,] else General <- General[DateCal]
+        if(is.null(DateCal)) General <- General[date > DateINCal & date <= DateENDCal + 1,] else General <- General[DateCal]
         if (is.data.table(General)) {
             if (is.null(Covariates) || length(Covariates) == 0 || Covariates == "") {
                 General <- General[is.finite(rowSums(General[,.SD,.SDcols = c(nameGasRef,nameGasVolt)])),.SD,.SDcols = c(nameGasRef,nameGasVolt, "date")]
@@ -2802,7 +2850,7 @@ Validation.tool <- function(General, DateIN, DateEND, DateINCal = DateIN, DateEN
     if (PlotCal) {
         # Fill in General with modelled data, first reintialise nameGasMod
         if (nameGasMod %in% names(General)) General[, (nameGasMod) := NULL ] 
-        Rows <- which(General$date >= DateIN  & General$date <= DateEND + 1 & !is.na(General[, nameGasVolt, with = F]))
+        Rows <- which(General$date > DateIN  & General$date <= DateEND + 1 & !is.na(General[, nameGasVolt, with = F]))
         if (mod.eta.model.type == "Linear" || mod.eta.model.type == "Linear.Robust") {
             data.table::set(General, i = Rows, j = nameGasMod, value = (General[Rows,nameGasVolt,with = F] - Model.i$Coef[1]) / Model.i$Coef[2])
         } else if (mod.eta.model.type == "gam") {
@@ -2810,11 +2858,11 @@ Validation.tool <- function(General, DateIN, DateEND, DateINCal = DateIN, DateEN
                             value = predict(Model.i, newdata = data.frame(x = General[Rows, nameGasVolt, with = FALSE]), type = "response"))}
         # Remove negative values when using the linear median regression (linear.robust). This is good to do
         if (remove.neg) {
-            index.which <- which(General[(General$date >= DateIN & General$date <= DateEND + 1),nameGasMod, which = F] < 0., arr.ind = TRUE)
+            index.which <- which(General[(General$date > DateIN & General$date <= DateEND + 1),nameGasMod, which = F] < 0., arr.ind = TRUE)
             if (length(index.which)>0) {
                 data.table::set(General, i = index.which, j = nameGasMod, value = rep(NA_real_, times = length(index.which)))
-                cat(paste0("Length of values < zero: ", length(index.which), " out of ",length(General[(General$date >= DateIN & General$date <= DateEND +1),nameGasMod])), sep = "\n")
-                cat(paste0("Loss of ",format(length(index.which)/length(General[(General$date >= DateIN & General$date <= DateEND + 1),nameGasMod])*100), digit = 0, " [%] of data"), sep = "\n")
+                cat(paste0("Length of values < zero: ", length(index.which), " out of ",length(General[(General$date > DateIN & General$date <= DateEND +1),nameGasMod])), sep = "\n")
+                cat(paste0("Loss of ",format(length(index.which)/length(General[(General$date > DateIN & General$date <= DateEND + 1),nameGasMod])*100), digit = 0, " [%] of data"), sep = "\n")
             } else {}
         } else {}
         # plotting the modelled/calibrated values
@@ -2842,11 +2890,11 @@ Validation.tool <- function(General, DateIN, DateEND, DateINCal = DateIN, DateEN
         # timeplots calibrated values
         if (timeseries.display) {
             if (model.log) {
-                timePlot(General[ General$date >= DateINPlot & General$date <= DateENDPlot +1,], pollutant = c(nameGasRef,nameGasMod), group=TRUE, date.pad=TRUE
+                timePlot(General[ General$date > DateINPlot & General$date <= DateENDPlot +1,], pollutant = c(nameGasRef,nameGasMod), group=TRUE, date.pad=TRUE
                          , main = paste0(AirSensEur.name, ": Calibrated ", name.sensor," from ",format(DateIN,"%d-%b-%y")," to "
                                          , format(DateEND,"%d-%b-%y"), " at ",Reference.name))
             } else {
-                timePlot(General[ General$date >= DateINPlot & General$date <= DateENDPlot +1,], pollutant = c(nameGasRef,nameGasMod), group=TRUE, date.pad=TRUE
+                timePlot(General[ General$date > DateINPlot & General$date <= DateENDPlot +1,], pollutant = c(nameGasRef,nameGasMod), group=TRUE, date.pad=TRUE
                          , main = paste0(AirSensEur.name, ": Calibrated ", name.sensor," from ",format(DateIN,"%d-%b-%y")," to "
                                          , format(DateEND,"%d-%b-%y"), " at ",Reference.name)
                          , ref.x = list(v = c(DateINCal, DateENDCal), lty = c(1, 1), col = c("black", "black"), lwd = c(2,2)))
@@ -2860,7 +2908,7 @@ Validation.tool <- function(General, DateIN, DateEND, DateINCal = DateIN, DateEN
     }
     # statistics
     if (Verbose) {
-        gas.statistics <-modStats(General[ (General$date >= DateIN & General$date <= DateEND + 1),]
+        gas.statistics <-modStats(General[ (General$date > DateIN & General$date <= DateEND + 1),]
                                   , mod = nameGasMod
                                   , obs = nameGasRef
                                   , statistic = c("n", "FAC2", "MB", "MGE", "NMB", "NMGE", "RMSE", "r", "COE", "IOA")
@@ -3215,7 +3263,7 @@ INFLUXDB <- function(WDoutput, DownloadSensor, UserMins,
             if (length(duplicated.Data) > 0) InfluxData <- InfluxData[-duplicated.Data]
             fwrite(InfluxData     , file = DownloadSensor$Influx.Rdata.file, na = "NA")
         } else if (file_ext(DownloadSensor$Influx.Rdata.file) == "Rdata") save(InfluxData, file = DownloadSensor$Influx.Rdata.file)
-        futile.logger::flog.info(paste0("[INFLUXDB] ", Dataset," Influx Sensor data saved in ", DownloadSensor$Influx.Rdata.file), sep = "\n")
+        futile.logger::flog.info(paste0("[INFLUXDB] ", Dataset," Influx Sensor data saved in ", DownloadSensor$Influx.Rdata.file))
     }
     # returning data
     if (!is.null(InfluxData) && !is.na(InfluxData)) {
@@ -3318,7 +3366,8 @@ SOS      <- function(WDoutput, DownloadSensor, Down.SOS, AirSensEur.name, UserMi
 #=====================================================================================CR
 # 170721 MG REF Downloading REFERENCE data ####
 #=====================================================================================CR
-REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMins,
+REF      <- function(PROXY = FALSE, URL = NULL, PORT = NULL, LOGIN = NULL, PASSWORD = NULL,
+                     DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMins,
                      Down.Ref, FTPMode, ref.tzone, InfluxData, SOSData, Reference.name, urlref, sens2ref,
                      RefSOSname = NULL, Ref.SOS.name = NULL, RefSOSPollutants = NULL, RefSOSDateIN = NULL, RefSOSDateEND = NULL,
                      Ref__a_i_p__name = NULL, User__a_i_p__ = NULL, Pass__a_i_p__ = NULL, Ref__a_i_p__Organisation = NULL,
@@ -3379,7 +3428,8 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
         if (Down.Ref) {
             cat("-----------------------------------------------------------------------------------\n")
             futile.logger::flog.info(paste0("[REF] INFO, Starting downloading data for ", Reference.name, sep = "\n"))
-            RefDataNew  <- Down_Ref(Reference.name = Reference.name, UserMins = UserMins, DownloadSensor = DownloadSensor, urlref = urlref, ref.tzone = ref.tzone,
+            RefDataNew  <- Down_Ref(PROXY = PROXY, URL = URL, PORT = PORT, LOGIN = LOGIN, PASSWORD = PASSWORD,
+                                    Reference.name = Reference.name, UserMins = UserMins, DownloadSensor = DownloadSensor, urlref = urlref, ref.tzone = ref.tzone,
                                     naString = c("-999.99", "-999.98999", NaN, NA), WDoutput = file.path(DisqueFieldtestDir, "General_data"),
                                     FTPMode = FTPMode,
                                     RefSOSname = RefSOSname, Ref.SOS.name = Ref.SOS.name, RefSOSPollutants = RefSOSPollutants, RefSOSDateIN = RefSOSDateIN, RefSOSDateEND = RefSOSDateEND,
@@ -3406,7 +3456,7 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
                 if (!is.data.table(RefData)) RefData <- data.table(RefData)
             }
             if (!haskey(RefData)) setkey(RefData, "date") # very slow, avoid
-        } else cat(paste0("[REF] INFO: there is no previously saved Ref data."), sep = "\n")
+        } else futile.logger::flog.info(paste0("[REF] INFO: there is no previously saved Ref data."))
     }
     # merging RefData and RefDataNew if needed
     if (exists("RefDataNew") && !is.null(RefDataNew) && !is.na(RefDataNew)) {
@@ -3421,42 +3471,54 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
             RefDataNew <- RefDataNew[Date.Ref.Influx]
             # Append new dates and update values for Common.pollutants
             if (exists("RefData") && !is.null(RefData) && !is.na(RefData)) {
-                # Replace existing data for comom dates for existing columns in RefData and RefDataNew
-                Date.RefDataNew.RefData <- which(RefDataNew$date %in% RefData$date)
-                Date.RefData.RefDataNew <- which(RefData$date %in% RefDataNew$date)
-                if (length(Date.RefDataNew.RefData) > 0) {
-                    # Common Pollutants
-                    Common.pollutants <- intersect(names(RefData), names(RefDataNew[Date.RefDataNew.RefData]))
-                    Common.pollutants <- Common.pollutants[-which(Common.pollutants %in% c("date","Ref.Long","Ref.Lat"))]
-                    if (length(Common.pollutants) > 0) {
-                        data.table::set(RefData, i = Date.RefData.RefDataNew, j = Common.pollutants, 
-                                        value = RefDataNew[Date.RefDataNew.RefData, Common.pollutants, with = FALSE])
-                    }
-                }
-                # Add new columns for existing dates
-                New.pollutants <-  names(RefDataNew[Date.RefDataNew.RefData])[!names(RefDataNew[Date.RefDataNew.RefData]) %in% names(RefData)]
-                if (length(New.pollutants) > 0) {
-                    # https://stackoverflow.com/questions/34834257/r-programming-merge-function-returns-column-names-with-x-and-y
-                    # replacing coordinates with new values and adding new pollutants
-                    Coord.RefData        <-all(c("Ref.Long","Ref.Lat") %in% names(RefData))
-                    Coord.RefDataNew     <-all(c("Ref.Long","Ref.Lat") %in% names(RefDataNew))
-                    if(Coord.RefDataNew & Coord.RefData){
-                        names.RefData <- names(RefData)[-grep(paste(c("Ref.Long","Ref.Lat"), collapse = "|"), names(RefData))]
-                    } else names.RefData <- names(RefData)
-                    Coord.New.pollutants <-all(c("Ref.Long","Ref.Lat") %in% New.pollutants)
-                    if(Coord.New.pollutants) {
-                        names.RefDataNew <- c("date", New.pollutants)
-                    } else names.RefDataNew <- c("date","Ref.Long","Ref.Lat", New.pollutants)
-                    RefData <- merge(x = RefData[, ..names.RefData], 
-                                     y = RefDataNew[Date.RefDataNew.RefData, ..names.RefDataNew], 
-                                     by = "date", all = TRUE)
-                }
-                # Append New Dates
+                # For Common dates, replace or the values of pollutants in RefDataNew in RefData except "dates" and "coordinates"
+                RefDataNew.IN.RefData <- which(RefDataNew$date %in% RefData$date)
+                RefData.IN.RefDataNew <- which(RefData$date %in% RefDataNew$date)
+                if (length(RefDataNew.IN.RefData) > 0) {
+                    # Pollutants to add
+                    # Common.pollutants <- intersect(names(RefData), names(RefDataNew[RefDataNew.IN.RefData]))
+                    # Common.pollutants <- Common.pollutants[-which(Common.pollutants %in% c("date","Ref.Long","Ref.Lat"))]
+                    Pollutants.Add <- names(RefDataNew[RefDataNew.IN.RefData])
+                    Pollutants.Add <- Pollutants.Add[-which(Pollutants.Add %in% c("date","Ref.Long","Ref.Lat"))]
+                    if (length(Pollutants.Add) > 0) {
+                        data.table::set(RefData, i = RefData.IN.RefDataNew, j = Pollutants.Add, 
+                                        value = RefDataNew[RefDataNew.IN.RefData, Pollutants.Add, with = FALSE])}
+                    # Setting coordinates for Common dates
+                    Coord.RefData        <-all(c("Ref.Long","Ref.Lat") %in% names(RefData[RefData.IN.RefDataNew]))
+                    Coord.RefDataNew     <-all(c("Ref.Long","Ref.Lat") %in% names(RefDataNew[RefDataNew.IN.RefData]))
+                    # if Coord.RefDataNew exists for the complete case of Ref.Long and ref.lag set Ref.Long and Ref.Lat of refData to the values of RefDataNew otherwise keep coordinates in RefData. If both do not exist set to NA
+                    if ((Coord.RefDataNew & Coord.RefData) || (Coord.RefDataNew & !Coord.RefData) && any(complete.cases(RefDataNew[RefDataNew.IN.RefData,c("Ref.Long","Ref.Lat")]))) {
+                        RefData.IN.RefDataNew <- which(RefData$date %in% RefDataNew[complete.cases(RefDataNew[, c("Ref.Long", "Ref.Lat")]), date])
+                        RefDataNew.IN.RefData <- which(RefDataNew$date %in% RefData$date & RefDataNew$date %in% RefDataNew[complete.cases(RefDataNew[, c("Ref.Long", "Ref.Lat")])]$date)
+                        set(RefData, i = RefData.IN.RefDataNew, j = "Ref.Long", value = RefDataNew[RefDataNew.IN.RefData, Ref.Long])
+                        set(RefData, i = RefData.IN.RefDataNew, j = "Ref.Lat",  value = RefDataNew[RefDataNew.IN.RefData, Ref.Lat])
+                    } else if (!Coord.RefDataNew & Coord.RefData) {
+                        # nothing to do let coordinates of RefData
+                    } else if (!Coord.RefDataNew & !Coord.RefData) {
+                        set(RefData, i = RefData.IN.RefDataNew, j = "Ref.Long", value = rep(NA, nrow(RefData)))
+                        set(RefData, i = RefData.IN.RefDataNew, j = "Ref.Lat",  value = rep(NA, nrow(RefData)))}}
+                # # Add new columns for existing dates
+                # New.pollutants <-  names(RefDataNew[RefDataNew.IN.RefData])[!names(RefDataNew[RefDataNew.IN.RefData]) %in% names(RefData)]
+                # if (length(New.pollutants) > 0) {
+                #     # https://stackoverflow.com/questions/34834257/r-programming-merge-function-returns-column-names-with-x-and-y
+                #     # replacing coordinates with new values and adding new pollutants
+                #     Coord.RefData        <-all(c("Ref.Long","Ref.Lat") %in% names(RefData))
+                #     Coord.RefDataNew     <-all(c("Ref.Long","Ref.Lat") %in% names(RefDataNew))
+                #     if(Coord.RefDataNew & Coord.RefData){
+                #         names.RefData <- names(RefData)[-grep(paste(c("Ref.Long","Ref.Lat"), collapse = "|"), names(RefData))]
+                #     } else names.RefData <- names(RefData)
+                #     Coord.New.pollutants <-all(c("Ref.Long","Ref.Lat") %in% New.pollutants)
+                #     if(Coord.New.pollutants) {
+                #         names.RefDataNew <- c("date", New.pollutants)
+                #     } else names.RefDataNew <- c("date","Ref.Long","Ref.Lat", New.pollutants)
+                #     RefData <- merge(x = RefData[, ..names.RefData], 
+                #                      y = RefDataNew[RefDataNew.IN.RefData, ..names.RefDataNew], 
+                #                      by = "date", all = TRUE)}
+                # for New dates, append dates coordinates and new pollutants
+                # rbindlist returns a data.table
                 New.Dates <- which(!RefDataNew$date %in% RefData$date)
                 if (length(New.Dates) > 0) {
-                    RefData <- rbindlist(list(RefData, RefDataNew[New.Dates]), use.names = TRUE, fill = TRUE)
-                }
-                # rbindlist returns a data.table
+                    RefData <- rbindlist(list(RefData, RefDataNew[New.Dates]), use.names = TRUE, fill = TRUE)}
                 rm(RefDataNew)
             } else {
                 RefData <- RefDataNew
@@ -3466,7 +3528,7 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
             if (tools::file_ext(DownloadSensor$Ref.Rdata.file) == "csv") {
                 duplicated.Data <- which(duplicated(RefData$date, fromLast = T))
                 if (length(duplicated.Data) > 0) RefData <- RefData[-duplicated.Data]
-                set(RefData, j = "date", value = ymd_hms(RefData$date))
+                set(RefData, j = "date", value = ymd_hms(RefData$date, tz = ref.tzone))
                 fwrite(RefData, file = DownloadSensor$Ref.Rdata.file, na = "NA", dateTimeAs = "ISO") #, dateTimeAs = "write.csv"
             } else if (tools::file_ext(DownloadSensor$Ref.Rdata.file) == "Rdata") save(RefData, file = DownloadSensor$Ref.Rdata.file)
             futile.logger::flog.info(paste0("[REF] reference data saved in ", DownloadSensor$Ref.Rdata.file))
@@ -3478,8 +3540,8 @@ REF      <- function(DownloadSensor, AirSensEur.name, DisqueFieldtestDir, UserMi
             # List of Pollutants monitored at the Referencce stations
             var.names.ref <- colnames(RefData)[-which(colnames(RefData) %in% c("date", "Ref.Long", "Ref.Lat"))]
             if (length(var.names.ref) == 0) {
-                cat(paste0("[REF] ERROR no reference data exisiting for ", AirSensEur.name," .Please check data at ", Reference.name))
-            } else cat(paste0("[REF] INFO, Variables found in the reference dataset: ", paste0(var.names.ref, collapse = ", "),"\n"))
+                futile.logger::flog.warn(paste0("[REF] no reference data exisiting for ", AirSensEur.name," .Please check data at ", Reference.name))
+            } else futile.logger::flog.info(paste0("[REF] INFO, Variables found in the reference dataset: ", paste0(var.names.ref, collapse = ", ")))
         } else {
             # if we do not have new data for sensors we use the names of sensors in sens2ref
             var.names.ref <- na.omit(sens2ref$gas.reference2use)
@@ -3905,24 +3967,28 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
                     } else return("Prediction with previous calibration")
                 } else return(NA)
             })
-            # Adding Sync.Cal and Sync.Pred if missing
+            # Adding Sync.Cal, Sync.Pred, Regression, Add.ubss, variable.ubsRM, variable.ubss and Fitted.RS if missing
             if (!"Sync.Cal"  %in% names(sens2ref)) sens2ref$Sync.Cal  <- FALSE
             if (!"Sync.Pred" %in% names(sens2ref)) sens2ref$Sync.Pred <- FALSE
+            if (!"Regression" %in% names(sens2ref)) sens2ref[, Regression := "OLS"]
+            if (!"Add.ubss" %in% names(sens2ref)) sens2ref[, Add.ubss := FALSE]
+            if (!"variable.ubsRM" %in% names(sens2ref)) sens2ref[, variable.ubsRM := FALSE]
+            if (!"variable.ubss" %in% names(sens2ref)) sens2ref[, variable.ubss := FALSE]
+            if (!"Fitted.RS" %in% names(sens2ref)) sens2ref[, Fitted.RS := FALSE]
             # Adding ubss and ubsRM if missing, the between sampler uncertainties for sensor and reference method
             if (!"ubsRM" %in% names(sens2ref)) {
                 if (!"uxi" %in% names(sens2ref)) {
                     sens2ref$ubsRM  <- rep(0, times = nrow(sens2ref))
-                } else sens2ref$ubsRM  <- sens2ref$uxi
-            }
+                } else sens2ref$ubsRM  <- sens2ref$uxi}
             if (!"ubss" %in% names(sens2ref)) {
                 if (!"uxi" %in% names(sens2ref)) {
                     sens2ref$ubss  <- rep(0, times = nrow(sens2ref))
                 } else {
                     sens2ref$ubss  <- sens2ref$uxi
-                    sens2ref[, uxi := NULL]}
-            }
+                    sens2ref[, uxi := NULL]}}
+            
             #change the type of column in df
-            Vector.type <- c("Ref.rm.Out","Sens.Inval.Out","Apply.Invalid", "remove.neg","Sens.rm.Out","Neg.mod", "Sync.Cal" , "Sync.Pred")
+            Vector.type <- c("Ref.rm.Out","Sens.Inval.Out","Apply.Invalid", "remove.neg","Sens.rm.Out","Neg.mod", "Sync.Cal" , "Sync.Pred", "Add.ubss", "variable.ubsRM", "variable.ubss", "Fitted.RS")
             Vector.type <- Vector.type[Vector.type %in% names(sens2ref)]
             for (j in Vector.type) set(sens2ref, j = j, value = as.logical(gsub(" ","",sens2ref[[j]])))
             Vector.type <- c("Ref.window","Ref.threshold","Ref.Ymin","Ref.Ymax","Ref.ThresholdMin","Ref.iterations","Gain","Intercept","Slope",
@@ -3986,7 +4052,7 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
                                   sens2ref[match(na.omit(sens2ref.shield[["gas.sensor"]]), sens2ref$gas.sensor), ..sens2ref.cols2change],
                                   check.attributes = TRUE, tolerance = 1E-5))) {
                 #change the type of column in sens2ref.shield
-                Vector.type <- c("Ref.rm.Out","Sens.Inval.Out","Apply.Invalid", "remove.neg","Sens.rm.Out","Neg.mod", "Sync.Cal" , "Sync.Pred")
+                Vector.type <- c("Ref.rm.Out","Sens.Inval.Out","Apply.Invalid", "remove.neg","Sens.rm.Out","Neg.mod", "Sync.Cal" , "Sync.Pred", "Add.ubss", "variable.ubsRM", "variable.ubss", "Fitted.RS")
                 Vector.type <- Vector.type[Vector.type %in% names(sens2ref.shield)]
                 for (j in Vector.type) set(sens2ref.shield, j = j, value = as.logical(gsub(" ","",sens2ref.shield[[j]])))
                 Vector.type <- c("Ref.window","Ref.threshold","Ref.Ymin","Ref.Ymax","Ref.ThresholdMin","Ref.iterations","Gain","Intercept","Slope",
@@ -4022,7 +4088,7 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
     }
     # re-ordering columns
     setcolorder(sens2ref, Columns <- c("name.gas", "name.sensor", "gas.sensor", "Sens.raw.unit", "Sens.unit", "gas.reference", "gas.reference2use", "ref.unitgas", 
-                                       "Cal.Line", "Cal.func", "mod.eta.model.type", "Neg.mod", "Slope", "Intercept", "ubsRM", "ubss", "Sync.Cal", "Sync.Pred", "eta.model.type", 
+                                       "Cal.Line", "Cal.func", "mod.eta.model.type", "Neg.mod", "Slope", "Intercept", "ubsRM",  "variable.ubsRM","ubss", "Add.ubss", "variable.ubss", "Regression", "Fitted.RS","Sync.Cal", "Sync.Pred", "eta.model.type", 
                                        "hoursWarming", "temp.thres.min", "temp.thres.max", "rh.thres.min", "rh.thres.max", "Sens.Inval.Out", "Sens.rm.Out", 
                                        "Sens.window", "Sens.threshold", "Sens.Ymin", "Sens.Ymax", "Sens.ThresholdMin", "Sens.iterations", "remove.neg", 
                                        "Ref.rm.Out", "Ref.window", "Ref.threshold", "Ref.Ymin", "Ref.Ymax", "Ref.ThresholdMin", "Ref.iterations",
@@ -4031,21 +4097,21 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
     Columns.Text <- c("name.gas", "name.sensor", "gas.sensor"    , "Sens.raw.unit", "Sens.unit", 
                       "gas.reference", "gas.reference2use", "ref.unitgas", 
                       "Cal.Line", "Cal.func", "mod.eta.model.type", "eta.model.type",
-                      "Ref_Source", "Fet_Short")
+                      "Ref_Source", "Fet_Short", "Regression")
     Columns.Num  <- c( "Slope", "Intercept", "ubsRM", "ubss", 
                        "hoursWarming", "temp.thres.min", "temp.thres.max", "rh.thres.min", "rh.thres.max",
                        "Sens.window", "Sens.threshold", "Sens.Ymin", "Sens.Ymax", "Sens.ThresholdMin", "Sens.iterations",
                        "Ref.window", "Ref.threshold", "Ref.Ymin", "Ref.Ymax", "Ref.ThresholdMin", "Ref.iterations",
                        "Ref", "RefAD", "RefAFE", "Rload", "TIA_Gain", "GAIN", "Int_Z", "Bias_Sign", "Bias", "Mode", "board.zero.set", "BIAIS")
-    Columns.Bool  <- c( "Neg.mod", "Sync.Cal", "Sync.Pred", "Sens.Inval.Out", "Sens.rm.Out", "remove.neg", "Ref.rm.Out")
+    Columns.Bool  <- c( "Neg.mod", "Sync.Cal", "Sync.Pred", "Sens.Inval.Out", "Sens.rm.Out", "remove.neg", "Ref.rm.Out", "Add.ubss", "variable.ubsRM", "variable.ubss", "Fitted.RS")
     if (!is.null(Names.Influx) && !is.null(Names.ref) && 
         !"CO2" %in% sens2ref$name.gas && "Carbon_dioxide" %in% Names.Influx && "Ref.CO2" %in% Names.ref) {
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("CO2", "D300", "Carbon_dioxide", "ppm", "ppm",    "CO2", "Ref.CO2", "ppm",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("CO2", "D300", "Carbon_dioxide", "ppm", "ppm",    "CO2", "Ref.CO2", "ppm",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 3, 15    ,4, -20, 40, 0, 100,    181, 20, 200, 2000, 200, 1,    181, 75, 200, 2000, 200, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4057,9 +4123,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM10", "OPCN3PM10", "Particulate_Matter_10", "ug/m3", "ug/m3",    "PM10", "Ref.PM10", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM10", "OPCN3PM10", "Particulate_Matter_10", "ug/m3", "ug/m3",    "PM10", "Ref.PM10", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 75,    181, 20, 0, 2000, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4070,9 +4136,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM2.5", "OPCN3PM25", "Particulate_Matter_25", "ug/m3", "ug/m3",    "PM2.5", "Ref.PM2.5", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM2.5", "OPCN3PM25", "Particulate_Matter_25", "ug/m3", "ug/m3",    "PM2.5", "Ref.PM2.5", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 75,    181, 20, 0, 2000, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4083,9 +4149,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM1", "OPCN3PM1", "Particulate_Matter_1", "ug/m3", "ug/m3",    "PM1", "Ref.PM1", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM1", "OPCN3PM1", "Particulate_Matter_1", "ug/m3", "ug/m3",    "PM1", "Ref.PM1", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 75,    181, 20, 0, 2000, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4097,9 +4163,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM10", "5310CAT", "PM10_PMSCal", "ug/m3", "ug/m3",    "PM10", "Ref.PM10", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM10", "5310CAT", "PM10_PMSCal", "ug/m3", "ug/m3",    "PM10", "Ref.PM10", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 80,    181, 20, 0, 500, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4110,9 +4176,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM2.5", "5325CAT", "PM25_PMSCal", "ug/m3", "ug/m3",    "PM2.5", "Ref.PM2.5", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM2.5", "5325CAT", "PM25_PMSCal", "ug/m3", "ug/m3",    "PM2.5", "Ref.PM2.5", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 80,    181, 20, 0, 500, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4123,9 +4189,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM1", "5301CAT", "PM1_PMSCal", "ug/m3", "ug/m3",    "PM1", "Ref.PM1", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM1", "5301CAT", "PM1_PMSCal", "ug/m3", "ug/m3",    "PM1", "Ref.PM1", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 80,    181, 20, 0, 500, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4136,9 +4202,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM10", "5310CST", "PM10_PMSraw", "ug/m3", "ug/m3",    "PM10", "Ref.PM10", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM10", "5310CST", "PM10_PMSraw", "ug/m3", "ug/m3",    "PM10", "Ref.PM10", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 80,    181, 20, 0, 500, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4149,9 +4215,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM2.5", "5325CST", "PM25_PMSraw", "ug/m3", "ug/m3",    "PM2.5", "Ref.PM2.5", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM2.5", "5325CST", "PM25_PMSraw", "ug/m3", "ug/m3",    "PM2.5", "Ref.PM2.5", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 80,    181, 20, 0, 500, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4162,9 +4228,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("PM1", "5301CST", "PM1_PMSraw", "ug/m3", "ug/m3",    "PM1", "Ref.PM1", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("PM1", "5301CST", "PM1_PMSraw", "ug/m3", "ug/m3",    "PM1", "Ref.PM1", "ug/m3",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 80,    181, 20, 0, 500, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4176,9 +4242,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("Temp_int", "SHT31TI", "Temperature_int", "Celsius", "Celsius",    "Temp", "Ref.Temp", "Celsius",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("Temp_int", "SHT31TI", "Temperature_int", "Celsius", "Celsius",    "Temp", "Ref.Temp", "Celsius",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 80,    181, 20, 0, 500, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -4190,9 +4256,9 @@ CONFIG <- function(DisqueFieldtestDir, DisqueFieldtest , sens2ref.shield = NULL,
         # adding the first row at the bottom of the table
         sens2ref <- rbind(sens2ref, sens2ref[1])
         # Correcting the last row
-        Values.Text <- c("RH_int", "SHT31HI", "Relative_humidity_int", "percent", "percent",    "RH", "Ref.RH", "percent",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA)
+        Values.Text <- c("RH_int", "SHT31HI", "Relative_humidity_int", "percent", "percent",    "RH", "Ref.RH", "percent",    "Prediction with previous calibration","", "Linear.Robust", "Linear",    NA , NA, "OLS")
         Values.num  <- c(1, 0, 2.5, 5    ,4, -20, 40, 0, 80,    181, 20, 0, 500, 0, 1,    181, 75, 0, 500, 0, 1,     NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
-        Values.Bool <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
+        Values.Bool <- rep(FALSE, length(Columns.Bool))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Text, value = lapply(Values.Text, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Num,  value = lapply(Values.num, function(i) i))
         data.table::set(sens2ref, i = nrow(sens2ref), j = Columns.Bool, value = lapply(Values.Bool, function(i) i))
@@ -5011,8 +5077,8 @@ get.DQO <- function(gas.sensor, Averaging.Period = "1hour", unit.ref = "ppb", Ca
             AT = 400
         } else cat(paste0("Wrong unit for ",gas.sensor))
         DQO.1 = 0.25 * LV
-        DQO.2 = 0.50 * LV
-        DQO.3 = 0.75 * LV
+        DQO.2 = 0.75 * LV
+        DQO.3 = 2.00 * LV
         LAT   = 0.50 * LV
         UAT   = 0.70 * LV
     } else if (gas.sensor == "Ozone") {
@@ -5026,8 +5092,8 @@ get.DQO <- function(gas.sensor, Averaging.Period = "1hour", unit.ref = "ppb", Ca
             AT = 240
         } else cat(paste0("Wrong unit for ",gas.sensor))
         DQO.1 = 0.30 * LV
-        DQO.2 = 0.50 * LV
-        DQO.3 = 0.75 * LV
+        DQO.2 = 0.75 * LV
+        DQO.3 = 2.00 * LV
         LAT   = NA
         UAT   = NA
     } else if (gas.sensor == "Sulphur_dioxide") {
@@ -5037,8 +5103,8 @@ get.DQO <- function(gas.sensor, Averaging.Period = "1hour", unit.ref = "ppb", Ca
             AT = 500/2.05
         } else if (unit.ref == "ug/m3") {LV = 350; IT = NA; AT = 500}
         DQO.1 = 0.25 * LV
-        DQO.2 = 0.50 * LV
-        DQO.3 = 0.75 * LV
+        DQO.2 = 0.70 * LV
+        DQO.3 = 2.00 * LV
         LAT   = 0.40 * LV
         UAT   = 0.60 * LV
     } else if (gas.sensor == "Benzene") {
@@ -5047,8 +5113,8 @@ get.DQO <- function(gas.sensor, Averaging.Period = "1hour", unit.ref = "ppb", Ca
             LV = 5/2.05
         } else if (unit.ref == "ug/m3") {LV = 5; IT = NA; AT = NA}
         DQO.1 = 0.30 * LV
-        DQO.2 = 0.50 * LV
-        DQO.3 = 1.00 * LV
+        DQO.2 = 1.00 * LV
+        DQO.3 = 2.00 * LV
         LAT   = 0.40 * LV
         UAT   = 0.70 * LV
     } else if (any(gas.sensor %in% c("Particulate_Matter_10", "PM10_PMSCal", "PM10_PMSraw"))) {
@@ -5080,9 +5146,9 @@ get.DQO <- function(gas.sensor, Averaging.Period = "1hour", unit.ref = "ppb", Ca
     } else if (gas.sensor == "Carbon_dioxide") {
         # Using LV for 24 hours time average
         LV    = 500
-        DQO.1 = 0.05 * LV
-        DQO.2 = 0.20 * LV
-        DQO.3 = 0.30 * LV
+        DQO.1 = 0.30 * LV
+        DQO.2 = 0.50 * LV
+        DQO.3 = 1.00 * LV
         LAT   = 0.50 * LV
         UAT   = 0.70 * LV
     } else {
@@ -5140,7 +5206,8 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
                            xAxisLabel = NULL, yAxisLabel = NULL, Xlim = NA, Ylim = NA, MainTitle = NULL,
                            DQO.1 = NA, DQO.2 = NA, DQO.3 = NA, CL = NA, IT = NA, AT = NA, LV = NA, LAT = NA, UAT = NA,
                            Disk = NA, WD = NA, Dir = NA, sdm_sdo = NULL, SavePlot = TRUE,
-                           Model.used = NULL, BeginEnd = NULL, Time.average = NULL, Max.percent = NULL, with.ubss = TRUE, Ref_Analysers = NULL) {
+                           Model.used = NULL, BeginEnd = NULL, Time.average = NULL, Max.percent = NULL, with.ubss = TRUE, Ref_Analysers = NULL,
+                           Regression = "OLS", Fitted.RS  = FALSE, variable.ubsRM = FALSE) {
     #=====[Consistency checks]=====
     # Ordering Mat according to xis to be able to create a color pallete e
     Mat <- Mat[order(Mat$xis),]
@@ -5211,8 +5278,8 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
         if (!is.null(Index.Good) && length(Index.Good) > 0) {
             Ylim <- c(max(-Max.percent,min(0, min(Mat$YData[Index.Good]))), min(Max.percent, max(DQO.3, max(Mat$YData[Index.Good]))))
         } else Ylim <- c(0, min(Max.percent, DQO.3 * 100))}
-    if (is.null(Index.Good))     return(futile.logger::flog.warn(paste0("[Target.Diagram] ", Sensor_name, " : no data with Ur < ", Max.percent, " %")))
-    if (!length(Index.Good) > 0) return(futile.logger::flog.warn(paste0("[Target.Diagram] ", Sensor_name, " : no data with bias or RSS < ", Max.percent, " %")))
+    if (is.null(Index.Good))     return(futile.logger::flog.warn(paste0("[Target.Diagram] ", Sensor_name, " : no data with Ur < ", Max.percent, "%")))
+    if (!length(Index.Good) > 0) return(futile.logger::flog.warn(paste0("[Target.Diagram] ", Sensor_name, " : no data with bias or RSS < ", Max.percent, "%")))
     # Flipping Xlim if standard deviation of yis is lower than the one of yis using sdm_sdo
     if (is.null(sdm_sdo)) sdm_sdo <- sd(Mat[Index.Good, yis]) <= sd(Mat[Index.Good, xis])
     if (sdm_sdo) Xlim <- rev(Xlim)
@@ -5229,9 +5296,9 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
     # If you don't want to include an axis label at all for either of these, just leave the double-quotes empty, i.e. "", for that one.
     if (is.null(xAxisLabel)) {
         if (with.ubss) {
-            xAxisLabel = bquote(paste("Relative random effect: 2 ", sqrt("u"[bs_s]^2*" + RMSE"^2*" - u"[bs_RM]^2), "/X"[i]*" in %"))
-        } else xAxisLabel = bquote(paste("Relative random effect: 2 ", sqrt("RMSE"^2*" - u"[bs_RM]^2), "/X"[i]*" in %"))}
-    if (is.null(yAxisLabel)) yAxisLabel = bquote("Relative bias: 2 (b"[0]*"/X"[i]*" + (b"[1]*" - 1)) in %")
+            xAxisLabel = bquote(paste("Relative random effect, RR = 2 ", sqrt("u"[bs_s]^2*" + RMSE"^2*" - u"[bs_RM]^2), "/X"[i]*", 2b"[0]*"/X"[i]*", 2(b"[1]*"- 1) in %"))
+        } else xAxisLabel = bquote(paste("Relative random effect, RR =  2 ", sqrt("RMSE"^2*" - u"[bs_RM]^2), "/X"[i]*", 2b"[0]*"/X"[i]*", 2(b"[1]*"- 1) in %"))}
+    if (is.null(yAxisLabel)) yAxisLabel = bquote("Relative bias, RB= 2 (b"[0]*"/X"[i]*" + (b"[1]*" - 1)) in %")
     #=====[LogAxis]=====
     # In some applications, the interesting patterns in your numbers are happening at small numbers (e.g. under 10), but you have a few outliers (e.g. over 100) that are forcing R to zoom out far enough to encompass all the data, so far that you can't see the interesting patterns in your data in the small-number range.
     # To overcome this problem, you can have R plot one or both of the axes 'logarithmically'.
@@ -5316,15 +5383,14 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
     #=====[Target Diagram]=====
     op <- par(no.readonly = TRUE)
     # Restoring graphical parameters on exit of function
-    par(mar = c(2.9, 2.4, 2.5, 3.5),  # mar=c(margin below, lines at left, lines at top, lines at right)
-        mgp = c(1.5, 0.3, 0),       # mgp=c(label, tick mar label, tick mark)
+    par(mar = c(2.6, 2.6, 2.5, 3.5),  # mar=c(margin below, lines at left, lines at top, lines at right)
+        mgp = c(1.35, 0.0, 0),         # mgp=c(label, tick mar label, tick mark)
         cex.axis = 0.8)
     
     on.exit(par(op))
-    plot.default(x           = Mat$XData[Index.Good],
-                 y           = Mat$YData[Index.Good],
-                 xlim        = Xlim      , ylim        = Ylim,
-                 xlab        = xAxisLabel, ylab        = yAxisLabel,
+    plot.default(x           = Mat$XData[Index.Good], y    = Mat$YData[Index.Good],
+                 xlim        = Xlim                 , ylim = Ylim,
+                 xlab        = xAxisLabel           , ylab = yAxisLabel,
                  pch         = PointSymbol,
                  col         = Mat$col[Index.Good],
                  cex         = PointSizeModifier,
@@ -5338,7 +5404,7 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
                                     col = GridlineColor,
                                     lwd = GridlineWidthModifier),
                  panel.last  = NULL,
-                 asp         = 1)
+                 asp         = 1, tck = 0)
     title(main = MainTitle, line = 1.5, font.main = 1, cex.main = 1)
     # get the limits of x and y axis
     usr <- par('usr')
@@ -5353,16 +5419,23 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
          y      = if (abs(Ylim[2]) > abs(Ylim[1])) usr[4] else usr[3],
          pos    = if (abs(Ylim[2]) > abs(Ylim[1])) 1 else 3,
          labels = bquote(sigma[Sensor] ~ .(label.sigma) ~ sigma[Reference] ~ " and " ~ .(label.Bias)), cex = 0.8)
-    # Legislative Levels
+    #=====[2nd line Main Title]=====
     if (!is.null(BeginEnd)) {
         Text.Dates <- paste0(BeginEnd[1], " to ", BeginEnd[2])
     } else Text.Dates <- paste0(format(min(Mat$Date, na.rm = T),"%Y%m%d"), " to ", format(max(Mat$Date, na.rm = T),"%Y%m%d"))
     Ref_Analysers <- ifelse(!is.null(Ref_Analysers), paste0(" (",Ref_Analysers,") "),"")
-    Text <- substitute(paste(Text.Dates,", Y"["i"]," = b"[0]," + b"[1]," X"["i"],", with b"[0]," = ", b0.Digits, " and b"[1]," = ", b1.Digits,
-                             ", u"[bs_RM]," = ", ubs_RM.Digits, " ", Unit.Ref, Ref_Analysers), 
-                       list(Text.Dates = Text.Dates, b0.Digits = format(b0, digits = 1), b1.Digits = format(b1, digits = 2), ubs_RM.Digits = format(ubsRM, digits = 3), 
-                            Unit.Ref = Unit.Ref, Ref_Analysers = Ref_Analysers))
-    if (with.ubss) Text <- paste0(Text, substitute(paste(" and u"[bs_s]," = ", ubss.Digits, " ", Unit.sensor), list(ubss.Digits = format(ubss, digits = 3), Unit.sensor = Unit.sensor)))
+    # Formatting Decimal places in R: https://stackoverflow.com/questions/3443687/formatting-decimal-places-in-r
+    if (variable.ubsRM) {
+        Text <- substitute(paste(Text.Dates,", Y"["i"]," = b"[0]," + b"[1]," X"["i"],", with b"[0]," = ", b0.Digits, " and b"[1]," = ", b1.Digits, " (", Type.Regression,")",
+                                 Ref_Analysers), 
+                           list(Text.Dates = Text.Dates, b0.Digits = format(round(b0,2), digits = 2), b1.Digits = format(round(b1, digits = 2), nsmall = 2), Type.Regression = Regression, Ref_Analysers = Ref_Analysers))
+    } else {
+        Text <- substitute(paste(Text.Dates,", Y"["i"]," = b"[0]," + b"[1]," X"["i"],", with b"[0]," = ", b0.Digits, " and b"[1]," = ", b1.Digits, " (", Type.Regression,")",
+                                 ", u"[bs_RM]," = ", ubs_RM.Digits, " ", Unit.Ref, Ref_Analysers), 
+                           list(Text.Dates = Text.Dates, b0.Digits = format(round(b0,2), digits = 2), b1.Digits = format(round(b1, digits = 2), nsmall = 2), Type.Regression = Regression,ubs_RM.Digits = format(round(ubsRM, 2), digits = 2), 
+                                Unit.Ref = Unit.Ref, Ref_Analysers = Ref_Analysers))
+    }
+    if (with.ubss) Text <- paste0(Text, substitute(paste(" and u"[bs_s]," = ", ubss.Digits, " ", Unit.sensor), list(ubss.Digits = format(round(ubss,2), digits = 2), Unit.sensor = Unit.sensor)))
     if (Unit.Ref == "ppm" || Unit.Ref == "mg/m3") {
         mtext(text = Text, side = 3, line = 0.1, cex  = 0.65)
     } else {
@@ -5372,39 +5445,57 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
     #=====[Contribution of b1 : (b1 - 1)]=====
     points(x = Mat$b1[Index.Good],
            y = Mat$YData[Index.Good],
-           col = Mat$col[Index.Good], pch  = "-", cex  = 0.3)
+           col = Mat$col[Index.Good], pch  = "-", cex  = 0.5)
     #=====[Contribution of b0 : b0/x]=====
     points(x = Mat$b0[Index.Good],
            y = Mat$YData[Index.Good],
-           col = Mat$col[Index.Good], pch  = "-", cex  = 0.3)
-    # draw axis
+           col = Mat$col[Index.Good], pch  = "-", cex  = 0.5)
+    #=====[draw axis]=====
     abline(h = 0)
     abline(v = 0)
+    #=====[colorscale]=====
+    # Add colorscale
+    testcol<-color.gradient(c(0,1,1),c(1,1,0),0,nslices=100)
+    color.legend(usr[2] + 0.005 *(usr[2]-usr[1]), usr[3], usr[2] + 0.03 *(usr[2]-usr[1]),usr[4] - 0.05 * (usr[4]-usr[3]),
+                 factor.Color,testcol, cex=0.6, align="rb",gradient="y")
+    LegendTitle <- substitute(paste("X"[i], ", ", Unit,sep=""),list(Unit=Unit.Ref))
     #=====[target circles]=====
     DQO.step <- min(c(DQO.1, DQO.2 - DQO.1, DQO.3 - DQO.2)) * 100
     Quadrants <- c(sum(usr[c(2,4)]^2),sum(usr[c(1,4)]^2),sum(usr[c(1,3)]^2),sum(usr[2:3]^2))
-    Which.Quadrants <- which.max(Quadrants)
-    usr.Quadrant    <- switch (Which.Quadrants, c(2,4), c(1,4), c(1,3), c(2,3))
+    #Which.Quadrants <- which.max(Quadrants)
+    #usr.Quadrant    <- switch (Which.Quadrants, c(2,4), c(1,4), c(1,3), c(2,3))
     Dist.Quadrants  <- sqrt(max(Quadrants))
     if (DQO.1 * 100 <= Dist.Quadrants) {
+        if (Xlim[2] > Xlim[1]) x = seq(Xlim[1], Xlim[2]) else x = seq(Xlim[2], Xlim[1])
+        if (Ylim[2] > Ylim[1]) y = seq(Ylim[1], Ylim[2]) else y = seq(Ylim[2], Ylim[1])
+        UR <- function(x,y) {z <- sqrt(x^2+y^2); return(z)}
+        z <- outer(x, y, UR)
         Steps <- seq(from = DQO.1 * 100, to = Dist.Quadrants, by = DQO.step)
         Steps <- Steps[-which(as.character(Steps) %in% as.character(c(DQO.1 * 100 , DQO.2  * 100, DQO.3  * 100)))]
+        # Plotting intermediary levels
         if (length(Steps) > 0) {
-            for (Step.level in Steps) {
-                cercle <- rbind(cbind(seq(-Step.level, Step.level, by =  Step.level/1000),  sqrt(Step.level^2 - seq(-Step.level,Step.level, by = Step.level/1000)^2)),
-                                cbind(seq( Step.level,-Step.level, by = -Step.level/1000), -sqrt(Step.level^2 - seq(-Step.level,Step.level, by = Step.level/1000)^2)))
-                lines(cercle,type = "l", lty = GridlineType, col = GridlineColor)
-                text(x = Step.level/Dist.Quadrants * usr[usr.Quadrant[1]],
-                     y = Step.level/Dist.Quadrants * usr[usr.Quadrant[2]],
-                     paste0(Step.level," %"),
-                     pos = ifelse(sdm_sdo,2,4),
-                     cex = 0.8)}}
-        for (i in c(DQO.1*100, DQO.2*100, DQO.3*100)) {
-            if (!is.na(i)) {
-                cercle <- rbind(cbind(seq(-i, i, by =  i/1000),  sqrt(i^2 - seq(-i,i, by = i/1000)^2)),
-                                cbind(seq( i,-i, by = -i/1000), -sqrt(i^2 - seq(-i,i, by = i/1000)^2)))
-                lines(cercle,type = "l")
-                text(x = i/Dist.Quadrants * usr[usr.Quadrant[1]], y = i/Dist.Quadrants * usr[usr.Quadrant[2]], paste0(i," %"), pos = ifelse(sdm_sdo,2,4), cex = 0.8)}}}
+            contour(x = x, y = y, z = z, col = "grey", add = TRUE, method = "edge", levels = Steps,
+                    vfont = NULL, axes = FALSE, frame.plot = axes, lty = 'dotdash', lwd = 1, labcex = 0.7)
+            # for (Step.level in Steps) {
+            #     cercle <- rbind(cbind(seq(-Step.level, Step.level, by =  Step.level/1000),  sqrt(Step.level^2 - seq(-Step.level,Step.level, by = Step.level/1000)^2)),
+            #                     cbind(seq( Step.level,-Step.level, by = -Step.level/1000), -sqrt(Step.level^2 - seq(-Step.level,Step.level, by = Step.level/1000)^2)))
+            #     lines(cercle,type = "l", lty = GridlineType, col = GridlineColor)
+            #     text(x = Step.level/Dist.Quadrants * usr[usr.Quadrant[1]],
+            #          y = Step.level/Dist.Quadrants * usr[usr.Quadrant[2]],
+            #          paste0(Step.level,"%"),
+            #          pos = ifelse(sdm_sdo,2,4),
+            #          cex = 0.8)}
+        }
+        # Plotting DQOs
+        contour(x = x, y = y, z = z, col = "black", add = TRUE, method = "edge", levels = c(DQO.1*100, DQO.2*100, DQO.3*100),
+                vfont = NULL, axes = axes, frame.plot = axes, lty = 'solid', lwd  = 2, labcex = 0.8)
+        # for (i in c(DQO.1*100, DQO.2*100, DQO.3*100)) {
+        #     if (!is.na(i)) {
+        #         cercle <- rbind(cbind(seq(-i, i, by =  i/1000),  sqrt(i^2 - seq(-i,i, by = i/1000)^2)),
+        #                         cbind(seq( i,-i, by = -i/1000), -sqrt(i^2 - seq(-i,i, by = i/1000)^2)))
+        #         lines(cercle,type = "l")
+        #         text(x = i/Dist.Quadrants * usr[usr.Quadrant[1]], y = i/Dist.Quadrants * usr[usr.Quadrant[2]], paste0(i,"%"), pos = ifelse(sdm_sdo,2,4), cex = 0.8)}}
+        }
     #=====[Arrows]=====
     # Plotting segments for relative measurement uncertainty
     # checking that data is visible
@@ -5449,7 +5540,7 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
          cex = 0.8, pos = 3) # pos label above the coordinate
     text(x = Mat$b1[1]/2,
          y = ifelse(label.Bias ==  "Bias > 0",max(Mat$YData[Index.Good]),min(Mat$YData[Index.Good])),
-         labels = paste0(format(2*(b1 - 1)*100, digits = 1)," %"),
+         labels = paste0(format(2*(b1 - 1)*100, digits = 1),"%"),
          cex = 0.8, pos = 1) # pos label above the coordinate
     Arrows(x0 = 0         , y0 = ifelse(label.Bias ==  "Bias > 0", max(Mat$YData[Index.Good]), min(Mat$YData[Index.Good])),
            x1 =  Mat$b1[1], y1 = ifelse(label.Bias ==  "Bias > 0",max(Mat$YData[Index.Good]),min(Mat$YData[Index.Good])),
@@ -5483,8 +5574,8 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
     segments(x0 = Mat$b0[Index.med.UR], y0 = 0,
              x1 = Mat$b0[Index.med.UR], y1 = Mat$YData[Index.med.UR],
              col = "black", lty = 2, lwd = 1)
-    Label <- substitute(paste("2 b"[0], "/X"[i], ":", b0.Digits, " %"), list(b0.Digits = format(Mat$b0[Index.med.UR],digits =0)))
-    text(x = Mat$b0[Index.med.UR], y = 0, labels = Label, pos = 1, cex = 0.8)
+    Label <- substitute(paste("2 b"[0], "/X"[i], ":\n", b0.Digits, "%"), list(b0.Digits = format(Mat$b0[Index.med.UR],digits =0)))
+    text(x = Mat$b0[Index.med.UR], y = 0, labels = Label, pos = 1, cex = 0.7)
     #=====[Limit Values identifier]=====
     Limits2plots        <- c(CL, IT, AT, LV, UAT, LAT)
     names(Limits2plots) <- c("CL", "IT", "AT", "LV", "UAT", "LAT")
@@ -5500,8 +5591,10 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
                 points(x = Mat$XData[Index.Good][Index.Limit],
                        y = Mat$YData[Index.Good][Index.Limit],
                        type = "p",
-                       col  = "black",
-                       pch  = "+")
+                       col  = "blue",
+                       cex  = 1.5,
+                       pch  = 8,
+                       lwd  = 2) #"+")
                 # plotting label Limit
                 text(x = Mat$XData[Index.Good][Index.Limit],
                      y = Mat$YData[Index.Good][Index.Limit],
@@ -5516,12 +5609,6 @@ Target.Diagram <- function(Sensor_name, Mat, ubsRM = NULL, ubss = NULL, b0 = NUL
                                                                             adj    = c(0.5, ifelse(abs(Ylim[2]) > abs(Ylim[1]), 0, 1)),
                                                                             #pos    = ifelse(abs(Ylim[2]) > abs(Ylim[1]), 3, 1),
                                                                             labels = paste0(Name.Limits2plots," ", Unit.sensor), cex = 0.8)
-    #=====[colorscale]=====
-    # Add colorscale
-    testcol<-color.gradient(c(0,1,1),c(1,1,0),0,nslices=100)
-    color.legend(usr[2] + 0.005 *(usr[2]-usr[1]), usr[3], usr[2] + 0.03 *(usr[2]-usr[1]),usr[4] - 0.05 * (usr[4]-usr[3]),
-                 factor.Color,testcol, cex=0.6, align="rb",gradient="y")
-    LegendTitle <- substitute(paste("X"[i], ", ", Unit,sep=""),list(Unit=Unit.Ref))
     # setting all margin accessible with mtext
     par(xpd = NA)
     text(x = usr[2] + 0.005 * (usr[2]-usr[1]), y = usr[4] - 0.005 * (usr[4]-usr[3]), labels  = LegendTitle, adj = c(0,1), cex = 0.8)
@@ -5537,7 +5624,7 @@ lm.Model.Compare <- function(General.df, DateIN, DateEND, x, y, Title = NULL) {
     #          Title      : optional chacter string of the scatterplot
     # Output : The linear comparison model
     # Subset General.df to selected date
-    General    <- subset(General.df[, c("date", x, y)], date >= as.POSIXct(DateIN) & date <= as.POSIXct(DateEND))
+    General    <- subset(General.df[, c("date", x, y)], date > as.POSIXct(DateIN) & date <= as.POSIXct(DateEND))
     # loading packages
     library(broom)
     # Linear regression of the x and predicted data of the model
@@ -5816,7 +5903,7 @@ Distribution_Ref_TS <- function(RefData, DateBegin = NULL, DateEnd = NULL, Senso
     # Selecting dates
     if (!is.data.table(RefData)) RefData <- data.table::data.table(RefData)
     if ("date" %in% names(RefData) && !all(is.null(c(DateBegin, DateEnd)))) {
-        if (!(is.null(DateBegin))) RefData <- RefData[Startdate >= DateBegin]
+        if (!(is.null(DateBegin))) RefData <- RefData[Startdate > DateBegin]
         if (!(is.null(DateEnd)))   RefData <- RefData[date <= DateEnd]
     } else stop("RefData is missing a column \"date\"")
     if (!is.null(Sensor_dates))  RefData <- RefData[date %in% Sensor_dates]
@@ -6381,10 +6468,6 @@ Identify_ASE <- function(Model, name.sensor = NULL, General.DT = NULL, ASE.cfg =
     if ("Relative_humidity_int" %in% var.names.meteo) var.names.meteo[var.names.meteo == "Relative_humidity_int"] <- "Out.Relative_humidity_int"
     if ("Atmospheric_pressure" %in% var.names.meteo)  var.names.meteo[var.names.meteo == "Atmospheric_pressure"]  <- "Out.Atmospheric_pressure"
     eta.model.type  <- unlist(ASE.cfg[name.gas == "eta.model.type", k, with = FALSE])
-    # lists for all sensors
-    list.gas.sensor  <- unlist(ASE.cfg[name.gas == "gas.sensor"])[-1]
-    list.sensors     <- unlist(ASE.cfg[name.gas == "name.sensor"])[-1]
-    list.reference   <- unlist(ASE.cfg[name.gas == "gas.reference2use"])[-1]
     # General.DT
     if (is.null(General.DT)) {
         General.file <- file.path(ASEDir, DIR_General, "General.csv")
@@ -6457,6 +6540,10 @@ Identify_ASE <- function(Model, name.sensor = NULL, General.DT = NULL, ASE.cfg =
                                                                   RefData = RefData, 
                                                                   InfluxData = InfluxData, 
                                                                   SOSData = SOSData, Verbose = FALSE))}}
+    # lists for all sensors
+    list.gas.sensor  <- intersect(unlist(ASE.cfg[name.gas == "gas.sensor"])[-1], names(General.DT))
+    list.sensors     <- unlist(ASE.cfg[name.gas == "name.sensor"])[unlist(ASE.cfg[name.gas == "gas.sensor"]) %in% list.gas.sensor]
+    list.reference   <- intersect(unlist(ASE.cfg[name.gas == "gas.reference2use"])[-1], names(General.DT))
     # Complete General DT with columns for filtered sesnors if needed
     General.DT <- Complete_General(f.list.name.sensor = list.sensors, f.list.gas.sensor = list.gas.sensor, f.General.DT = General.DT, f.Config = Config, 
                                    f.ASEDir = ASEDir, f.Shield = Shield, f.list.reference = unique(list.reference), f.ASE.cfg = ASE.cfg, Filter.Sens = Filter.Sens, Filter.Ref = Filter.Ref)
@@ -6779,7 +6866,7 @@ Sens_Conv <- function(Conv.Forced  = TRUE, General.DT, list.gas.sensor, list.nam
         No.Shield.gas.Sensors <- setdiff(list.gas.sensor, Shield$gas.sensor)
         No.Shield.gas.Sensors <- No.Shield.gas.Sensors[which(c(paste0("Out.",No.Shield.gas.Sensors) %in% names(General.DT) ))]
         if (length(No.Shield.gas.Sensors) > 0) {
-            No.Shield.name.Sensors <- setdiff(list.name.sensor, Shield$name.sensor)
+            No.Shield.name.Sensors <- list.name.sensor[list.gas.sensor %in% No.Shield.gas.Sensors]
             x <- General.DT[,paste0("Out.",No.Shield.gas.Sensors), with = FALSE]
             data.table::set(General.DT,  j =  paste0(No.Shield.name.Sensors,"_volt"),
                             value = lapply(seq_len(ncol(x)), function(i) x[[i]]))
@@ -7226,7 +7313,7 @@ Roll_Fit_New_Model <- function(ASEDir, ASE.ID = NULL, DIR_Models = "Models", Int
             }
             Cal.DateEND <- min(Cal.DateIN + Cal.Interval, Meas.DateEND)
             # Creating DateCal if null
-            if (is.null(DateCal)) DateCal <- ASE.ID$General.DT[date >= DateIN & date < DateEND + 1, which = TRUE]
+            if (is.null(DateCal)) DateCal <- ASE.ID$General.DT[date > DateIN & date <= DateEND + 1, which = TRUE]
             
             # Checking that data are not empty
             if (is.null(namesCovariates) || is.na(namesCovariates) || (length(namesCovariates) == 1 & namesCovariates == "")) {
@@ -7241,7 +7328,7 @@ Roll_Fit_New_Model <- function(ASEDir, ASE.ID = NULL, DIR_Models = "Models", Int
                                         paste0(c(paste0(c(ASE.name,name.sensor,ASE.ID$ASESens.raw.unit,Mod_type, format(Cal.DateIN,"%Y%m%d"),format(Cal.DateEND,"%Y%m%d"),
                                                           ifelse(any(namesCovariates != ""),paste(paste0(namesCovariates, paste0("-",degrees)),collapse = "&"),"")),"__"),".rdata"), collapse = ""))
                 # Selecting windows slice date within DateCal
-                Data.num <- ASE.ID$General.DT[DateCal,.SD, .SDcols = c("date",List.Columns)][date >= Cal.DateIN & date < Cal.DateEND + 1, which = TRUE]
+                Data.num <- ASE.ID$General.DT[DateCal,.SD, .SDcols = c("date",List.Columns)][date > Cal.DateIN & date <= Cal.DateEND + 1, which = TRUE]
                 
                 if (length(Data.num) > 10) {
                     if ((!file.exists(nameModel))) {
@@ -7315,11 +7402,13 @@ Compare_Models <- function(List.models, ASE.ID = NULL, General.DT = NULL, ASE.cf
             futile.logger::flog.warn(paste0("[Compare_Models] General.csv for ",ASE.ID$ASE.name, " already loaded."))
         } else {
             ASE.ID <- Identify_ASE(Model = Model)
+            if (exists("Cal.DateIN")) rm(Cal.DateIN)
+            if (exists("Cal.DateEND")) rm(Cal.DateEND)
             futile.logger::flog.info(paste0("[Compare_Models] General.csv for ",ASE.ID$ASE.name, " loaded."))
         } 
         # Calibration Model
-        if (is.null(Cal.DateIN))  Cal.DateIN  <- ASE.ID$Cal.DateIN
-        if (is.null(Cal.DateEND)) Cal.DateEND <- ASE.ID$Cal.DateEND
+        if (!exists("Cal.DateIN") || is.null(Cal.DateIN))  Cal.DateIN  <- ASE.ID$Cal.DateIN
+        if (!exists("Cal.DateEND") || is.null(Cal.DateEND)) Cal.DateEND <- ASE.ID$Cal.DateEND
         Variables   <- ASE.ID$Variables
         Model.i     <- load_obj(Model)
         R2raw       <- ifelse("r.squared" %in% names(Model.i$Glance), Model.i$Glance$r.squared, NA)
@@ -7329,7 +7418,7 @@ Compare_Models <- function(List.models, ASE.ID = NULL, General.DT = NULL, ASE.cf
         if (all(c(ASE.ID$nameGasRef,ASE.ID$nameGasMod) %in% names(ASE.ID$General.DT))) {
             if(!is.null(DateCal)) {
                 Calibration.DT <- ASE.ID$General.DT[DateCal, .SD, .SDcols = c("date",ASE.ID$nameGasRef,ASE.ID$nameGasMod)]
-            }  else Calibration.DT <- ASE.ID$General.DT[date >= Cal.DateIN & date < Cal.DateEND + 1, .SD, .SDcols = c("date",ASE.ID$nameGasRef,ASE.ID$nameGasMod)]
+            }  else Calibration.DT <- ASE.ID$General.DT[date > Cal.DateIN & date <= Cal.DateEND + 1, .SD, .SDcols = c("date",ASE.ID$nameGasRef,ASE.ID$nameGasMod)]
         } else return(futile.logger::flog.error("[Compare_Models] sensor or reference data are missing!\n")) 
         Calibration.DT <- Calibration.DT[is.finite(rowSums(Calibration.DT[,c(ASE.ID$nameGasRef,ASE.ID$nameGasMod), with =F]))]
         N.Cal          <- Calibration.DT[,.N]
@@ -7355,11 +7444,11 @@ Compare_Models <- function(List.models, ASE.ID = NULL, General.DT = NULL, ASE.cf
         # discarding incomplete rows, there must be enough data otherwise impossible to calibrate
         Prediction.DT <- Prediction.DT[is.finite(rowSums(Prediction.DT[,names(Prediction.DT)[grep("date", names(Prediction.DT), invert = T)], with = F]))]
         # selecting only Prediction date, check if enough data
-        if (Prediction.DT[date >= Meas.DateIN & date < Meas.DateEND + 1, .N] < 10) {
+        if (Prediction.DT[date > Meas.DateIN & date <= Meas.DateEND + 1, .N] < 10) {
             futile.logger::flog.warn(("[Compare_Models] no data for prediction, using dates of calibration."))
             if (is.null(Meas.DateIN))  Meas.DateIN  <- Cal.DateIN
             if (is.null(Meas.DateEND)) Meas.DateEND <- Cal.DateEND} 
-        Prediction.DT <- Prediction.DT[date >= Meas.DateIN & date < Meas.DateEND + 1]
+        Prediction.DT <- Prediction.DT[date > Meas.DateIN & date <= Meas.DateEND + 1]
         # discarding calibration data if requested and some data are remaining
         if (Exclude.Cal) {
             # if (is.null(DateCal)) {
@@ -7913,7 +8002,7 @@ List_Covariates <- function(Median.Models, ASE.ID = NULL, lmat = rbind(c(0,0),c(
 
 Formula.Degrees <- function(Mod_type = "Linear.Robust", ASE.ID, DateINPlot, DateENDPlot, Covariates, Multi.File = NULL) {
     if (Mod_type == "MultiLinear") {
-        Matrice         <- General[date >= DateINPlot & date < DateENDPlot + 1, .SD, .SDcols = Covariates]
+        Matrice         <- General[date > DateINPlot & date <= DateENDPlot + 1, .SD, .SDcols = Covariates]
         names(Matrice)  <- Covariates
         if (!is.null(Multi.File)) {
             if (file.exists(Multi.File)) {
@@ -7937,18 +8026,18 @@ Formula.Degrees <- function(Mod_type = "Linear.Robust", ASE.ID, DateINPlot, Date
         namesCovariates <- paste0(paste(Covariates,Degrees, sep = "-"),collapse = "&")
     } else if (any(mod.eta.model.type %in% c("Peaks_baseline", "exp_kT_NoC", "exp_kT", "exp_kK", "T_power", "K_power"))) {
         if (is.null(Covariates) || length(Covariates) == "0" || Covariates == "") namesCovariates <- "Out.Temperature"
-        Matrice         <- General[date >= DateINPlot & date < DateENDPlot + 1, .SD, .SDcols = Covariates]
+        Matrice         <- General[date > DateINPlot & date <= DateENDPlot + 1, .SD, .SDcols = Covariates]
         #names(Matrice)  <- namesCovariates
     } else if (any(mod.eta.model.type %in% c("BeerLambert"))) {
         Covariates <- c("Out.Temperature", "Out.Atmospheric_pressure")
         Degrees <-  c(1,-1)
         namesCovariates <- paste0(Covariates,collapse = "&")
-        Matrice         <- General[date >= DateINPlot & date < DateENDPlot + 1, .SD, .SDcols = Covariates]
+        Matrice         <- General[date > DateINPlot & date <= DateENDPlot + 1, .SD, .SDcols = Covariates]
     } else if (any(mod.eta.model.type %in% c("Kohler","Kohler_only"))) {
         Covariates      <- c("Out.Relative_humidity")
         Degrees         <- 1
         namesCovariates <- paste0(Covariates,collapse = "&")
-        Matrice         <- General[date >= DateINPlot & date < DateENDPlot + 1, .SD, .SDcols = Covariates]
+        Matrice         <- General[date > DateINPlot & date <= DateENDPlot + 1, .SD, .SDcols = Covariates]
         #names(Matrice)  <- namesCovariates
     } else {
         namesCovariates <- ""
@@ -8119,7 +8208,7 @@ Auto.Cal <- function(ASEDir, ASE.ID = NULL, name.sensor = "CO_A4_P1", Interval =
                         Formula <- as.formula(paste0(addq(ASE.ID$nameGasVolt)," ~ ",ASE.ID$nameGasRef, " + ", 
                                                      paste(First.covariate[1:(n.loop - 1)], collapse = " + ")))
                         # here we can use parameter y.name to limit vif only to the new covariate
-                        nVIF <- HH::vif(lm(Formula, data = data.frame(ASE.ID$General.DT[date >= DateIN & date < DateEND + 1], check.names = F, stringsAsFactors = F), 
+                        nVIF <- HH::vif(lm(Formula, data = data.frame(ASE.ID$General.DT[date > DateIN & date <= DateEND + 1], check.names = F, stringsAsFactors = F), 
                                            x = TRUE), singular.ok = TRUE)
                         cat("-----------------------\n")
                         if (any(is.infinite(nVIF)) || any(nVIF > Treshold.VIF)) {
@@ -8407,8 +8496,8 @@ AutoCal.Boxes.Sensor <- function(List.ASE, ASE.ID = NULL, Dir = "S:/Box Sync/Air
                 rm(All.dates)}
         } else {
             if (is.null(DateIN) || is.null(DateEND)) stop(futile.logger::flog.error(paste0("[AutoCal.Boxes.Sensor] please define DateIN and DateEND if you do not pass DateCal for ASE ",i)))
-            DateCal <- which(ASE.ID$General.DT$date >= DateIN & ASE.ID$General.DT$date < DateEND +1)
-            if(all(is.na(ASE.ID$General.DT[date >= DateIN & date < DateEND +1][[paste0("Out.",ASE.ID$gas.sensor)]]))) {
+            DateCal <- which(ASE.ID$General.DT$date > DateIN & ASE.ID$General.DT$date < DateEND +1)
+            if(all(is.na(ASE.ID$General.DT[date > DateIN & date <= DateEND +1][[paste0("Out.",ASE.ID$gas.sensor)]]))) {
             futile.logger::flog.warn(paste0("[AutoCal.Boxes.Sensor] ",ASE.ID$ASE.name, " ", ASE.ID$name.sensor, " nodata between ", DateIN, " and ", DateEND, ". Impossible to calibrate"))
             next}}
         assign(paste0("Fit.",strsplit(name.sensor,"_")[[1]][1],"_", i), 
@@ -9106,14 +9195,14 @@ Plot_ASE_reg <- function(Compound = NULL, ASE.ID, U.orth.List, UbsRM, Ubss, Add.
     par(mar = c(1.7,2.4,0.5,0.1))
     Ylab <- paste0("ASE in blue, reference in red, ", ASE.ID$unit.sensor)
     Ylim <- c(min(U.orth.List$Mat[, .(xis, yis)], na.rm = T), max(U.orth.List$Mat[, .(xis, yis)], na.rm = T))
-    plot(U.orth.List$Mat[order(Date),.(Date,yis)], type = "l", col = "blue", ylab = Ylab, ylim = Ylim)
-    lines(U.orth.List$Mat[order(Date),.(Date,xis)], col = "red")
+    plot(U.orth.List$Mat[order(Date),.(Date,xis)], type = "l", col = "red", ylab = Ylab, ylim = Ylim)
+    lines(U.orth.List$Mat[order(Date),.(Date,yis)], col = "blue")
     grid()
     # Adding calibration period 7 cases : the 2 ones with sensor data outside Cal_interval means nothing is plotted
     if (!(ASE.ID$Cal.DateIN > max(U.orth.List$Mat$Date, na.rm = T) || ASE.ID$Cal.DateEND < min(U.orth.List$Mat$Date, na.rm = T)) ) {
         # Cal_interval within sensor data 
         if (ASE.ID$Cal.DateIN > min(U.orth.List$Mat$Date, na.rm = T)) {
-            Ind.CalIN <- which(U.orth.List$Mat[, Date] == min(U.orth.List$Mat[Date >= ASE.ID$Cal.DateIN, Date], na.rm = T))[1]
+            Ind.CalIN <- which(U.orth.List$Mat[, Date] == min(U.orth.List$Mat[date > ASE.ID$Cal.DateIN, Date], na.rm = T))[1]
             if (ASE.ID$Cal.DateEND < max(U.orth.List$Mat$Date, na.rm = T)) {
                 Ind.CalEND <- which(U.orth.List$Mat[, Date] == max(U.orth.List$Mat[Date <= as.POSIXct(ASE.ID$Cal.DateEND) + 1, Date], na.rm = T))[1]
             } else {
@@ -9224,6 +9313,7 @@ UbsRM <- function(name.sensor, ubsRM = NULL) {
     } else return(ubsRM)}
 #' return u(bs,RM) the uncertainty of the reference analyser
 UbsRM_WG42 <- function( Instrument, name.sensor = NULL,Unit.ppb = FALSE) {
+    # Values in approval tets https://qal1.de/en/index.htm
     # Checking if it is a NOx instrument for which u(bs,RM) exists both for NO and NO2
     if (Instrument %in% c("APNA-370", "42i")) {
         if (is.null(name.sensor)) {
@@ -9237,6 +9327,18 @@ UbsRM_WG42 <- function( Instrument, name.sensor = NULL,Unit.ppb = FALSE) {
                             "NO"  = switch(Instrument,
                                           "APNA-370"     = 1.33,
                                           "42i"          = 0.35))}
+    } else if (Instrument %in% c("FIDAS", "GRIMM", "TOPAS", "TEOM")) {
+        if (is.null(name.sensor)) {
+            return(flog.error("[UbsRM_WG42] for PM, the name of sensor is needed. Cannot return u(bs,RM) if the name of sensor is unknown"))
+        } else {
+            Compound <- Compound(name.sensor)
+            ubsRM <- switch(Compound,
+                            "PM10"  = switch(Instrument,
+                                             "FIDAS"                = 1.35, # at  50 table 27 p 120 https://qal1.de/report/0000040212_21227195C_palas_Fidas200S_en.pdf
+                                             "TEOM"                 = 1.42), # at 50, page 100 https://qal1.de/report/0000035016_21209885B_thermo_Teom1405f_pm10_en.pdf),
+                            "PM2.5" = switch(Instrument,
+                                             "FIDAS"                = 0.8, # at 25 table 27 p 120 https://qal1.de/report/0000040212_21227195C_palas_Fidas200S_en.pdf
+                                             "TEOM"                 = 0.7))} # at 25 p 9 p 120 https://qal1.de/report/0000036949_21209885C_thermo_Teom1405f_pm25_en.pdf
     } else {
         # values in ug.m-3 or mg.m-3
         ubsRM <- switch(Instrument,
@@ -9275,7 +9377,7 @@ UbsRM_WG42 <- function( Instrument, name.sensor = NULL,Unit.ppb = FALSE) {
                         "CO12e"        = 1.13,
                         "CO12M"        = 0.68,
                         "APMA-370"     = 0.28,
-                        "300E /T300"   = 0.76,
+                        "300E / T300"  = 0.76,
                         "48i"          = 0.91,
                         "48iQ"         = 0.45,
                         # Benzene
@@ -9283,13 +9385,9 @@ UbsRM_WG42 <- function( Instrument, name.sensor = NULL,Unit.ppb = FALSE) {
                         "GC5000 BTX PID"       = 0.10,
                         "VOC72M"               = 0.02,
                         "GC 955 Model 601 PID" = 0.05,
-                        # PM
-                        "FIDAS"                = 2.0,
-                        "GRIMM"                = 2.0,
-                        "TOPAS"                = 2.0,
-                        "TEOM"                 = 2.0,
                         # CO2
-                        "Picarro"              = 0.085 # https://amt.copernicus.org/articles/12/5717/2019/
+                        "Picarro"              = 0.085, # https://amt.copernicus.org/articles/12/5717/2019/
+                        "Sick Sidor"           = 10
         )} 
     # Convert to ppb or ppm if requested
     if (Unit.ppb && Compound(ASE.ID$name.sensor) != "CO2") {
@@ -9301,7 +9399,7 @@ UbsRM_WG42 <- function( Instrument, name.sensor = NULL,Unit.ppb = FALSE) {
             Compound = "SO2"
         } else if (Instrument %in% c("Serinus 10", "O342e", "O342M", "APOA-370", "AR500", "400E / T400", "49i", "49iQ")) {
             Compound = "O3"
-        } else if (Instrument %in% c("Serinus 30", "CO12e", "CO12M", "APMA-370", "300E /T300", "48i", "48iQ")) {
+        } else if (Instrument %in% c("Serinus 30", "CO12e", "CO12M", "APMA-370", "300E / T300", "48i", "48iQ")) {
             Compound = "CO"
         } else if (Instrument %in% c("GC5000 BTX FID", "VOC72M", "GC 955 Model 601 PID")) {
             Compound = "Benzene"}
@@ -9557,7 +9655,7 @@ Upload2Influx <- function(WD, Project, List.ASE, DIR_Config = "Configuration", D
         JSON.File <- Melted.data[!is.na(Melted.data$POST),"POST"]
         Melted.data[,POST := NULL]
         
-        # Checking if "ASE_Calibrated table exists
+        # Checking if "ASE_Calibrated table exists on INFLUX (delete file on "Results" to restart the files)
         Influx.Tables <- httr::GET(URLencode(paste0("http://", ASE.ID.init$Config$Server$Host,":", ASE.ID.init$Config$Server$Port,"/query?db=", ASE.ID.init$Config$Server$Db)),
                                    config = authenticate(user = User, password = Pass, type = "basic"),
                                    query = list(q = paste0("SHOW SERIES ON ", ASE.ID.init$Config$Server$Db)))
@@ -9605,7 +9703,6 @@ Upload2Influx <- function(WD, Project, List.ASE, DIR_Config = "Configuration", D
                         Start_line <- Start_line + Step
                     } 
                 } else {
-                    browser()
                     futile.logger::flog.warn(paste0(paste0("[Upload2Influx] ",ASE, ", Lines :", (Start_line+1), " to ",(Start_line+Step), " not loaded. Trying again. Error:\n",Loaded.Table)))
                     if (!exists("Trial.count")) {
                         Trial.count <- 2
@@ -9835,14 +9932,14 @@ Oslo_Cal <- function(List.ASE, ...) {
         if ("ASE.ID" %in% names(arguments)) ASE.ID <- arguments$ASE.ID else ASE.ID <- NULL
         name.sensor      <- ifelse("name.sensor" %in% names(arguments), arguments$name.sensor, "CO_A4_P1")
         Mod_type         <- ifelse("Mod_type" %in% names(arguments), arguments$Mod_type, "Linear.Robust")
-        Probs            <- ifelse("Probs" %in% names(arguments), arguments$Probs, NULL)
+        if ("Probs" %in% names(arguments)) Probs <- arguments$Probs else Probs <- NULL
         Add.Covariates   <- ifelse("Add.Covariates" %in% names(arguments), arguments$Add.Covariates, FALSE)
         if ("Relationships" %in% names(arguments)) Relationships <- arguments$Relationships else Relationships <- NULL
         Degrees          <- ifelse("Degrees" %in% names(arguments), arguments$Degrees, 1)
-        Usermins         <- ifelse("Usermins" %in% names(arguments), arguments$Usermins, NULL)
+        if ("Usermins" %in% names(arguments)) Usermins <- arguments$Usermins else  Usermins <- NULL
         namesCovariates  <- if (length(Relationships) > 0 && Relationships != "") paste0(paste(Relationships,Degrees, sep = "-"),collapse = "&") else ""
         Cal_Interval     <- Cal_Inter(i, name.sensor)
-        Predict_Interval <- Pred_Inter(i)
+        Predict_Interval <- Pred_Inter(i, name.sensor)
         Auto.cal.name    <- paste0(c("Auto.Cal",name.sensor, Place, format(Cal_Interval[1],"%Y%m%d"), format(Cal_Interval[2],"%Y%m%d"), Mod_type, Add.Covariates, namesCovariates),collapse = "__")
         if ("Discarded.covariates" %in% names(arguments)) Discarded.covariates <- arguments$Discarded.covariates else Discarded.covariates <- NULL
         if ("Dir" %in% names(arguments))                  Dir                  <- arguments$Dir                  else Dir                  <- "S:/Box Sync/AirSensEUR/Fieldtests/Shiny"
@@ -9883,24 +9980,30 @@ Cal_Inter <-  function(i, name.sensor) {
     } else if (i == "65325E") {
         return(c(as.Date("2021-03-29"), as.Date("2021-04-09")))
     } else if (i == "64B082") {
-        return(c(as.Date("2021-03-26"), as.Date("2021-04-09")))
+        return(c(as.Date("2021-03-23"), as.Date("2021-04-07")))
+    } else if ((i %in% c("40458D", "4065ED")) & !(name.sensor %in% c("OX_A431_P1", "5301CAT", "5301CST", "OPCN3PM1"))) {
+        return(c(as.Date("2021-03-23"), as.Date("2021-04-07")))
     } else if (i == "426179") {
         return(c(as.Date("2020-09-04"), as.Date("2020-09-18")))
     } else if (i == "65326C") {
         return(c(as.Date("2020-09-11"), as.Date("2020-09-25")))
     } else if (i == "425FB4" || i == "64A292" ||  i == "64FD0A") {
         return(c(as.Date("2020-10-01"), as.Date("2020-10-14")))
-    }  else if ((name.sensor == "CO_A4_P1") || name.sensor == "NO_B4_P1") {
+    # } else if (i %in% c("40642E", "40816F", "425FB3", "40458D", "4065ED") && (name.sensor == "CO_A4_P1" || name.sensor == "NO_B4_P1" || name.sensor == "NO2_B43F_P1")) {
+    #     return(c(as.Date("2020-10-01"), as.Date("2020-10-14")))
+    } else if ((name.sensor == "CO_A4_P1") || name.sensor == "NO_B4_P1") {
         return(c(as.Date("2020-10-01"), as.Date("2020-10-14")))
     } else {
         return(c(as.Date("2020-09-16"), as.Date("2020-09-30")))}}
-Pred_Inter <-  function(i) {
+Pred_Inter <-  function(i, name.sensor) {
     if (i == "64FD11") {
         return(c(as.Date("2020-09-11"), as.Date("2020-09-21")))
     } else if (i == "65325E") {
-        return(c(as.Date("2020-12-01"), as.Date("2021-04-09")))
+        return(c(as.Date("2021-03-29"), as.Date("2021-04-09")))
     } else if (i == "64B082") {
-        return(c(as.Date("2021-03-08"), as.Date("2021-04-09")))
+        return(c(as.Date("2021-03-13"), as.Date("2021-04-08")))
+    } else if ((i %in% c("40458D", "4065ED")) & !(name.sensor %in% c("OX_A431_P1", "5301CAT", "5301CST", "OPCN3PM1"))) {
+        return(c(as.Date("2021-03-13"), as.Date("2021-04-08")))
     } else if (i == "426179") {
         return(c(as.Date("2020-08-26"), as.Date("2020-09-18")))
     } else if (i == "65326C") {
