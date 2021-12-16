@@ -3875,7 +3875,7 @@ server <- function(input, output, session) {
                                 if (is.null(DF$General) || nrow(DF$General) == 0 ||
                                     (!is.null(DF$General) && !isTRUE(all.equal(D[,.SD, .SDcols = intersect(names(D),names(DF$General))],
                                                                                DF$General[,.SD, .SDcols = intersect(names(D),names(DF$General))],
-                                                                               , check.attributes = FALSE)))) {
+                                                                               check.attributes = FALSE)))) {
                                     save.General.df <- TRUE
                                     DF$General <- D
                                     # Checking if the SETTIME are consistent with the avalable date in General()
