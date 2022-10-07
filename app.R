@@ -1,4 +1,3 @@
-# Essai Michel
 #================================================================CR
 # Licence: ====
 # Copyright 2018 EUROPEAN UNION
