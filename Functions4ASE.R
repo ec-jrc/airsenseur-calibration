@@ -5241,7 +5241,7 @@ get.DQO <- function(gas.sensor = NULL, name.sensor = NULL, name.gas = NULL, Aver
 #' @param Xlim,Ylim limits of x and y axis, default values is NA, vectors of two values min and max values. Xlim and Ylim overruled Max.Percent
 #' @param Max.percent: numeric in percent, maximum extent of the x and y axis of the Target Diagram. This is reespected provided that Ur smaller than Max.percent exist.
 #' @param MainTitle character, title to appear On the top of the scatter plot of x And y values - NOT USED ANYMORE
-#' @param DQO.1,DQO.2,DQO.3 numeric, data quality objectives for Indicative measurements, Modelling and objective estimation. The DQOs are expressed in percentage. Defaul is NA, if NA no DQO target circle is plotted. Use function get DQO()
+#' @param DQO.1,DQO.2,DQO.3 numeric, data quality objectives for Indicative measurements, Modelling and objective estimation. The DQOs are expressed in percentage. Defaul is NA, if NA no DQO target circle is plotted. Use function get
 #' @param LAT,UAT,LV,AT,CL numeric, lower and upper assessment threshold, limit value, Alert threshold and Critical level of the European Air Quality Directive for Mat$xis, same unit as Mat$xis, default value = NA, used for color scale and target circles
 #' @param Disk,WD,Dir Character vectors where you put the graphic files (Disk, working directory, directory), It is sufficient if only Dir is supplied
 #' @param variable.ubsRM logical (default = FALSE ), if FALSE ubsRM is used as constant random standard uncertainties for all xis reference values. If TRUE ubsRM given in Mat and is used for each reference values

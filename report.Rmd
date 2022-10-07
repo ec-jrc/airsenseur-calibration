@@ -1,37 +1,51 @@
 ---
 title: "Evaluatation of low-cost sensor"
-author:
-- Michel Gerboles1, Federico Karagulian, Alexander Kotsev, Laurent Spinelle
-
 date: "last update `r format(Sys.time(), '%d %B %Y, %H:%M')`"
 output:
-  # word_document: 
-  #   reference_docx: word_style.docx
-  #   number_sections: true
-  #pdf_document: default
-  html_document: default
-  fig_width: 7
-    fig_height: 7
-    fig_caption: true
-  number_sections: true
-  #bookdown::word_document: default
-
-
-#bibliography: [Field_Validation_FK.bib, MyPubblications.bib, Diffusion.bib, MACPoll.bib]
-# csl: sensors.csl
-#csl: nature.csl
-# csl: atmospheric-environment.csl
-#link-citations: yes
-header-includes:
-  - \usepackage{xcolor}
-  - \usepackage{framed}
-  - \pagenumbering{arabic}
+    html_document:
+        theme: paper
+        number_sections: true
+        toc: yes
+        toc_depth: 3
+        toc_float: true
+        df_print: paged
 ---
-...
 
+```{r, Options, include=FALSE}
+knitr::opts_chunk$set(echo      = FALSE,
+                      message   = FALSE,
+                      warning   = FALSE,
+                      include   = TRUE,
+                      comment   = FALSE,
+                      error     = TRUE,
+                      dpi       = 300,
+                      out.width = '\\textwidth',
+                      cache     = FALSE)
+```
 
+```{r, YAML-options, echo = FALSE, eval=FALSE}
+output:
+    html_document:
+    theme: paper
+number_sections: true
+toc: yes
+toc_depth: 3
+toc_float: false
+df_print: paged
+word_document:
+    toc: yes
+number_sections: true
+pdf_document:
+    toc: yes
+pandoc_args:
+    - --wrap=none
+- --top-level-division=chapter
+fig_caption: yes
+number_sections: true
 
-```{r eval = FALSE, echo = FALSE, cache = FALSE}
+```
+
+```{r, authors, echo = FALSE, eval = FALSE}
 #================================================================CR
 # Licence: ====
 # Copyright 2018 EUROPEAN UNION
@@ -50,43 +64,41 @@ header-includes:
 # - Laurent Spinelle       , laurent.spinelle@ec.europa.eu - European Commission - Joint Research Centre
 # - Marco Signorini        , marco.signorini@liberaintentio.com - Liberatintentio srl
 # - Alex Kotsev            , alexander.kotsev@ec.europa.eu - European Commission - Joint Research Centre
-
-# Note that due to an issue in rmarkdown, the default value of a parameter in
-# the header cannot be `NULL`, so I used a default of `NA` for the default value
-# of `n`.
 ```
 
-```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', message = FALSE, comment=FALSE, include=FALSE}
+```{r, setup, include = FALSE}
 
+#https://stackoverflow.com/questions/57175351/flextable-autofit-in-a-rmarkdown-to-word-doc-causes-table-to-go-outside-page-mar
+FitFlextableToPage <- function(ft, pgwidth = 6){
+    
+    ft_out <- ft %>% autofit()
+    
+    ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+    return(ft_out)
+}
+```
+
+```{r, Libraries, include=FALSE}
 library(stringr)
 library(tools)
-library(ggplot2)
-#library(ggpmisc)
-library(xtable)
+library(htmltools)
 library(pander)
-library(formattable)
 library(rmarkdown)
+library(markdown)
 library(knitr)
-#library(kableExtra)
-library(forcats)
-#library(ggrepel)
-library(scales)
-#library(mosaic)
-#library(mosaicData)
 library(flextable)
-library(officer)
-library(gridExtra)
-#library(RGraphics) 
-#library(requireR)
-library(captioner)
-#library(citr)
 ```
 
-## Identification of sensor, calibration period and location
-During this evalutation, the sensor  `r CalSet()$name.sensor` was installed into the AirSensEUR box named `r CalSet()$AirsensEur.name`.
-
-```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "90%", results = 'asis', message = FALSE, comment=FALSE}
-# title_CAL <- paste0('<h0><strong>', "Position of ", CalSet()$AirsensEur.name, " during calibration",
+## Identification of sensor `r  Last.CalSet$name.sensor`
+The **`r  Last.CalSet$name.sensor`** sensor installed into the AirSensEUR box **`r ASE_name()`** is evaluated in this report.
+```{r, PN, echo=FALSE, include = TRUE, results='asis'}
+if (any(Last.CalSet$name.sensor %in% Select.Sensors.cfg()$name)) {
+    PN <- unique(Sensors.cfg()[which(Select.Sensors.cfg()$name == Last.CalSet$name.sensor)][["serial"]])
+    PN <- PN[!is.na(PN)]
+    if (isTruthy(PN)) cat(paste0("The part number identifying the ",Last.CalSet$name.sensor," sensor is ", PN, "\n"))}
+```
+```{r, Maps, eval=FALSE, include=FALSE}
+# title_CAL <- paste0('<h0><strong>', "Position of ", Last.CalSet$AirSensEur.name, " during calibration",
 #                     "</i></strong><br> The blue pointer is the location of the reference station, <br> the grey circle is the location of 
 #                                 the AirSensEur during calibration")
 # 
@@ -117,163 +129,180 @@ During this evalutation, the sensor  `r CalSet()$name.sensor` was installed into
 #        options    = layersControlOptions(collapsed = TRUE))
 ```
 
+## Calibration of sensor `r  Last.CalSet$name.sensor`
+```{r, Cal.DT, include=FALSE}
+with.Covariates    <- unlist(strsplit(x = Last.CalSet$CovMod , split = "&"))
+if (any(grepl(pattern = "-", x = with.Covariates[1]))) {
+    with.Covariates <- unlist(strsplit(x = with.Covariates , split = "-"))
+    with.Covariates <- with.Covariates[ seq(from = 1, to = length(with.Covariates), by = 2)]}
+```
+The sensor was calibrated between `r Last.CalSet$Cal.DateIN` and `r Last.CalSet$Cal.DateEND`,
+at the Air Quality Monitoring Station with longitude: `r format(as.numeric(pointsCal()$Cal_LON[1]), digits = 5)` 
+and latitude: `r format(as.numeric(pointsCal()$Cal_LAT[1]), digits = 5)` decimal degrees.
+The calibration was performed using the raw sensor data (y-axis) in `r Last.CalSet$Sens.raw.unit` 
+against the reference measurements (x-axis) in `r Last.CalSet$unit.ref`.
+Applying the calibration function, the sensor measurements are converted into calibrated sensor data in `r Last.CalSet$unit.sensor`. 
+The calibration function is established by fitting a `r Last.CalSet$mod.eta.model.type`
+model`r ifelse(all(is.na(with.Covariates)), "", paste0(" with the following co-variates: ", paste(gsub("_"," ", gsub("Out.","", with.Covariates)), collapse = ", ")))`.
+The calibration function was established using time averages of `r input[["UserMins"]]` min. 
+The file holding the calibration model is:  
+`r paste0(Last.CalSet$Cal)`  
+and is in directory:  
+`r paste0(Last.CalSet$WDoutputMod)`.  
 
-## Calibration of sensor
-The sensor was calibrated between `r CalSet()$Cal.DateIN` and `r CalSet()$Cal.DateEND`,
-at `r CalSet()$Reference.name`, longitude: `r format(input$coord.ref.Long, digits = 5)` `r if (!grepl(pattern = paste0(c("W","E"), collapse = "|"), x = input$coord.ref.Long)) "decimal degrees"` 
-and latitude: `r format(input$coord.ref.Lat, digits = 5)` `r if (!grepl(pattern = paste0(c("N","S"), collapse = "|"), x = input$coord.ref.Lat)) "decimal degrees"`.
+### Calibration model and validity of calibration model
+```{r, r-cal-aov, echo=FALSE, results='asis'}
 
-
-The calibration was performed using the sensor data (y) in  `r CalSet()$Sens.raw.unit` 
-against the reference measurements (x) in `r CalSet()$unit.ref`.
-Applying the calibration function, the sensor measurements are converted into `r CalSet()$unit.sensor`. 
-The calibration function is established by fitting a `r CalSet()$mod.eta.model.type`
-model with the following co-variates: `r paste0(gsub("_"," ",CalSet()$CovMod), collapse = ", ")`.
-The calibration function was established using time averages of `r input$UserMins` min.
-
-The file holding the calibration model is `r gsub("_","-",CalSet()$Cal)`.
-
-### Validity of calibration of model
-```{r r_cal_aov, echo=FALSE, message=FALSE, warning=FALSE, cache=FALSE, comment=FALSE, out.width="100%", results='asis'}
-
-if (CalSet()$Cal != "") {
+if (Last.CalSet$Cal != "") {
     # checking that the model file exists
-    if (file.exists(file.path(CalSet()$WDoutputMod, CalSet()$Cal))) {
+    if (file.exists(file.path(Last.CalSet$WDoutputMod, Last.CalSet$Cal))) {
         
         # loading the calibration files
-        name.Model.i <- file.path(CalSet()$WDoutputMod, CalSet()$Cal) 
+        name.Model.i <- file.path(Last.CalSet$WDoutputMod, Last.CalSet$Cal) 
         # Loading Model.i either as Rdata list or as a RDS file
         if (grepl(pattern = "rdata", x = name.Model.i)) {
             Model.i <- load_obj(name.Model.i)
         } else if (grepl(pattern = "rds", x = name.Model.i)) {
-            
             # Read model object as a RDS object
-            Model.i <- readRDS(file = name.Model.i) 
-        }
+            Model.i <- readRDS(file = name.Model.i)}
         options(digits = 10)
-        if (CalSet()$mod.eta.model.type == "Linear.robust") return.SummaryCal <- summary.rq(Model.i) else return.SummaryCal <- summary(Model.i)
+        if (Last.CalSet$mod.eta.model.type == "Linear.robust") return.SummaryCal <- summary.rq(Model.i) else return.SummaryCal <- summary(Model.i)
         
-    } else cat(paste0("[Shiny]Table.SummaryCal, ERROR, calibration model ", CalSet()$Cal, " does not exist\n"))
-} else cat(paste0("[Shiny]Table.SummaryCal, ERROR, calibration model is empty\n"))
-
+    } else cat(paste0("[r-cal-aov]Table.SummaryCal, ERROR, calibration model ", Last.CalSet$Cal, " does not exist\n"))
+} else cat(paste0("[r-cal-aov]Table.SummaryCal, ERROR, calibration model is empty\n"))
 ```
 
-```{r echo=FALSE}
+```{r, Model-Cal, echo=FALSE, results='asis'}
 if (!is.null(Model.i$Equation)) {
     cat("The calibration function is:\n")
-    cat(Model.i$Equation)
-} 
+    cat(gsub(pattern = "e\\+00",replacement = "", Model.i$Equation))
+    cat(paste0("\n", "with coefficients:\n"))} 
 ```
 
-```{r cal_aov, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "100%", results = 'asis', message = FALSE, comment=FALSE}
-
-# kable table with coefficients
-#knitr::kable(Model.i$Tidy, caption = "coefficents of model")
-ft <- flextable::flextable(Model.i$Tidy)
-ft <- theme_vanilla(ft)
-#ft <- color(ft, color = "blue", part = "header")
-ft <- width(ft, width = .99) # set width of all columns to .99 in
-ft <- fontsize(ft, part = "body", size = 12)
-ft <- fontsize(ft, part = "header", size = 14)
-ft  <- autofit(ft)
-ft
+```{r, cal-aov, echo=FALSE, results='asis', fig.height=2}
+# table with coefficients
+(ft <- flextable::flextable(Model.i$Tidy[,which(names(Model.i$Tidy) != "tau")]) %>%
+     theme_vanilla() %>%
+     width( width = .99) %>% # set width of all columns to .99 in
+     fontsize( part = "body", size = 9) %>%
+     fontsize( part = "header", size = 9) %>%
+     colformat_double(j = names(Model.i$Tidy[,which(names(Model.i$Tidy) != "tau")]), digits = 3) %>%
+     autofit() %>% 
+     FitFlextableToPage(pgwidth = 6))
 ```
 
-Estimate: the estimated coefficient is the value of slope calculated by the regression. It might seem a little confusing that the Intercept also has a value, but just think of it as a slope that is always multiplied by 1. This number will obviously vary based on the magnitude of the variable you're inputting into the regression, but it's always good to spot check this number to make sure it seems reasonable.
-
-Standard Error of the Coefficient Estimate: measure of the variability in the estimate for the coefficient. Lower means better but this number is relative to the value of the coefficient. As a rule of thumb, this value to be at least an order of magnitude less than the coefficient estimate.
-
-Statistics: score that measures whether or not the coefficient for this variable is meaningful for the model. You probably won't use this value itself, but know that it is used to calculate the p-value and the significance levels.
-
-p-value: probability that the variable is NOT relevant. You want this number to be as small as possible (< 0.05 or 0.001). If the number is really small, it is displayed in scientific notation. In or example 2e-16 means that the odds that parent is meaningless is about 1⁄5000000000000000
-
-```{r cal_Glance, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "100%", results = 'asis', message = FALSE, comment=FALSE}
-
-# kable table with coefficients
-#knitr::kable(Model.i$Tidy, caption = "coefficents of model")
-ft <- flextable::flextable(Model.i$Glance)
-ft <- theme_vanilla(ft)
-#ft <- color(ft, color = "blue", part = "header")
-ft <- width(ft, width = .99) # set width of all columns to .99 in
-ft <- fontsize(ft, part = "body", size = 12)
-ft <- fontsize(ft, part = "header", size = 14)
-ft  <- autofit(ft)
-ft
+Estimate: the estimated coefficient is the value of slope calculated by the regression. It might seem a little confusing that the Intercept also has a value, but just think of it as a slope that is always multiplied by 1.  
+Standard Error of the Coefficient Estimate: measure of the variability in the estimate for the coefficient. Lower means better but this number is relative to the value of the coefficient. As a rule of thumb, this value to be at least an order of magnitude less than the coefficient estimate.  
+Statistics: score that measures whether or not the coefficient for this variable is meaningful for the model.  
+p-value: probability that the variable is NOT relevant. You want this number to be as small as possible (< 0.05 or 0.001). If the number is really small, it is displayed in scientific notation for example 2e-16.  
+The table below presents some metrics about the fitting of the calibration model:  
+```{r, cal-Glance, echo=FALSE, results='asis', fig.height=2}
+# table with metrics
+(ft <- flextable::flextable(Model.i$Glance[,which(names(Model.i$Glance) != "tau")]) %>%
+     theme_vanilla() %>% 
+     color(color = "black", part = "header") %>% 
+     width(width = .99) %>%  # set width of all columns to .99 in
+     fontsize(part = "body", size = 9) %>% 
+     fontsize(part = "header", size = 9) %>% 
+     colformat_double(j = names(Model.i$Glance[,which(names(Model.i$Glance) != "tau")]), digits = 3) %>%
+     autofit() %>% 
+     FitFlextableToPage(pgwidth = 6))
 ```
 
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(dev = 'png')
+```{r, setup2, include = FALSE}
+knitr::opts_chunk$set(dev = "png")
 ```
 
-### Validity of calibration of model. Independence, homogeneity of variance, relationship between co-variates
-```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "100%", results = 'asis', dpi = 300, fig.width = 8, fig.height = 8}
+### Validity of calibration of model
+
+The matrix plot below allows checking the independence of co-variates and reference pollutants, homogeneity of the variance of residuals 
+and any relationship between co-variates and residuals during the calibration period.  
+```{r, Cal-Matrix, echo=FALSE, fig.height=8}
 
 # Sensor relationships with other variables
-Relationships <- unique(c(na.omit(names(DF$General)[names(DF$General) %in% input[[paste0("Sens",CalSet()$k)]] ] ), CalSet()$nameGasRef, CalSet()$nameGasMod))
+Relationships <- unique(c(grep(pattern = paste(strsplit(Last.CalSet$Sens.i, ",")[[1]], collapse = "|"), x = names(Cal.DT()), value = T), Last.CalSet$nameGasRef, Last.CalSet$nameGasMod))
 
-# filter date, select Relationships, add residuals
-General.df <- DF$General[date >= CalSet()$Cal.DateIN & date <= CalSet()$Cal.DateEND + 1, .SD, .SDcols = c("date", Relationships)]
-data.table::set(General.df, j = "Residuals", value = General.df[[CalSet()$nameGasMod]] - General.df[[CalSet()$nameGasRef]])
-Relationships <- c(Relationships, "Residuals")
+if (!"Residuals" %in% names(Cal.DT())) {
+    data.table::set(Cal.DT(), j = "Residuals", value = Cal.DT()[[Last.CalSet$nameGasMod]] - Cal.DT()[[Last.CalSet$nameGasRef]])}
+Relationships <- unique(c(Relationships, "Residuals"))
 
-if (all(is.na(General.df[, .SD, .SDcols = Relationships]))) {
+cat(paste0("Relationships: ",paste(Relationships,collapse = ","), "\n"))
+
+if (length(is.finite(rowSums(Cal.DT()[, .SD, .SDcols = Relationships[!Relationships %in% "date"]]))) < 10) {
     
-    cat("[Shiny]Plot.ResCalMatrix, ERROR, All sensor time series are empty, not plotting any times series\n")
+    my_message <- "WARN [Cal-Matrix] ERROR, All data in calibration time series are empty, not plotting any scatterplot."
+    futile.logger::flog.warn(my_message)
+    plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
+    text(1,1,my_message)
     
 } else {
     
     # changing names of variables
     Pattern  <- rbind(c("Out.", ""), 
-                      c("ppm",""), c("ppb",""), 
-                      c("Ref.", paste0("Reference, ", CalSet()$unit.ref, " ")), 
-                      c("_volt", paste0(", ",CalSet()$Sens.raw.unit)), 
-                      c(CalSet()$gas.sensor, paste0(CalSet()$name.sensor)),
-                      c("_modelled",paste0(", ",CalSet()$unit.sensor)), 
+                      c("ppm",""), 
+                      c("ppb",""), 
+                      c("Ref.RH", "Ref, RH perc."),
+                      c("Ref.Temp", "Ref, T C"),
+                      c("Ref\\.", paste0("Ref, ", Last.CalSet$unit.ref, " ")), 
+                      c("_volt", paste0(", ",Last.CalSet$Sens.raw.unit)), 
+                      c(Last.CalSet$gas.sensor, paste0(Last.CalSet$name.sensor)),
+                      c("_modelled",paste0(", Cal ",Last.CalSet$unit.sensor)), 
                       c("_"," "))
+    
     if (nrow(Pattern) > 0) Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = Relationships) 
     if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Labels)  
     
     # in panel smooth() change pch and cex, in panel.cor() change digits and cex.cor, in pairs() change cex.labels to fit the plots
-    pairs(General.df[, .SD, .SDcols = c(Relationships)],
+    pairs(Cal.DT()[, .SD, .SDcols = Relationships],
           lower.panel = panel.smooth, 
           upper.panel = panel.cor,
           diag.panel  = panel.hist, 
           labels      = Labels, 
-          main        = paste0("Correlation matrix of residuals of calibration data (R2 in bold) versus Covariates for sensors ", input$Sensors,
-                               " between ", CalSet()$Cal.DateIN, 
-                               " and "    , CalSet()$Cal.DateEND),
-          cex.main    = 0.7,
-          cex.labels  = 2) # cex.cor = 1.3
-    }
+          main        = paste0("Matrix of covariate plots for sensor ", Last.CalSet$name.sensor,
+                               " from ", Last.CalSet$Cal.DateIN, 
+                               " to "    , Last.CalSet$Cal.DateEND),
+          cex.main    = 1,
+          cex.labels  = 0.9) # cex.cor = 1.3
+}
 ```
 
-### Calibration plot of sensor raw data
-```{r Cal_scatter, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', dpi = 300}
+```{r, median1, results='asis'}
+if("Out.Ref.RH" %in% Relationships) {
+    if (length(Cal.DT()[Out.Ref.RH >= 30 & Out.Ref.RH <= 60, Out.Ref.RH]) > 1 &&
+        length(Cal.DT()[Out.Ref.RH >= 85 & Out.Ref.RH <= 95, Out.Ref.RH]) > 1) {
+        cat(paste0("The median of the relative residuals (sensor - reference)/Reference between 30 and 60 % of relative humidity is: ",
+                   round(median(Cal.DT()[Out.Ref.RH >= 30 & Out.Ref.RH <= 60, r.Residuals], na.rm = T), digits = 3), "\n"))
+        cat(paste0("The median of the relative residuals (sensor - reference)/Reference between 85 and 95 % of relative humidity is: ",
+                   round(median(Cal.DT()[Out.Ref.RH >= 85 & Out.Ref.RH <= 95, r.Residuals], na.rm = T), digits = 3), "\n"))}}
+```
 
-# Plotting
-x <- Model.i$Augment$x
-y <- Model.i$Augment$y
+### Scatterplot of sensor raw data
+
+The figure below shows the scatterplot of the raw sensor data versus reference data during the calibration period.  
+```{r, raw-Cal-scatter, echo=FALSE}
+
 # Changing axis labels
-Pattern  <- rbind(c("Out.", ""),c("Ref.", "Reference "),c("ppm",""),c("ppb",""),c("_",""))
-if (nrow(Pattern) > 0) A.Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = CalSet()$nameGasRef)
+Pattern  <- rbind(c("Out.", ""),
+                  c("Ref.", "Reference "),
+                  c("ppm",""),
+                  c("ppb",""),
+                  c("_",""))
+if (nrow(Pattern) > 0) A.Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = Last.CalSet$nameGasRef)
 if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) A.Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = A.Labels)
-if (any(CalSet()$mod.eta.model.type %in% "gam")) {
-    A.Labels.X <- paste0( CalSet()$AirsensEur.name, ", raw data of ", CalSet()$name.sensor," in ",CalSet()$Sens.raw.unit)
-    A.Labels.Y <- paste0(A.Labels ," in ",CalSet()$unit.ref, " at ",CalSet()$Reference.name)
+if (any(Last.CalSet$mod.eta.model.type %in% "gam")) {
+    A.Labels.X <- paste0( Last.CalSet$AirSensEur.name, ", raw data of ", Last.CalSet$name.sensor," in ",Last.CalSet$Sens.raw.unit)
+    A.Labels.Y <- paste0(A.Labels ," in ",Last.CalSet$unit.ref, " at ",Last.CalSet$Reference.name)
 } else {
-    A.Labels.X <- paste0(A.Labels ," in ",CalSet()$unit.ref, " at ",CalSet()$Reference.name)
-    A.Labels.Y <- paste0( CalSet()$AirsensEur.name, ", raw data of ", CalSet()$name.sensor," in ",CalSet()$Sens.raw.unit)
+    A.Labels.X <- paste0(A.Labels ," in ",Last.CalSet$unit.ref, " at ",Last.CalSet$Reference.name)
+    A.Labels.Y <- paste0( Last.CalSet$AirSensEur.name, ", raw data of ", Last.CalSet$name.sensor," in ",Last.CalSet$Sens.raw.unit)
 }
-EtalLim <- Etalonnage( x = x, 
-                       s_x = NULL, 
-                       y = y, 
-                       s_y = NULL, 
+# Plotting
+EtalLim <- Etalonnage( x = Model.i$Augment$x, s_x = NULL, 
+                       y = Model.i$Augment$y, s_y = NULL, 
                        AxisLabelX = A.Labels.X, 
                        AxisLabelY = A.Labels.Y, 
-                       Title = paste0(CalSet()$AirsensEur.name, ": ","Calibration ", CalSet()$name.sensor,", data from ",
-                                      format(CalSet()$Cal.DateIN,"%d-%b-%y")," to ",format(CalSet()$Cal.DateEND,"%d-%b-%y"), " at ",CalSet()$Reference.name
-                                      , " using ", isolate(CalSet()$NewCalSet), " method"), 
+                       Title = paste0(Last.CalSet$AirSensEur.name, ": raw ", Last.CalSet$name.sensor," data from ",
+                                      format(Last.CalSet$Cal.DateIN,"%d-%b-%y")," to ",format(Last.CalSet$Cal.DateEND,"%d-%b-%y")), 
                        Marker = 1, 
                        Couleur = "blue", 
                        ligne = 'p', 
@@ -284,50 +313,57 @@ EtalLim <- Etalonnage( x = x,
                        marges = c(4,4,3,0.5),
                        Verbose = FALSE)
 
-if (!(CalSet()$NewCalSet %in% c("ExpGrowth", 
-                                "exp_kT", 
-                                "exp_kK", 
-                                "T_power", 
-                                "K_power", 
-                                "MultiLinear"))) Cal_Line(x             = x, 
-                                                          s_x           = NULL, 
-                                                          y             = y, 
-                                                          s_y           = NULL, 
-                                                          Mod_type      = isolate(CalSet()$NewCalSet), 
-                                                          Matrice       = NULL, 
-                                                          line_position = 0, 
-                                                          Couleur       = "red", 
-                                                          Sensor_name   = NULL, 
-                                                          f_coef1       = "%.3e", 
-                                                          f_coef2       = "%.3e",
-                                                          f_R2          = "%.4f", 
-                                                          lim           = EtalLim, 
-                                                          marges        = NULL, 
-                                                          Covariates    = NULL,
-                                                          Weighted      = TRUE,
-                                                          Lag_interval  = (max(x, na.rm = T) - min(x, na.rm = T)) / 15,
-                                                          Auto.Lag      = CalSet()$Sync.Pred,
-                                                          Verbose = FALSE) 
+if (!(Last.CalSet$NewCalSet %in% c("ExpGrowth", "exp_kT", "exp_kK", "T_power", "K_power", "MultiLinear", "Ridge", "Kohler"))){
+    Cal_Line(x             = Model.i$Augment$x, s_x = NULL, 
+             y             = Model.i$Augment$y, s_y = NULL, 
+             Mod_type      = Last.CalSet$NewCalSet, 
+             Matrice       = NULL, 
+             line_position = 0, 
+             Couleur       = "red", 
+             Sensor_name   = NULL, 
+             f_coef1       = "%.3e", 
+             f_coef2       = "%.3e",
+             f_R2          = "%.4f", 
+             lim           = EtalLim, 
+             marges        = NULL, 
+             Covariates    = NULL,
+             Weighted      = TRUE,
+             Lag_interval  = (max(Model.i$Augment$x, na.rm = T) - min(Model.i$Augment$x, na.rm = T)) / 15,
+             Auto.Lag      = Last.CalSet$Sync.Pred,
+             Verbose       = FALSE)}
 ```
 
-### Scatter plot of calibrated sensor data
-```{r Calibrated_scatter, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', dpi = 300}
-# Loading previous model an updating General.cal
-x <- DF$General[[CalSet()$nameGasRef]][DF$General$date >= CalSet()$Cal.DateIN & DF$General$date <= CalSet()$Cal.DateEND + 1]
-y <- DF$General[[CalSet()$nameGasMod]][DF$General$date >= CalSet()$Cal.DateIN & DF$General$date <= CalSet()$Cal.DateEND + 1] 
-if (is.null(y)) Cal$Forced <<- TRUE else {
+### Scatterplot of calibrated sensor data
+  
+The figure below shows the scatterplot of the calibrated sensor data versus reference data during the calibration period.  
+```{r, Cal-scatter, echo=FALSE}
+
+if (length(is.finite(rowSums(Cal.DT()[, c(Last.CalSet$nameGasRef, Last.CalSet$nameGasMod), with = F]))) < 10) {
+    
+    my_message <- "[Cal-scatter] WARN , All data in calibration time series are empty, not plotting any scatterplot.\n"
+    futile.logger::flog.warn(my_message)
+    plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
+    text(1,1,my_message)
+    
+} else {
     
     # Changing axis labels
-    Pattern  <- rbind(c("Out.", ""),c("Ref.", "Reference "),c("ppm",""),c("ppb",""),c("_",""))
-    if (nrow(Pattern) > 0) A.Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = CalSet()$nameGasRef)
+    Pattern  <- rbind(c("Out.", ""),
+                      c("Ref.", "Reference "),
+                      c("ppm",""),
+                      c("ppb",""),
+                      c("_",""))
+    if (nrow(Pattern) > 0) A.Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = Last.CalSet$nameGasRef)
     if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) A.Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = A.Labels)
-    A.Labels.X <- paste0(A.Labels ," in ",CalSet()$unit.ref, " at ",CalSet()$Reference.name)
-    A.Labels.Y <- paste0( CalSet()$AirsensEur.name, ", Calibrated data of ", CalSet()$name.sensor," in ",CalSet()$unit.sensor)
-    EtalLim <- Etalonnage( x = x, s_x = NULL, y = y, s_y = NULL, 
+    A.Labels.X <- paste0(A.Labels ," in ",Last.CalSet$unit.ref, " at ",Last.CalSet$Reference.name)
+    A.Labels.Y <- paste0( Last.CalSet$AirSensEur.name, ", Calibrated data of ", Last.CalSet$name.sensor," in ",Last.CalSet$unit.sensor)
+    
+    # Plotting
+    EtalLim <- Etalonnage( x = Cal.DT()[[Last.CalSet$nameGasRef]], s_x = NULL,
+                           y = Cal.DT()[[Last.CalSet$nameGasMod]], s_y = NULL, 
                            AxisLabelX = A.Labels.X, AxisLabelY = A.Labels.Y, 
-                           Title = paste0(CalSet()$AirsensEur.name, ": ","Calibrated ", CalSet()$name.sensor," data, from ",
-                                          format(CalSet()$Cal.DateIN,"%y-%m-%d")," to ",format(CalSet()$Cal.DateEND,"%y-%m-%d")
-                           ), #, " at ",CalSet()$Reference.name, " using ", isolate(CalSet()$NewCalSet), " method"
+                           Title = paste0(Last.CalSet$AirSensEur.name, ": Calibrated ", Last.CalSet$name.sensor," data from ",
+                                          format(Last.CalSet$Cal.DateIN,"%y-%m-%d")," to ",format(Last.CalSet$Cal.DateEND,"%y-%m-%d")),
                            Marker = 1, 
                            Couleur = "blue", 
                            ligne = 'p', 
@@ -338,9 +374,9 @@ if (is.null(y)) Cal$Forced <<- TRUE else {
                            marges = c(4,4,3,0.5),
                            Verbose = FALSE) 
     
-    Comparison <- Cal_Line(x = x, s_x = NULL, 
-                           y = y, s_y = NULL, 
-                           Mod_type      = CalSet()$eta.model.type, 
+    Comparison <- Cal_Line(x = Cal.DT()[[Last.CalSet$nameGasRef]], s_x = NULL, 
+                           y = Cal.DT()[[Last.CalSet$nameGasMod]], s_y = NULL, 
+                           Mod_type      = Last.CalSet$eta.model.type, 
                            Matrice       = NULL, 
                            line_position = 0, 
                            Couleur       = "red", 
@@ -352,291 +388,328 @@ if (is.null(y)) Cal$Forced <<- TRUE else {
                            marges        = NULL, 
                            Covariates    = NULL,
                            Weighted      = FALSE,
-                           Lag_interval  = (max(x, na.rm = T) - min(x, na.rm = T)) / 15,
-                           Auto.Lag      = CalSet()$Sync.Cal,
-                           Verbose = FALSE) 
+                           Lag_interval  = (max(Cal.DT()[[Last.CalSet$nameGasRef]], na.rm = T) - min(Cal.DT()[[Last.CalSet$nameGasRef]], na.rm = T)) / 15,
+                           Auto.Lag      = Last.CalSet$Sync.Cal,
+                           Verbose       = FALSE) 
 }
-
 ```
 
-### Time series of calibration time period
-```{r cal_ts, echo=FALSE, warning=FALSE, cache=FALSE, out.width="100%", results='asis', dpi = 300, fig.width = 7, fig.height = 4}
-General.df <- DF$General[date >= CalSet()$Cal.DateIN & date <= CalSet()$Cal.DateEND + 1,
-                         .SD, .SDcols = c("date", CalSet()$nameGasRef, CalSet()$nameGasMod)]
+### Time series of calibrated sensor data and reference data
 
-if (all(is.na(General.df[, .SD, .SDcols = c(CalSet()$nameGasRef,CalSet()$nameGasMod)]))) {
+The figure below shows the time series of the calibrated sensor data and reference data during the calibration period.  
+```{r, cal-ts, fig.height = 5}
+
+if (length(is.finite(rowSums(Cal.DT()[, c(Last.CalSet$nameGasRef, Last.CalSet$nameGasMod), with = F]))) < 10) {
     
-    cat("[Report.Rmd] ERROR, All data in calibration time series are empty, not plotting any times series\n")
+    my_message <- "[Cal-scatter] WARN, All data in calibration time series are empty, not plotting any  times series."
+    futile.logger::flog.warn(my_message)
+    plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
+    text(1,1,my_message)
     
 } else {
     
     # changing names of variables
-    Pattern  <- rbind(c("Out.", ""), 
-                      c("ppm",""), c("ppb",""), 
-                      c("Ref.", paste0("Reference, ", CalSet()$unit.ref, ", ")), 
-                      c("_volt", paste0(", ",CalSet()$Sens.raw.unit)), 
-                      c(CalSet()$gas.sensor, paste0(CalSet()$name.sensor)),
-                      c("_modelled",paste0(", ",CalSet()$unit.sensor)), 
+    Pattern  <- rbind(c("Out.", ""),
+                      c("ppm",""),
+                      c("ppb",""),
+                      c("Ref.RH", "Ref, RH perc."),
+                      c("Ref.Temp", "Ref, T C"),
+                      c("Ref\\.", paste0("Ref, ",  Last.CalSet$unit.ref, " ")), 
+                      c("_volt", paste0(", ",Last.CalSet$Sens.raw.unit)), 
+                      c(Last.CalSet$gas.sensor, paste0(Last.CalSet$name.sensor)),
+                      c("_modelled",paste0(", ", Last.CalSet$unit.sensor)), 
                       c("_"," "))
-    Name.pol <- c(CalSet()$nameGasRef, CalSet()$nameGasMod)
+    Name.pol <- c(Last.CalSet$nameGasRef, Last.CalSet$nameGasMod)
     for (i in 1:nrow(Pattern)) {
         Name.pol[1] <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Name.pol[1])  
-        Name.pol[2] <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Name.pol[2])  
-    } 
-                
-    timePlot(mydata    = General.df,
-             pollutant = c(CalSet()$nameGasRef,CalSet()$nameGasMod),
-             name.pol = Name.pol,
-             group=TRUE,
-             date.pad=TRUE,
-             auto.text = FALSE,
-             lty=c(1,1),
-             col = c("red", "blue"),
-             ylab = "",
-             main      = paste0(CalSet()$AirsensEur.name, ": Calibration ",
-                                CalSet()$name.sensor," from ",format(CalSet()$Cal.DateIN,"%d-%b-%y")," to ", format(CalSet()$Cal.DateEND,"%d-%b-%y"),
-                                " with model ",isolate(CalSet()$NewCalSet)," at ",CalSet()$Reference.name),
-             ref.x     = list(v = c(input[[paste0("DateCal",CalSet()$k)]][1],
-                                    input[[paste0("DateCal",CalSet()$k)]][2]),
-                              lty = c(1, 1),
-                              col = c("black", "black"),
-                              lwd = c(2,2)), 
-          cex.main    = 0.7)
-}
-```
-
-
-## Prediction of sensor data with calibration model
-The calibration function was used to predict sensor data between `r CalSet()$Meas.DateIN` and `r CalSet()$Meas.DateEND`,
-at `r CalSet()$Reference.name`, longitude: `r format(input$coord.ref.Long, digits = 5)` `r if (!grepl(pattern = paste0(c("W","E"), collapse = "|"), x = input$coord.ref.Long)) "decimal degrees"` 
-and latitude: `r format(input$coord.ref.Lat, digits = 5)` `r if (!grepl(pattern = paste0(c("N","S"), collapse = "|"), x = input$coord.ref.Lat)) "decimal degrees"`.
-
-### Validity of prediction with calibration model. Independence, homogeneity of variance, relationship between co-variates
-```{r, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "100%", results = 'asis', dpi = 300, fig.width = 8, fig.height = 8}
-
-# Select aggregated dataFrame or non aggregated if needed
-General.df <- DF.aggregated$Avg
-
-# Sensor relationships with other variables
-Relationships <- unique(c(na.omit(names(General.df)[names(General.df) %in% input[[paste0("Sens",CalSet()$k)]] ] ), CalSet()$nameGasRef, CalSet()$nameGasMod))
-
-# filter date, select Relationships, add residuals
-General.df <- General.df[date >= CalSet()$Meas.DateIN & date <= CalSet()$Meas.DateEND + 1, .SD, .SDcols = c("date", Relationships)]
-General.df[, Residuals :=  General.df[[CalSet()$nameGasMod]] - General.df[[CalSet()$nameGasRef]]]
-Relationships <- c(Relationships, "Residuals")
-
-if (all(is.na(General.df[, .SD, .SDcols = Relationships]))) {
+        Name.pol[2] <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Name.pol[2])} 
     
-    cat("[shiny, Plot.ResExtraMatrix()] ERROR, All sensor time series are empty, not plotting any times series\n")
-    
-} else {
-    
-    # changing names of variables
-    Pattern  <- rbind(c("Out.", ""), 
-                      c("ppm",""), c("ppb",""), 
-                      c("Ref.", paste0("Reference, ", CalSet()$unit.ref, " ")), 
-                      c("_volt", paste0(", ",CalSet()$Sens.raw.unit)), 
-                      c(CalSet()$gas.sensor, paste0(CalSet()$name.sensor)),
-                      c("_modelled",paste0(", ",CalSet()$unit.sensor)), 
-                      c("_"," "))
-    if (nrow(Pattern) > 0) Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = Relationships) 
-    if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Labels)  
-    
-    # in panel smooth() change pch and cex, in panel.cor() change digits and cex.cor, in pairs() change cex.labels to fit the plots
-    pairs(General.df[, .SD, .SDcols = c(Relationships)],
-          lower.panel = panel.smooth, 
-          upper.panel = panel.cor,
-          diag.panel  = panel.hist, 
-          labels = Labels, 
-          main = paste0("Correlation matrix of residuals of calibrated data (R2 in bold) versus Covariates for sensor ", input$Sensors,
-                        " between ", CalSet()$Meas.DateIN, " and ", CalSet()$Meas.DateEND), 
-          cex.main    = 0.7,
-          cex.labels  = 2) # cex.cor = 1.3
-}
-```
-
-### Scatterplot of predited sensor data
-```{r Predicted_scatter, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', dpi = 300}
-# Loading previous model an updating General.cal
-x <- DF$General[[CalSet()$nameGasRef]][DF$General$date >= CalSet()$Meas.DateIN & DF$General$date <= CalSet()$Meas.DateEND + 1]
-y <- DF$General[[CalSet()$nameGasMod]][DF$General$date >= CalSet()$Meas.DateIN & DF$General$date <= CalSet()$Meas.DateEND + 1] 
-if (is.null(y)) Cal$Forced <<- TRUE else {
-    
-    # Changing axis labels
-    Pattern  <- rbind(c("Out.", ""),c("Ref.", "Reference "),c("ppm",""),c("ppb",""),c("_",""))
-    if (nrow(Pattern) > 0) A.Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = CalSet()$nameGasRef)
-    if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) A.Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = A.Labels)
-    A.Labels.X <- paste0(A.Labels ," in ",CalSet()$unit.ref, " at ",CalSet()$Reference.name)
-    A.Labels.Y <- paste0( CalSet()$AirsensEur.name, ", Calibrated data of ", CalSet()$name.sensor," in ",CalSet()$unit.sensor)
-    EtalLim <- Etalonnage( x = x, s_x = NULL, y = y, s_y = NULL, 
-                           AxisLabelX = A.Labels.X, AxisLabelY = A.Labels.Y, 
-                           Title = paste0(CalSet()$AirsensEur.name, ": ","Calibrated ", CalSet()$name.sensor," data, from ",
-                                          format(CalSet()$Meas.DateIN,"%y-%m-%d")," to ",format(CalSet()$Meas.DateEND,"%y-%m-%d")
-                           ), #, " at ",CalSet()$Reference.name, " using ", isolate(CalSet()$NewCalSet), " method"
-                           Marker = 1, 
-                           Couleur = "blue", 
-                           ligne = 'p', 
-                           XY_same = TRUE, 
-                           lim = NULL, 
-                           steps = c(10,10), 
-                           digitround = c(1,1), 
-                           marges = c(4,4,3,0.5),
-                           Verbose = FALSE) 
-    
-    Comparison <- Cal_Line(x = x, s_x = NULL, 
-                           y = y, s_y = NULL, 
-                           Mod_type      = CalSet()$eta.model.type, 
-                           Matrice       = NULL, 
-                           line_position = 0, 
-                           Couleur       = "red", 
-                           Sensor_name   = NULL, 
-                           f_coef1       = "%.3e", 
-                           f_coef2       = "%.3e", 
-                           f_R2          = "%.4f", 
-                           lim           = EtalLim, 
-                           marges        = NULL, 
-                           Covariates    = NULL,
-                           Weighted      = FALSE,
-                           Lag_interval  = (max(x, na.rm = T) - min(x, na.rm = T)) / 15,
-                           Auto.Lag      = CalSet()$Sync.Cal,
-                           Verbose = FALSE) 
-}
-
-```
-
-#### Time series of prediction time period
-```{r Meas_ts, echo=FALSE, warning=FALSE, cache=FALSE, out.width="100%", results='asis', dpi = 300, fig.width = 7, fig.height = 4}
-General.df <- DF$General[date >= CalSet()$Meas.DateIN & date <= CalSet()$Meas.DateEND + 1,
-                         .SD, .SDcols = c("date", CalSet()$nameGasRef, CalSet()$nameGasMod)]
-
-if (all(is.na(General.df[, .SD, .SDcols = c(CalSet()$nameGasRef,CalSet()$nameGasMod)]))) {
-    
-    cat("[Report.Rmd] ERROR, All data in prediction time series are empty, not plotting any times series\n")
-    
-} else {
-    
-    # changing names of variables
-    Pattern  <- rbind(c("Out.", ""), 
-                      c("ppm",""), c("ppb",""), 
-                      c("Ref.", paste0("Reference, ", CalSet()$unit.ref, ", ")), 
-                      c("_volt", paste0(", ",CalSet()$Sens.raw.unit)), 
-                      c(CalSet()$gas.sensor, paste0(CalSet()$name.sensor)),
-                      c("_modelled",paste0(", ",CalSet()$unit.sensor)), 
-                      c("_"," "))
-    Name.pol <- c( CalSet()$nameGasRef, CalSet()$nameGasMod)
-    for (i in 1:nrow(Pattern)) {
-        Name.pol[1] <- sub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Name.pol[1])  
-        Name.pol[2] <- sub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Name.pol[2])  
-    } 
-    
-    timePlot(mydata    = General.df,
-             pollutant = c(CalSet()$nameGasRef,CalSet()$nameGasMod),
+    timePlot(mydata    = Cal.DT(),
+             pollutant = c(Last.CalSet$nameGasRef,Last.CalSet$nameGasMod),
              name.pol  = Name.pol,
              group     = TRUE,
              date.pad  = TRUE,
              auto.text = FALSE,
              lty       = c(1,1),
              col       = c("red", "blue"),
-             ylab = "",
-             main      = paste0(CalSet()$AirsensEur.name, ": Calibrated ",
-                                CalSet()$name.sensor," from ",format(CalSet()$Meas.DateIN,"%d-%b-%y")," to ", format(CalSet()$Meas.DateEND,"%d-%b-%y"),
-                                " with model ",isolate(CalSet()$NewCalSet)," at ",CalSet()$Reference.name),
-             ref.x     = list(v = c(input[[paste0("DateCal",CalSet()$k)]][1],
-                                    input[[paste0("DateCal",CalSet()$k)]][2]), 
-                              lty = c(1, 1), 
-                              col = c("black", "black"), 
+             ylab      = Last.CalSet$unit.sensor,
+             main      = paste0(Last.CalSet$AirSensEur.name, ": calibrated ",
+                                Last.CalSet$name.sensor," data from ",format(Last.CalSet$Cal.DateIN,"%d-%b-%y")," to ", format(Last.CalSet$Cal.DateEND,"%d-%b-%y")),
+             ref.x     = list(v = c(Last.CalSet$Cal.DateIN, Last.CalSet$Cal.DateEND),
+                              lty = c(1, 1),
+                              col = c("black", "black"),
                               lwd = c(2,2)), 
-          cex.main    = 0.7)
+             cex.main  = 0.7)
 }
 ```
 
-### Measurement uncertainty
-```{r include=FALSE}
-U.orth.List <- U.orth.List()
+## Prediction of sensor data with calibration model
+
+The calibration function is used to predict sensor data between `r Last.CalSet$Meas.DateIN` and `r Last.CalSet$Meas.DateEND`,
+at location with longitude: `r format(as.numeric(pointsExtrap()$MEAS_LON[1]), digits = 5)` 
+and latitude: `r format(as.numeric(pointsExtrap()$MEAS_LAT[1]), digits = 5)` decimal degrees.
+The data are plotted with time averages of `r Last.CalSet$UserAvg` min(s).
+
+### Validity of predicted sensor data
+The matrix plot below allows to check the independence of co-variates and reference pollutants, the homogeneity of the variance of residuals and any relationship between co-variates and residuals during the prediction period.
+Any relevant pattern in the residuals could reveal a mis-definition of the calibration model, likely an unknow covariate having an effect on the response of the sensor.
+
+```{r, Pred-matrix, echo = FALSE, warning = FALSE, cache = FALSE, dpi = 300, fig.height = 8, out.width = "100%"}
+
+# Sensor relationships with other variables
+Relationships <- unique(c(grep(pattern = paste(strsplit(Last.CalSet$Sens.i, ",")[[1]], collapse = "|"), x = names(Pred.DT.Avg()), value = T), Last.CalSet$nameGasRef, Last.CalSet$nameGasMod))
+
+# select Relationships, add residuals
+if (!"Residuals" %in% names(Pred.DT.Avg())) {
+    data.table::set(Pred.DT.Avg(), j = "Residuals", value = Pred.DT.Avg()[[Last.CalSet$nameGasMod]] - Pred.DT.Avg()[[Last.CalSet$nameGasRef]])}
+Relationships <- unique(c(Relationships, "Residuals"))
+
+# Select aggregated dataFrame or non aggregated if needed
+General.df <- Pred.DT.Avg()
+
+if (length(is.finite(rowSums(Pred.DT.Avg()[, .SD, .SDcols = Relationships]))) < 10) {
+    
+    my_message <- "[Pred-matrix] WARN, All data in calibration time series are empty, not plotting any scatterplot."
+    futile.logger::flog.warn(my_message)
+    
+} else {
+    
+    # changing names of variables
+    Pattern  <- rbind(c("Out.", ""), 
+                      c("ppm",""), 
+                      c("ppb",""), 
+                      c("Ref.RH", "Ref, RH perc."),
+                      c("Ref.Temp", "Ref, T C"),
+                      c("Ref\\.", paste0("Ref, ", Last.CalSet$unit.ref, " ")), 
+                      c("_volt", paste0(", ", Last.CalSet$Sens.raw.unit)), 
+                      c(Last.CalSet$gas.sensor, paste0(Last.CalSet$name.sensor)),
+                      c("_modelled", paste0(", Cal ", Last.CalSet$unit.sensor)), 
+                      c("_"," "))
+    if (nrow(Pattern) > 0) Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = Relationships) 
+    if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Labels)  
+    
+    # in panel smooth() change pch and cex, in panel.cor() change digits and cex.cor, in pairs() change cex.labels to fit the plots
+    pairs(Pred.DT.Avg()[, .SD, .SDcols = c(Relationships)],
+          lower.panel = panel.smooth, 
+          upper.panel = panel.cor,
+          diag.panel  = panel.hist, 
+          labels = Labels, 
+          main = paste0("Matrix plot of covariate plots for sensor ", Last.CalSet$name.sensor,
+                        " from ", Last.CalSet$Meas.DateIN, " to ", Last.CalSet$Meas.DateEND), 
+          cex.main    = 1,
+          cex.labels  = 1) # cex.cor = 1.3
+}
 ```
 
-```{r U, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', dpi = 300}
-Xlabel    = paste0(CalSet()$gas.sensor, " in ", CalSet()$unit.ref) 
-Ylabel    = paste0("Sensor measurement in ", CalSet()$unit.sensor)
-Title     = paste0("Measurement uncertainty of sensor ",input$Sensors," between ",
-                   format(CalSet()$Meas.DateIN, "%y%m%d")," and ", format(CalSet()$Meas.DateEND,"%y%m%d"))
-DQO.1     = CalSet()$DQO.1
-DQO.2     = CalSet()$DQO.2                                                           # Data quality Objective for the gas.sensor
-DQO.3     = CalSet()$DQO.3                                                           # Data quality Objective for the gas.sensor
-LV        = CalSet()$LV
-Units     = CalSet()$unit.sensor
-Dir       = CalSet()$WDModelled_gas 
-nameModel = CalSet()$Cal
+```{r, median2, results='asis'}
+if("Out.Ref.RH" %in% Relationships) {
+    if (length(Pred.DT.Avg()[Out.Ref.RH >= 30 & Out.Ref.RH <= 60, Out.Ref.RH]) > 1 && 
+        length(Pred.DT.Avg()[Out.Ref.RH >= 85 & Out.Ref.RH <= 95, Out.Ref.RH]) > 1) {
+        cat(paste0("The median of the relative residuals (sensor - reference)/Reference between 30 and 60 % of relative humidity is: ",
+                   round(median(Pred.DT.Avg()[Out.Ref.RH >= 30 & Out.Ref.RH <= 60, r.Residuals], na.rm = T), digits = 3), "\n"))
+        cat(paste0("The median of the relative residuals (sensor - reference)/Reference between 85 and 95 % of relative humidity is: ",
+                   round(median(Pred.DT.Avg()[Out.Ref.RH >= 85 & Out.Ref.RH <= 95, r.Residuals], na.rm = T), digits = 3), "\n"))}}
+```
 
-if (!is.null(CalSet()$unit.sensor)) Ylab = paste0("Expanded uncertainty in ", CalSet()$unit.sensor) else Ylab <- "Expanded uncertainty"
-order.xis <- order(U.orth.List$Mat$xis)
-plot(U.orth.List$Mat[["xis"]][order.xis], 
-     U.orth.List$Mat[["U"]][order.xis], 
+### Scatterplot of predited sensor data
+The figure below shows the scatterplot of the calibrated sensor data versus reference data during the prediction period.  
+```{r, Pred-scatter}
+
+if (length(is.finite(rowSums(Pred.DT.Avg()[, c(Last.CalSet$nameGasRef, Last.CalSet$nameGasMod), with = F]))) < 10) {
+    
+    my_message <- "[Pred-scatter] WARN, All data in prediction time series are empty, not plotting any scatterplot.\n"
+    futile.logger::flog.warn(my_message)
+    plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
+    text(1,1,my_message)
+    
+} else {
+    
+    # Changing axis labels
+    Pattern  <- rbind(c("Out.", ""), c("Ref.", "Reference "), c("ppm",""), c("ppb",""), c("_",""))
+    if (nrow(Pattern) > 0) A.Labels <- gsub(pattern = Pattern[1,1], replacement = Pattern[1,2], x = Last.CalSet$nameGasRef)
+    if (nrow(Pattern) > 1) for (i in 2:nrow(Pattern)) A.Labels <- gsub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = A.Labels)
+    A.Labels.X <- paste0(A.Labels ," in ",Last.CalSet$unit.ref, " at ",Last.CalSet$Reference.name)
+    A.Labels.Y <- paste0( Last.CalSet$AirSensEur.name, ", Calibrated data of ", Last.CalSet$name.sensor," in ",Last.CalSet$unit.sensor)
+    
+    # Plotting
+    EtalLim <- Etalonnage( x = Pred.DT.Avg()[[Last.CalSet$nameGasRef]], s_x = NULL,
+                           y = Pred.DT.Avg()[[Last.CalSet$nameGasMod]], s_y = NULL, 
+                           AxisLabelX = A.Labels.X, AxisLabelY = A.Labels.Y, 
+                           Title = paste0(Last.CalSet$AirSensEur.name, ": predicted ", Last.CalSet$name.sensor," data from ",
+                                          format(Last.CalSet$Meas.DateIN,"%y-%m-%d")," to ",format(Last.CalSet$Meas.DateEND,"%y-%m-%d")
+                           ), #, " at ",Last.CalSet$Reference.name, " using ", isolate(Last.CalSet$NewCalSet), " method"
+                           Marker = 1, 
+                           Couleur = "blue", 
+                           ligne = 'p', 
+                           XY_same = TRUE, 
+                           lim = NULL, 
+                           steps = c(10,10), 
+                           digitround = c(1,1), 
+                           marges = c(4,4,3,0.5),
+                           Verbose = FALSE) 
+    
+    Comparison <- Cal_Line(x = Pred.DT.Avg()[[Last.CalSet$nameGasRef]], s_x = NULL, 
+                           y = Pred.DT.Avg()[[Last.CalSet$nameGasMod]], s_y = NULL, 
+                           Mod_type      = Last.CalSet$eta.model.type, 
+                           Matrice       = NULL, 
+                           line_position = 0, 
+                           Couleur       = "red", 
+                           Sensor_name   = NULL, 
+                           f_coef1       = "%.3e", 
+                           f_coef2       = "%.3e", 
+                           f_R2          = "%.4f", 
+                           lim           = EtalLim, 
+                           marges        = NULL, 
+                           Covariates    = NULL,
+                           Weighted      = FALSE,
+                           Lag_interval  = (max(Pred.DT.Avg()[[Last.CalSet$nameGasRef]], na.rm = T) - min(Pred.DT.Avg()[[Last.CalSet$nameGasRef]], na.rm = T)) / 15,
+                           Auto.Lag      = Last.CalSet$Sync.Cal,
+                           Verbose = FALSE)}
+```
+
+### Time series of predicted sensor data and reference data
+Time series of the calibrated sensor data and reference data during the prediction period.  
+```{r, Pred-ts, fig.height = 5}
+
+if (length(is.finite(rowSums(Pred.DT.Avg()[, c(Last.CalSet$nameGasRef, Last.CalSet$nameGasMod), with = FALSE]))) < 10) {
+    
+    my_message <- "[Pred-ts] WARN, All data in prediction time series are empty, not plotting any timesseries."
+    futile.logger::flog.warn(my_message)
+    plot(1,1,col = "white", xlab = "", ylab = "", xaxt = "n", yaxt = "n", cex = 1.2)
+    text(1,1,my_message)
+    
+} else {
+    
+    # changing names of variables
+    Pattern  <- rbind(c("Out.", ""), 
+                      c("ppm",""), c("ppb",""), 
+                      c("Ref.", paste0("Reference, ", Last.CalSet$unit.ref, ", ")), 
+                      c("_volt", paste0(", ",Last.CalSet$Sens.raw.unit)), 
+                      c(Last.CalSet$gas.sensor, paste0(Last.CalSet$name.sensor)),
+                      c("_modelled",paste0(", ",Last.CalSet$unit.sensor)), 
+                      c("_"," "))
+    Name.pol <- c( Last.CalSet$nameGasRef, Last.CalSet$nameGasMod)
+    for (i in 1:nrow(Pattern)) {
+        Name.pol[1] <- sub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Name.pol[1])  
+        Name.pol[2] <- sub(pattern = Pattern[i,1], replacement = Pattern[i,2], x = Name.pol[2])  
+    } 
+    
+    timePlot(mydata    = Pred.DT.Avg(),
+             pollutant = c(Last.CalSet$nameGasRef,Last.CalSet$nameGasMod),
+             name.pol  = Name.pol,
+             group     = TRUE,
+             date.pad  = TRUE,
+             auto.text = FALSE,
+             lty       = c(1,1),
+             col       = c("red", "blue"),
+             ylab      = Last.CalSet$unit.sensor,
+             main      = paste0(Last.CalSet$AirSensEur.name, ": predicted ",
+                                Last.CalSet$name.sensor," from ",format(Last.CalSet$Meas.DateIN,"%d-%b-%y")," to ", format(Last.CalSet$Meas.DateEND,"%d-%b-%y")),
+             ref.x     = list(v = c(Last.CalSet$Cal.DateIN, Last.CalSet$Cal.DateEND), 
+                              lty = c(1, 1), 
+                              col = c("black", "black"), 
+                              lwd = c(2,2)), 
+             cex.main    = 0.7)}
+```
+
+### Measurement uncertainty of predicted sensor data
+
+```{r, Row.cfg, include=FALSE}
+# rows of config for sensor
+Row.cfg <- which(Config$all[["sens2ref"]]$name.sensor == Last.CalSet$name.sensor)
+```
+
+The relative measurement uncertainty 
+$U_R$
+is estimated using equation: 
+$$U_R = 2 \sqrt{RMSE^2-u_{bs,RM}^2 + [b_0 + (b_1-1)x_i]^2}/x_i$$ 
+The standard uncertainty of reference methods $u_{bs,RM}$ was set to `r ifelse(Config$all[["sens2ref"]]$variable.ubsRM[Row.cfg],"3% of xi",paste0(Last.CalSet$ubsRM, " ",Last.CalSet$unit.ref))`.  
+The square of residuals was `r ifelse(Config$all[["sens2ref"]]$Fitted.RS[Row.cfg],"fitted using a General Additive Model", "set to a constant value along xi range")`.
+`r ifelse(Config$all[["sens2ref"]]$Regression[Row.cfg] == "OLS","Ordinary Least Square", Config$all[["sens2ref"]]$Regression[Row.cfg])` regression was used to compute the slope and intercept of the regression line. 
+
+```{r, U-scatter, fig.height = 7, results='asis'}
+Xlabel    = paste0(Last.CalSet$gas.sensor, " in ", Last.CalSet$unit.ref) 
+Ylabel    = paste0("Sensor measurement in ", Last.CalSet$unit.sensor)
+Title     = paste0("Measurement uncertainty of sensor ",input$Sensors," between ",
+                   format(Last.CalSet$Meas.DateIN, "%y%m%d")," and ", format(Last.CalSet$Meas.DateEND,"%y%m%d"))
+DQO.1     = Last.CalSet$DQO.1
+DQO.2     = Last.CalSet$DQO.2
+DQO.3     = Last.CalSet$DQO.3
+LV        = Last.CalSet$LV
+Units     = Last.CalSet$unit.sensor
+Dir       = Last.CalSet$WDModelled_gas 
+nameModel = Last.CalSet$Cal
+
+if (!is.null(Last.CalSet$unit.sensor)) Ylab = paste0("Expanded uncertainty in ", Last.CalSet$unit.sensor) else Ylab <- "Expanded uncertainty"
+order.xis <- order(U.orth.List()$Mat$xis)
+plot(U.orth.List()$Mat[["xis"]][order.xis], 
+     U.orth.List()$Mat[["U"]][order.xis], 
      xlab  = Xlabel, 
      ylab  = Ylab, 
      main  = Title , 
      col   = 'blue', 
      type  = "l", 
-     ylim  = c(0, max(U.orth.List$Mat$U, na.rm = T))
-)
+     ylim  = c(0, max(U.orth.List()$Mat$U, na.rm = T)))
 
 if (!is.na(LV)) {
     abline(v = LV)
     text(x = LV, 
-         y = 0 + 0.05 * (max(U.orth.List$Mat[order.xis, "U"], na.rm = T) - 0), 
-         labels = "LV")  
-} 
+         y = 0 + 0.05 * (max(U.orth.List()$Mat[order.xis, "U"], na.rm = T) - 0), 
+         labels = "LV")} 
 if (!is.na(DQO.1)) {
     abline(h = DQO.1) # in ppb
-    text(x = min(U.orth.List$Mat[order.xis, "xis"], na.rm = T) + 0.05 * (max(U.orth.List$Mat[order.xis, "xis"], na.rm = T) - min(U.orth.List$Mat[order.xis, "xis"], na.rm = T)), 
+    text(x = min(U.orth.List()$Mat[order.xis, "xis"], na.rm = T) + 0.05 * (max(U.orth.List()$Mat[order.xis, "xis"], na.rm = T) - min(U.orth.List()$Mat[order.xis, "xis"], na.rm = T)), 
          y = DQO.1, 
-         labels = "DQO.1")  
-} 
+         labels = "DQO.1")} 
 if (!is.na(DQO.2)) {
     abline(h = DQO.2) # in ppb
-    text(x = min(U.orth.List$Mat[order.xis, "xis"], na.rm = T) + 0.05 * (max(U.orth.List$Mat[order.xis, "xis"], na.rm = T) - min(U.orth.List$Mat[order.xis, "xis"], na.rm = T)), 
+    text(x = min(U.orth.List()$Mat[order.xis, "xis"], na.rm = T) + 0.05 * (max(U.orth.List()$Mat[order.xis, "xis"], na.rm = T) - min(U.orth.List()$Mat[order.xis, "xis"], na.rm = T)), 
          y = DQO.2, 
-         labels = "DQO.2")  
-} 
+         labels = "DQO.2")} 
 if (!is.na(DQO.3)) {
     abline(h = DQO.3) # in ppb
-    text(x = min(U.orth.List$Mat[order.xis, "xis"], na.rm = T) + 0.05 * (max(U.orth.List$Mat[order.xis, "xis"], na.rm = T) - min(U.orth.List$Mat[order.xis, "xis"], na.rm = T)), 
+    text(x = min(U.orth.List()$Mat[order.xis, "xis"], na.rm = T) + 0.05 * (max(U.orth.List()$Mat[order.xis, "xis"], na.rm = T) - min(U.orth.List()$Mat[order.xis, "xis"], na.rm = T)), 
          y = DQO.3, 
-         labels = "DQO.3")  
-} 
+         labels = "DQO.3")} 
 
 grid(nx = NULL, ny = NULL, lty = 2, col = "grey")
 ```
 
-### Target Diagram
-, showing relative expanded uncertainty and data quality objectives 
-```{r plot.Target, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "70%", results = 'asis', dpi = 300}
+### Target Diagram for predicted sensor data
+
+The plot below shows relative expanded uncertainty, Limit Value, Upper Assessment Threshold, Lower Assessment Threshold and data quality objectives.
+
+```{r, plot.Target, fig.height = 7}
 
 # Plotting Modified Target Diagram
-Target.Diagram(Sensor_name = CalSet()$name.sensor,
+Target.Diagram(Sensor_name = Last.CalSet$name.sensor,
                Mat         = U.orth.List()[["Mat"]],
-               ubsRM       = as.numeric(CalSet()$ubsRM),
-               ubss        = as.numeric(CalSet()$ubss),
-               Unit.Ref    = CalSet()$unit.ref,
+               ubsRM       = as.numeric(Last.CalSet$ubsRM),
+               ubss        = as.numeric(Last.CalSet$ubss),
+               Unit.Ref    = Last.CalSet$unit.ref,
                b0          = U.orth.List()[["b0"]],
                b1          = U.orth.List()[["b1"]],
                xAxisLabel  = NULL,
                yAxisLabel  = NULL,
-               DQO.1       = CalSet()$DQO.1 / CalSet()$LV,
-               DQO.2       = CalSet()$DQO.2 / CalSet()$LV,
-               DQO.3       = CalSet()$DQO.3 / CalSet()$LV,
-               LAT         = CalSet()$LAT,
-               UAT         = CalSet()$UAT,
-               LV          = CalSet()$LV,
-               AT          = CalSet()$AT,
+               DQO.1       = Last.CalSet$DQO.1 / Last.CalSet$LV,
+               DQO.2       = Last.CalSet$DQO.2 / Last.CalSet$LV,
+               DQO.3       = Last.CalSet$DQO.3 / Last.CalSet$LV,
+               LAT         = Last.CalSet$LAT,
+               UAT         = Last.CalSet$UAT,
+               LV          = Last.CalSet$LV,
+               AT          = Last.CalSet$AT,
                sdm_sdo     = U.orth.List()[["sdm"]] > U.orth.List()[["sdo"]],
-               Model.used  = CalSet()$Cal,
-               BeginEnd    = c(format(CalSet()$Meas.DateIN, "%Y%m%d"), format(CalSet()$Meas.DateEND, "%Y%m%d")))
-
+               Model.used  = Last.CalSet$Cal,
+               BeginEnd    = c(format(Last.CalSet$Meas.DateIN, "%Y%m%d"), format(Last.CalSet$Meas.DateEND, "%Y%m%d")))
 ```
 
-### Drift
-```{r plot_drift, echo = FALSE, warning = FALSE, cache = FALSE, out.width = "100%", results = 'asis', dpi = 300, fig.width = 7, fig.height = 4}
+### Drift of daily averages of predicted sensor data
+
+The figure below shows the trend of daily residuals of calibrated sensor data (calibrated sensor data minus reference data).
+Day 1 corresponds to the first day of the prediction period, see above.
+Any pattern in the residuals could reveal aging of the sensor or a mis-definition of the calibration model, with a lack of fit when
+the condition of exposure is different during the prediction period compared to the calibration period.  
+```{r, plot-drift, fig.height = 5, results='asis'}
 if (all(is.na(Drift.df()))) {
     cat("[shiny, plot.drift()] ERROR, No data in calibrated time series, not plotting any drift times series\n")
 } else {
@@ -646,8 +719,8 @@ if (all(is.na(Drift.df()))) {
          xlab = "Number of days from 1st data transfer or selected date for plotting Prediction",
          xaxt = "n",
          xaxs = "i", # grid is putting nx grid lines in the user space, but plot is adding 4% extra space on each side. You can take control of this. Adding xaxs= "i", yaxs= "i"
-         ylab = CalSet()$unit.ref,
-         main = paste0("Daily residuals in ",CalSet()$unit.sensor," for ",input$Sensors," Sensors - Ref.)"), 
+         ylab = Last.CalSet$unit.ref,
+         main = paste0("Daily residuals in ",Last.CalSet$unit.sensor," for ",input$Sensors," (Sensor - Ref.)"), 
          col  = "blue", 
          type = "l", 
          lty  = 1, 
@@ -666,10 +739,8 @@ if (all(is.na(Drift.df()))) {
     if (cor.test(Drift.df()$duration,Drift.df()$drift)$p.value < 0.05) {
         
         # add trend line and equation
-        Cal_Line(x             = Drift.df()$duration, 
-                 s_x           = NULL,
-                 y             = Drift.df()$drift, 
-                 s_y           = NULL,
+        Cal_Line(x             = Drift.df()$duration, s_x           = NULL,
+                 y             = Drift.df()$drift   , s_y           = NULL,
                  Mod_type      = "Linear", 
                  Matrice       = NULL, 
                  line_position = -1, 
@@ -681,7 +752,6 @@ if (all(is.na(Drift.df()))) {
                  lim           = NULL, 
                  marges        = c(5,4,4,1), 
                  Covariates    = NULL, 
-                 Verbose = FALSE)
-    }
-}
-            ```
+                 Verbose       = FALSE)}}
+```
+

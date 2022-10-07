@@ -22,26 +22,30 @@
 #   1.b Checking Functions4AES.R and SensorToolBox availability
 #       Checking availability of Config files of AirSensEUrs
 #----------------------------------------------------------------CR
+if (!exists("VERBOSE")) VERBOSE <- TRUE
 # Checking if Functions4ASE.R is available
-cat("-----------------------------------------------------------------------------------\n")
+if (VERBOSE) cat("-----------------------------------------------------------------------------------\n")
 if (!"remotes"   %in% utils::installed.packages()) install.packages("remotes")
 if (!"librarian" %in% utils::installed.packages()) remotes::install_github("DesiQuintans/librarian")
-librarian::shelf(futile.logger)
-futile.logger::flog.info("[Global] checking presence of necessary files Functions4ASE.R.")
+librarian::shelf(futile.logger, cran_repo = 'https://cran.r-project.org', quiet = TRUE)
+if (VERBOSE) futile.logger::flog.info("[Global] checking presence of necessary files Functions4ASE.R.")
 Functions4ASE  <- file.path(getwd(), "Functions4ASE.R")
 if (!file.exists(c(Functions4ASE))) {
     stop(futile.logger::flog.error(paste0("[Global] ERROR, file ", Functions4ASE), " not found, stopping the process."))
-} else futile.logger::flog.info(paste0("[Global] file ", Functions4ASE, " found and ready to be sourced."))
+} else {
+    if (VERBOSE) futile.logger::flog.info(paste0("[Global] file ", Functions4ASE, " found and ready to be sourced."))}
 # Checking if "151016 Sensor_Toolbox.R" is available
 DisqueSensToolBox  <- file.path(getwd(),"151016 Sensor_Toolbox.R")
-futile.logger::flog.info("[Global] checking presence of necessary file 151016 Sensor_Toolbox.R.")
+if (VERBOSE) futile.logger::flog.info("[Global] checking presence of necessary file 151016 Sensor_Toolbox.R.")
 if (!file.exists(c(DisqueSensToolBox))) {
     stop(futile.logger::flog.error(paste0("[Global] ERROR, file ", DisqueSensToolBox), " not found, stopping the process."))
-} else futile.logger::flog.info(paste0("[Global] file ", DisqueSensToolBox , " found and ready to be sourced."))
+} else {
+    if (VERBOSE) futile.logger::flog.info(paste0("[Global] file ", DisqueSensToolBox , " found and ready to be sourced."))
+}
 #----------------------------------------------------------------CR
 # 1.c Sourcing SensorToolBox and Functions4AES.R----
 #----------------------------------------------------------------CR
-futile.logger::flog.info(paste0("[Global] sourcing 151016 Sensor_Toolbox.R and Funtions4ASE.R"))
+if (VERBOSE) futile.logger::flog.info(paste0("[Global] sourcing 151016 Sensor_Toolbox.R and Funtions4ASE.R"))
 # Loading SensorToolBox
 source(DisqueSensToolBox)
 remove(DisqueSensToolBox)
@@ -51,7 +55,7 @@ remove(Functions4ASE)
 #----------------------------------------------------------CR
 #  1.d Install packages (CRAN + Github) ----
 #----------------------------------------------------------CR
-futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
+if (VERBOSE) futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # Packages to be loaded
 # transpose dataFrame, and rbindlist (faster than rbindfill)            --> data.table
 # Clean and consistent tools to split-apply-combine pattern in R        --> plyr # use the function plyr::rbind.fill to add dataframes together
@@ -59,7 +63,7 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # ggplot2, dplyr, tidyr, readr, purrr, tibble, stringr, forcats
 # stringr: function str_detect, like grepl but for several pattern
 # rsqlite query name of tables                                          --> dbplyr
-# function to tidy Models 												                      --> broom, broomExtra
+# function to tidy Models                                               --> broom, broomExtra
 # To read sensor data, needed for senorweb4R, install before openair    --> stringi
 # Easier management of time interval                                    --> lubridate
 # When removing ouliers, using rollapply(), na.locf                     --> zoo
@@ -97,7 +101,7 @@ futile.logger::flog.info("[Global] List of packages needed to run the scripts.")
 # ctest for Heteroskedacity                                             --> skedastic
 # Deming regression, standard uncertainty of slope and intercept        --> car
 # Deming regression model                                               --> MethComp
-# Robust algoritm A, ISO 5725                                           --> MetRology
+# Robust algoritm A, ISO 5725                                           --> metRology
 # parallel computing                                                    --> future.apply
 
 list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broomExtra"      , "stringi"         ,
@@ -111,8 +115,8 @@ list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"d
                    "OSMscale"        , "berryFunctions"  ,
                    "RcppRoll"        , "foreach"         , "doParallel"      ,
                    "caTools"         , "weathermetrics"  , "colorspace"      , "backports"       , "raster"          ,
-                   "proj4"           , "skedastic"       , "car"             , "MethComp"        , "MetRology"       , "future.apply")
+                   "proj4"           , "skedastic"       , "car"             , "MethComp"        , "metRology"       , "future.apply") #
 # if error on plyr then type install.packages("plyr") at the console
 list.packages.github <- c("52North/sensorweb4R", "rundel/timezone")
-cat("-----------------------------------------------------------------------------------\n")
-cat("\n")
+if (VERBOSE) cat("-----------------------------------------------------------------------------------\n")
+if (VERBOSE) cat("\n")

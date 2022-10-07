@@ -21,8 +21,9 @@
 #----------------------------------------------------------CR
 #  1.d Install packages (CRAN + Github) ----
 #----------------------------------------------------------CR
-cat("-----------------------------------------------------------------------------------\n")
-futile.logger::flog.info("[Global4Shiny] List of packages needed to run the Shiny App.")
+if (!exists("VERBOSE")) VERBOSE <- TRUE
+if (VERBOSE) cat("-----------------------------------------------------------------------------------\n")
+if (VERBOSE) futile.logger::flog.info("[Global4Shiny] List of packages needed to run the Shiny App.")
 # Packages to be loaded
 # Packages to be loaded
 # Grahical User Interface                                               --> shiny
@@ -56,11 +57,14 @@ futile.logger::flog.info("[Global4Shiny] List of packages needed to run the Shin
 # unzip                                                                 --> utils
 # Automatic determination of the starting directory                     --> kimisc
 # Plotting color scale of Target.Dagram                                 --> plotrix
+# for rendering Rmarkdown report                                        --> markdown
+# For outpoutting report file                                           --> bindrcpp
+# plotting table in rRmarkdown report                                   --> flextable
 #
 # Manca rgdal?
 #
 list.Packages <- c("shiny"           , "shinyjs"         , "shinythemes"     , "shinyBS"         , "shinycssloaders" , "shinyWidgets"    ,
-                   "shinydashboard"  ,
+                   "shinydashboard"  , "bindrcpp"        , "markdown"        ,
                    "rChoiceDialogs"  , "R.utils"         , "utils"           , "kimisc"          ,
                    "openair"         , "corrplot"        , "DT"              , 
                    "rhandsontable"   , "fields"          , "shape"           , 
