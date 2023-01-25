@@ -104,7 +104,7 @@ if (VERBOSE) futile.logger::flog.info("[Global] List of packages needed to run t
 # Robust algoritm A, ISO 5725                                           --> metRology
 # parallel computing                                                    --> future.apply
 
-list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "broomExtra"      , "stringi"         ,
+list.Packages <- c("data.table"      , "plyr"            , "tidyverse"       ,"dbplyr"           , "stringi"         , "broomExtra"      ,
                    "lubridate"       , "zoo"             , "xts"             ,"matrixStats"      , "pryr"            ,
                    "futile.options"  , "lambda.r"        , "futile.logger"   , "geosphere"       ,
                    "curl"            , "RCurl"           , "httr"            , "devtools"        , "processx"        , "sp"              ,

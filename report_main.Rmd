@@ -1,0 +1,239 @@
+---
+title: "Calibration reports of low-cost sensor"
+author: Michel Gerboles, Sinan Yatkin, European Commission - Joint Research Centre, Italy
+date: "last update `r format(Sys.time(), '%d %B %Y, %H:%M')`"
+geometry: margin=2cm
+output:
+  pdf_document:
+    number_sections: true
+    toc: yes
+    toc_depth: 2
+papersize: a4
+---
+```{r, YAML-options, echo = FALSE, eval=FALSE}
+output:
+    html_document:
+    theme: paper
+number_sections: true
+toc: yes
+toc_depth: 2
+toc_float: false
+df_print: paged
+word_document:
+    toc: yes
+number_sections: true
+pdf_document:
+    theme: paper
+number_sections: true
+toc: yes
+toc_depth: 2
+toc_float: false
+pandoc_args:
+    - --wrap=none
+- --top-level-division=chapter
+
+{css}
+h1 {
+    font-size: 3em;
+    color: black;
+    text-align: center;
+    font-style:bold;
+}
+h2 {
+    font-size: 2em;
+    color: black;
+    text-align: left;
+    font-style:bold;}
+h3 {
+    font-size: 1em;
+    color: black;
+    text-align: left;
+    font-style:italic;}
+
+```
+
+```{r, authors, echo = FALSE, eval = FALSE}
+#================================================================CR
+# Licence: ====
+# Copyright 2018 EUROPEAN UNION
+# Licensed under the EUPL, Version 1.2 or subsequent versions of the EUPL (the "License"); 
+# You may not use this work except in compliance with the License. 
+# You may obtain a copy of the License at: http://ec.europa.eu/idabc/eupl
+# Unless required by applicable law or agreed to in writing, the software distributed 
+# under the License is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS 
+# OF ANY KIND, either express or implied. See the License for the specific language 
+# governing permissions and limitations under the License.
+# Date: 05/11/2017
+# 
+# Authors
+# - Michel Gerboles        , michel.gerboles@ec.europa.eu  - European Commission - Joint Research Centre
+# - Sinan yatkin           , sinan.yatkin@ec.europa.eu - European Commission - Joint Research Centre
+# - Federico Karagulian    , federico.karagulian@ec.europa.eu - European Commission - Joint Research Centre
+# - Laurent Spinelle       , laurent.spinelle@ec.europa.eu - European Commission - Joint Research Centre
+# - Marco Signorini        , marco.signorini@liberaintentio.com - Liberatintentio srl
+# - Alex Kotsev            , alexander.kotsev@ec.europa.eu - European Commission - Joint Research Centre
+```
+
+```{r, setup, include=FALSE}
+rm(list = ls())
+options(knitr.duplicate.label = "allow") # for knit_child in a loop
+
+# General chunk options
+knitr::opts_chunk$set(echo      = FALSE,
+                      message   = FALSE,
+                      warning   = FALSE,
+                      include   = TRUE,
+                      comment   = FALSE,
+                      error     = TRUE,
+                      dpi       = 300,
+                      out.width = "100%",
+                      cache     = FALSE)
+```
+
+```{r, include=FALSE}
+
+# Setting Directory and sourcing files
+Possible.Dir <- c(file.path("S:", "Box Sync", "AirSensEUR", "Fieldtests", "Shiny"),
+                  file.path("D:", "Bureau", "DIffusion", "Box Sync", "AirSensEUR", "Fieldtests", "Shiny"),
+                  file.path("home", "shinyadmin", "App"))
+for (Dir in Possible.Dir) if (dir.exists(Dir)) {break()}
+rm(Possible.Dir)
+
+# loading libraries
+source(file.path(Dir,"global.R"))
+if (exists("list.Packages") && list.Packages != "") {
+    librarian::shelf(list.Packages, quiet = TRUE)
+    rm(list.Packages, envir = .GlobalEnv)}
+if (exists("list.packages.github") && list.packages.github != "") {
+    librarian::shelf(list.packages.github, quiet = TRUE)
+    rm(list.packages.github, envir = .GlobalEnv)}
+source(file.path(Dir,"global4Shiny.R"))
+if (exists("list.Packages") && list.Packages != "") {
+    librarian::shelf(list.Packages)
+    rm(list.Packages, envir = .GlobalEnv)} 
+
+# loading toolbox
+#source(file.path(Dir,"151016 Sensor_Toolbox.R"))
+source(file.path(Dir,"Functions4ASE.R"))
+
+#https://stackoverflow.com/questions/57175351/flextable-autofit-in-a-rmarkdown-to-word-doc-causes-table-to-go-outside-page-mar
+FitFlextableToPage <- function(ft, pgwidth = 6){
+    
+    ft_out <- ft %>% autofit()
+    
+    ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+    return(ft_out)
+}
+```
+
+```{r, Libraries, include=FALSE}
+
+#librarian::shelf(shiny, quiet = TRUE)       # function isTruthy()
+#librarian::shelf(openair, quiet = TRUE)     # function timeplot()
+#librarian::shelf(grDevices, quiet = TRUE)   # function rainbow(), topo.colors()
+
+#librarian::shelf(xtable, quiet = TRUE)
+librarian::shelf(pander, quiet = TRUE)
+#librarian::shelf(formattable, quiet = TRUE)
+librarian::shelf(rmarkdown, quiet = TRUE)
+librarian::shelf(markdown, quiet = TRUE)
+librarian::shelf(knitr, quiet = TRUE)
+#librarian::shelf(kableExtra, quiet = TRUE)
+#librarian::shelf(forcats, quiet = TRUE)
+#librarian::shelf(scales, quiet = TRUE)
+librarian::shelf(flextable, quiet = TRUE)
+#librarian::shelf(officer, quiet = TRUE)
+#librarian::shelf(gridExtra, quiet = TRUE)
+#librarian::shelf(RGraphics, quiet = TRUE) 
+#librarian::shelf(captioner, quiet = TRUE)
+```
+
+```{r, Identify, include=FALSE}
+# Directories
+Project     <- "ASE_Boxes"
+DIR_General <- "General_data"
+DIR_Config  <- "Configuration"
+DIR_Models  <- "Models"
+
+#Sensors
+Sensor   <- c("CO_A4_P1", "NO_B4_P1", "NO2_B43F_P1", "OX_A431_P1", "5310CST", "5325CST", "5301CST")
+Sensor   <- c("5325CST")
+List.ASE <- c(# Antwerp
+    "402723", "402B00", "4043A7", "4043AE", "4043B1",  
+    "4047D7", "4047DD", "4047E0", "4047E7", "4047CD", 
+    "40499C", "40499F", "4049A6", "40623F", "406246", 
+    "406249", "40641B", "406424", "40642B", "4065D0",
+    "4065D3", "4065DA", "4065DD", "4065E0", "4065E3",
+    "4065EA", "4067B0", "4067B3", "4067BA", "4067BD", 
+    "408165", "408168", "408175", "408178"
+    , # Oslo
+    "40642E", "40816F", "425FB3", "425FB4", "426178",
+    "426179", "647D5A", "648B91", "649312", "649526",
+    "64A291", "64A292", "64CB6D", "64CB70", "64CB78",
+    "64E9C5", "64FD0A", "64FD11", "65063E", "6517DD",
+    "651EF5", "651EFC", "652A32", "652D3A", "652FA4",
+    "652FAF", "653257", "65326C", "40817F", "40458D",
+    "4065ED", "65325E", "64B082")
+List.ASE <- c("402B00", "40641B", "4065E0", "4065E3", "40816F","4047D0")
+List.ASE <- c("402723", "402B00", "4043A7", "4043AE", "4043B1")
+List.ASE <- c("402723")
+
+# Report object
+out <- rep(NA,length(List.ASE)*length(Sensor))
+```
+
+```{r, All-reports, results='hide'}
+for (n.ASE in seq_along(List.ASE)) {
+    # # Heading 1
+    # cat(paste0("\n", "# AirSensEUR box ", List.ASE[n.ASE], "\n"))
+    
+    # Identifying
+    ASE         <- List.ASE[n.ASE]
+    ASEDir      <- file.path(Dir, Project, ASE)
+    WDoutputMod <- file.path(Dir, Project, ASE, DIR_Models)
+    if (exists("ASE.ID")) rm(ASE.ID)
+    ASE.ID <- Identify_ASE_Dir(ASEDir, name.sensor = Sensor[1], General.DT = NULL, ASE.cfg = NULL, SetTime = NULL,
+                               Config = NULL, Shield = NULL, DIR_Config = DIR_Config, DIR_Models = DIR_Models, DIR_General = DIR_General)
+    
+    # Adding PM coarse for reference
+    set(ASE.ID$General.DT, j = "Out.Ref.Coarse", value = ASE.ID$General.DT$Out.Ref.PM10 - ASE.ID$General.DT$Out.Ref.PM2.5)
+    
+    # Adding PM coarse for sensor PMS sensor
+    set(ASE.ID$General.DT, j = "Coarse_PMSCal_modelled", value = ASE.ID$General.DT$`PM10_PMSCal_modelled` - ASE.ID$General.DT$`PM25_PMSCal_modelled`)
+    set(ASE.ID$General.DT, j = "Coarse_PMSraw_modelled", value = ASE.ID$General.DT$`PM10_PMSraw_modelled` - ASE.ID$General.DT$`PM25_PMSraw_modelled`)
+    set(ASE.ID$General.DT, j = "53CoarseCAT"           , value = ASE.ID$General.DT$`5310CAT_volt`         - ASE.ID$General.DT$`5325CAT_volt`)
+    set(ASE.ID$General.DT, j = "53CoarseCST"           , value = ASE.ID$General.DT$`5310CST_volt`         - ASE.ID$General.DT$`5325CST_volt`)
+    # Adding PM coarse for sensor OPC-N3
+    
+    
+    for (n.Sensor in seq_along(Sensor)) {
+        
+        ASE.ID <- Identify_ASE_Dir(ASEDir, name.sensor = Sensor[n.Sensor],
+                                   General.DT = ASE.ID$General.DT, ASE.cfg = ASE.ID$ASE.cfg, SetTime = ASE.ID$SetTime,
+                                   Config = ASE.ID$Config, Shield = ASE.ID$Config$sens2ref.shield,
+                                   DIR_Config = DIR_Config, DIR_Models = DIR_Models, DIR_General = DIR_General)
+        Cal    <- paste0(ASE,"__", Sensor[n.Sensor],"__", ASE.ID$Config$sens2ref[name.sensor == Sensor[n.Sensor], Cal.func])
+        DQOs   <- get.DQO(name.sensor = ASE.ID$name.sensor)
+        
+        # Creating reports
+        n.report <- (n.ASE-1) * length(Sensor) + n.Sensor
+        out[n.report] <- knitr::knit_child(file.path(Dir,"report_child_inLoop.Rmd"))
+        
+        # Printing report of sensor
+        cat( paste(out[[n.report]], collapse='\\pagebreak'))
+    }
+}
+```
+
+```{r, eval = TRUE, echo=FALSE, print-slides, results = 'asis'}
+#https://stackoverflow.com/questions/25240541/how-to-add-newpage-in-rmarkdown-in-a-smart-way
+#cat( paste(out, collapse='\\pagebreak') )
+
+for (n.ASE in seq_along(List.ASE)) {
+    cat(paste0("\n", "# AirSensEUR box ", List.ASE[n.ASE], "\n"))
+    for (n.Sensor in seq_along(Sensor)) {
+        cat(paste0("\n", "## AirSensEUR box ", List.ASE[n.ASE], ", sensor ", Sensor[n.Sensor],"\n"))
+        n.report <- (n.ASE-1) * length(Sensor) + n.Sensor
+        cat( paste(out[[n.report]], collapse='\\pagebreak'))
+    }
+}
