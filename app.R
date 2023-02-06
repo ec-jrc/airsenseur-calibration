@@ -602,9 +602,9 @@ ui <- navbarPage(title = "ASE_App v0.28", id = "ASE", theme = shinytheme("cerule
                  tabPanel("Help", value = "Help", icon = icon("question"),
                           sidebarPanel(titlePanel("User Manual"), width = 3),
                           mainPanel(
-                              #tags$iframe(style = "height:900px; width:100%; scrolling=yes", src = "ShinyASE.pdf"),
-                              tags$iframe(class = "shiny-plot-output",
-                                          src = "https://docs.google.com/document/d/e/2PACX-1vSH7N4piil32823BM5jJxNElQkwkm17RXczmgR6qyMXNOJyoY3BpxJoqL444o9s54VoNpxDZp74dwQB/pub?embedded=true")
+                              tags$iframe(style = "height:900px; width:100%; scrolling=yes", src = "ShinyASE_App.pdf"),
+                              # tags$iframe(class = "shiny-plot-output",
+                              #             #src = "https://docs.google.com/document/d/e/2PACX-1vSH7N4piil32823BM5jJxNElQkwkm17RXczmgR6qyMXNOJyoY3BpxJoqL444o9s54VoNpxDZp74dwQB/pub?embedded=true")
                               , width = 9))
                  # ,
                  # tabPanel("Console Logs", value = "ConsoleLogs", icon = icon("info-circle"),
