@@ -1,12 +1,11 @@
 #================================================================CR
 # Version History ====
 #================================================================CR
-# New release V0.27, released 2022-02-??
-#            N161 - Major change of reactivity chains for filtering, calibration and prediction with button on top of layout for Warming, TepmRH, Invalid, OutlierSens, Convert, Outref, ApplyCal.
-#                   As a result the App is much faster, all plots in Menu DataTreatment|PlotFiltering are reactive to any changes of paraeters
-#            N162 - New layout of buttons and radio buttons are used. The App should be more clear for user.
-#            E134 - Bug correction: mistake in the App, Plot.Calibration instead of plotting the unit of sensor on the y-axis, the name of the modelled sensor data was shown. Corrected.
-#            E135 - Bug Correction Confusion between "Discard negative modelled data" and "Discard Ref. negative data" when filtering outliers of reference.
+# New release V0.28, released 2023-0206
+#            N163 - New layout of SideLayout under menu "DataTreatment" tab Setime: dateRangeInput "Range of dates for plotting calibration:" and "Range of dates for plotting predicted data:" have beed deleted, they were confusing.
+#            N164 - Coarse fraction of PM reference and sensors (PMS5003, not for OPC-N3) added in the list of covariates for plotting and modelling, tab "Calib" of sideLayout of menu "DataTreatment"Data Treatment".
+#            N165 - New buttons to save only config files for Sever, Setime, Sensor config, Covariates and CovMod.
+#            E136 - Bug Correction Parameters of menu "Data Treatment", Side Layout Filtering, Calb and SetTime were lost when changing of selected sensor without saving the configuration. Corre
 # Needed BUG CORRECTIONS
 #             E36 - Some of the Spin Loaders keep on spinning after updating of the plots. Others do not realize when they receive the updated plots and do not display them. Have a look.
 #             E45 - The time zone used in the mainTabPanel "Plot Filtering" - "Invalid" - "Table" seems to use the local time zone instead of the data series time zone ("UTC") when discarding values.
@@ -49,6 +48,12 @@
 #            N108 - Allow to select only data with GPStimestamp and GPS coordinates
 #            N133 - use the information in the new version of AirSensEUR regarding reset to filter data for warming time
 #            
+# New release V0.27, released 2023-01-24
+#            N161 - Major change of reactivity chains for filtering, calibration and prediction with button on top of layout for Warming, TepmRH, Invalid, OutlierSens, Convert, Outref, ApplyCal.
+#                   As a result the App is much faster, all plots in Menu DataTreatment|PlotFiltering are reactive to any changes of paraeters
+#            N162 - New layout of buttons and radio buttons are used. The App should be more clear for user.
+#            E134 - Bug correction: mistake in the App, Plot.Calibration instead of plotting the unit of sensor on the y-axis, the name of the modelled sensor data was shown. Corrected.
+#            E135 - Bug Correction Confusion between "Discard negative modelled data" and "Discard Ref. negative data" when filtering outliers of reference.
 # New release V0.26, released 2022-02-??
 #            E122 - bug correction: u(bs,RM) and u(bs,s) should not be allowed to have a value of 0, as this may crash the app with wrong calculation in U_Orth_list(). Solved, min value 0.01, if needed change the min value
 #            N150 - It is now possible to select a calibration model that is not computed with the data registered by the ASE box. E. g.: calibration of Antwerp used in Zagreb. In this case Sync.Cal shall be set to FALSE
