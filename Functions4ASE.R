@@ -5616,7 +5616,7 @@ get.DQO <- function(gas.sensor = NULL, name.sensor = NULL, name.gas = NULL, Aver
     
     # Checking consistency of arguments
     if (!Directive %in% c("EN TS 17660", "2008/50/EC", "2024/2881/EC")){
-        return(futile.logger::flog.error(paste0("[get.DQO] unknown legislative documenet ", Directive)))}
+        return(futile.logger::flog.error(paste0("[get.DQO] unknown legislative documnent ", Directive)))}
     if (!Averaging.Period %in% c("1hour", "8hour", "24hour","1year")) return(futile.logger::flog.error(paste0("[get.DQO] unknown Averaging.Period ", Averaging.Period)))
     if (!unit.ref %in% c("\u00b5g/m\u00b3","ug/m3", "mg/m3", "mg/m\u00b3", "ppb", "ppm", "percent", "Celsius", "hPa")){
         return(futile.logger::flog.error(paste0("[get.DQO] unknown unit.ref ", unit.ref)))}
@@ -5760,7 +5760,7 @@ get.DQO <- function(gas.sensor = NULL, name.sensor = NULL, name.gas = NULL, Aver
     } else if (name.gas %in% c("SO2", "NO2", "NO","CO", "O3", "Benzene", "PM1", "PM2.5", "PM10")){
         
         if(Directive == "EN TS 17660"){
-            Class.1.slp     <- c(0.78, 1.29); Class.2.slp     <- c(0.60, 1.67); Class.3.slp     <- c(0.43, 2.33)
+            Class.1.slp <- c(0.78, 1.29); Class.2.slp <- c(0.60, 1.67); Class.3.slp <- c(0.43, 2.33)
             Perc.DQO.3 <- 2 #set in "EN TS 17660" not in the European Directives
             if (name.gas %in% c("SO2", "NO2", "NO","CO")){
                 Perc.DQO.1 <- 0.25; Perc.DQO.2 <- 0.75
@@ -6061,7 +6061,7 @@ get.DQO <- function(gas.sensor = NULL, name.sensor = NULL, name.gas = NULL, Aver
                     LV <- 40; Avg.Period <-  60 * 24 * 365
                 } else stop(paste0(" ERROR Undefined LV and DQO for averaging time ", Averaging.Period))
             } else if(Directive == "2024/2881/EC"){
-                Perc.DQO.1 <- 0.35;  Perc.DQO.2 <- min(0.85, Perc.DQO.1 * 1.7)
+                Perc.DQO.0 <- 0.25; Perc.DQO.1 <- 0.35;  Perc.DQO.2 <- min(0.85, Perc.DQO.1 * 1.7)
                 if(Averaging.Period == "24hour"){
                     LV <- 45; Avg.Period <-  60 * 24
                 } else if(Averaging.Period == "1year"){
@@ -6092,7 +6092,7 @@ get.DQO <- function(gas.sensor = NULL, name.sensor = NULL, name.gas = NULL, Aver
                     LV <- 40; Avg.Period <-  60 * 24 * 365
                 } else stop(paste0(" ERROR Undefined LV and DQO for averaging time ", Averaging.Period))
             } else if(Directive == "2024/2881/EC"){
-                Perc.DQO.1 <- 0.35;  Perc.DQO.2 <- min(0.85, Perc.DQO.1 * 1.7)
+                Perc.DQO.0 <- 0.25; Perc.DQO.1 <- 0.35;  Perc.DQO.2 <- min(0.85, Perc.DQO.1 * 1.7)
                 if(Averaging.Period == "24hour"){
                     LV <- 25; Avg.Period <-  60 * 24 # from 2027
                 } else if(Averaging.Period == "1year"){
@@ -6104,7 +6104,7 @@ get.DQO <- function(gas.sensor = NULL, name.sensor = NULL, name.gas = NULL, Aver
             
         }  else if (name.gas == "PM1") {
             if(Directive == "EN TS 17660"){
-                # Fake DQO only for plotting DQO for PM1 using mehtos of EN TS 17660
+                # Fake DQO only for plotting DQO for PM1 using method of EN TS 17660
                 LV    <- 20
                 
                 # Parameters that are not dependent on Directive but on TS17660-1, defined in µg/m³, taken from PM2.5
